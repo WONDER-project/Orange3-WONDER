@@ -109,7 +109,7 @@ class FitGlobalParameters(FitParametersList):
             for strain_parameters in self.strain_parameters:
                 parameters.extend(strain_parameters.get_parameters())
 
-        return parameters
+        return numpy.array(parameters)
 
     def tuple(self):
         tuple = []

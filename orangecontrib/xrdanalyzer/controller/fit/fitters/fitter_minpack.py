@@ -11,8 +11,6 @@ from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import fit_function
 
 PRCSN = 2.5E-7
 
-from numba import jit,prange
-
 class MinpackData:
     def __init__(self,
                  dof = 0.0,
@@ -110,19 +108,12 @@ class FitterMinpack(FitterInterface):
         self.nobs = self.nr_points
         self.dof = self.nobs - self.nfit
 
-        self.a = CTriMatrix()
-        self.c = CTriMatrix()
-        self.g = CVector()
-        self.grad = CVector()
-        self.currpar = CVector()
-        self.initialpar = CVector()
-
-        self.a.setSize(self.nfit)
-        self.c.setSize(self.nfit)
-        self.g.setSize(self.nfit)
-        self.grad.setSize(self.nfit)
-        self.initialpar.setSize(self.nfit)
-        self.currpar.setSize(self.nfit)
+        self.a = CTriMatrix(_n=self.nfit)
+        self.c = CTriMatrix(_n=self.nfit)
+        self.g = CVector(_n=self.nfit)
+        self.grad = CVector(_n=self.nfit)
+        self.currpar = CVector(_n=self.nfit)
+        self.initialpar = CVector(_n=self.nfit)
 
         self.mighell = False
 
@@ -149,7 +140,6 @@ class FitterMinpack(FitterInterface):
 
         print("Fitter Initialization done.")
 
-    @jit(nopython=False, parallel=True)
     def do_fit(self, current_fit_global_parameters, current_iteration):
         print("Fitter - Begin iteration nr. " + str(current_iteration))
 
