@@ -34,8 +34,6 @@ class LaueGroup:
     def tuple(cls):
         return ["-1", "2/m", "2/mmm", "4/m", "4/mmm", "-3R", "-31mR", "-3", "-3m1", "-31m", "6/m", "6/mmm", "m3", "m3m"]
 
-from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import displacement_invariant_pah
-
 class InvariantPAH(FitParametersList):
     aa = None
     bb = None
@@ -175,6 +173,9 @@ class InvariantPAH(FitParametersList):
     def get_warren_plot(self, h, k, l, L_max=50):
         step = L_max/100
         L = numpy.arange(start=step, stop=L_max + step, step=step)
+
+        from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import displacement_invariant_pah
+
         DL = displacement_invariant_pah(L, h, k, l, self.aa.value, self.bb.value, self.get_invariant(h, k, l))
 
         return L, DL
@@ -389,8 +390,6 @@ class InvariantPAHLaueGroup14(InvariantPAHCubic):
                  e4  = FitParameter(parameter_name="e4" , value=1e-4)):
         super(InvariantPAHLaueGroup14, self).__init__(aa, bb, 14, e1, e4)
 
-from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import displacement_krivoglaz_wilkens
-
 class KrivoglazWilkensModel(FitParametersList):
     rho = None
     Re  = None
@@ -458,6 +457,9 @@ class KrivoglazWilkensModel(FitParametersList):
     def get_warren_plot(self, h, k, l, L_max=50):
         step = L_max/100
         L = numpy.arange(start=step, stop=L_max + step, step=step)
+
+        from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import displacement_krivoglaz_wilkens
+
         DL = displacement_krivoglaz_wilkens(L, h, k, l,
                                             self.rho.value,
                                             self.Re.value,
