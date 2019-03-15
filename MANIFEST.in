@@ -1,0 +1,12 @@
+recursive-include orangecontrib/xrdanalyzer *.svg *.png *.jpg
+recursive-include orangecontrib/xrdanalyzer *.pyx
+
+recursive-include orangecontrib/xrdanalyzer/controller/fit/data *.dat
+recursive-include orangecontrib/xrdanalyzer/controller/fit/data/delta_l_files *.FTinfo
+recursive-include orangecontrib/xrdanalyzer/view/initialization/data *.dat
+
+include requirements.txt
+include README.md
+include LICENSE.txt
+include about.md
+include *.py *.txt
