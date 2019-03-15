@@ -208,6 +208,47 @@ class FitGlobalParameters(FitParametersList):
 
         return text
 
+    @classmethod
+    def compute_functions(cls, parameters, free_input_parameters, free_output_parameters):
+
+        has_function = False
+
+        for parameter in parameters:
+            if parameter.function:
+                has_function = True
+                break
+
+        if has_function:
+            python_code = "import numpy\nfrom numpy import *\n\n"
+            python_code += free_input_parameters.to_python_code()
+
+            for parameter in parameters:
+                if not parameter.function: python_code += parameter.to_parameter_text() + "\n"
+
+            parameters_dictionary_fit = {}
+
+            for parameter in parameters:
+                if parameter.function:
+                    parameters_dictionary_fit[parameter.parameter_name] = numpy.nan
+                    python_code += parameter.to_python_code() + "\n"
+
+
+            parameters_dictionary_out, code_out = free_output_parameters.get_functions_data()
+
+            python_code += code_out
+
+            parameters_dictionary = {}
+            parameters_dictionary.update(parameters_dictionary_fit)
+            parameters_dictionary.update(parameters_dictionary_out)
+
+            exec(python_code, parameters_dictionary)
+
+            for parameter in parameters:
+                if parameter.function:
+                    parameter.value = float(parameters_dictionary[parameter.parameter_name])
+
+            free_output_parameters.set_functions_values(parameters_dictionary)
+
     def evaluate_functions(self):
         if self.has_functions() or self.free_output_parameters.get_parameters_count() > 0:
             python_code = "import numpy\nfrom numpy import *\n\n"
