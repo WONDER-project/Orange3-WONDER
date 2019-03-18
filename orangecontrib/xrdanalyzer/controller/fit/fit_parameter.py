@@ -142,6 +142,7 @@ class ParametersList:
 
 
 class FitParametersList(ParametersList):
+    __parameters = numpy.empty(10000)
 
     @classmethod
     def get_parameters_prefix(cls):
@@ -151,43 +152,7 @@ class FitParametersList(ParametersList):
         return len(self.get_parameters())
 
     def get_parameters(self):
-        parameters = []
-
-        for attribute_name in self.__dict__.keys():
-            attribute = self.__dict__[attribute_name]
-
-            if isinstance(attribute, FitParameter):
-                parameters.append(attribute)
-
-        return parameters
-
-    def tuple(self):
-        parameters = []
-        boundaries_min = []
-        boundaries_max = []
-
-        for fit_parameter in self.get_parameters():
-            parameters.append(fit_parameter.value)
-
-            if fit_parameter.boundary is None:
-                boundaries_min.append(PARAM_HWMIN)
-                boundaries_max.append(PARAM_HWMAX)
-            else:
-                boundaries_min.append(fit_parameter.boundary.min_value)
-                boundaries_max.append(fit_parameter.boundary.max_value)
-
-        boundaries = [boundaries_min, boundaries_max]
-
-        return parameters, boundaries
-
-    def append_to_tuple(self, parameters, boundaries):
-        my_parameters, my_boundaries = self.tuple()
-
-        parameters    = list(numpy.append(parameters, my_parameters))
-        boundaries[0] = list(numpy.append(boundaries[0], my_boundaries[0]))
-        boundaries[1] = list(numpy.append(boundaries[1], my_boundaries[1]))
-
-        return parameters, boundaries
+        return self.__parameters
 
     def to_text(self):
         raise NotImplementedError()
@@ -201,7 +166,7 @@ class FitParametersList(ParametersList):
     def get_available_parameters(self):
         text = ""
 
-        for parameter in self.get_parameters():
+        for parameter in self.__parameters:
             if not parameter.function: text += parameter.to_parameter_text() + "\n"
 
         return text
@@ -210,7 +175,7 @@ class FitParametersList(ParametersList):
         parameters_dictionary = {}
         python_code = ""
 
-        for parameter in self.get_parameters():
+        for parameter in self.__parameters:
             if parameter.function:
                 parameters_dictionary[parameter.parameter_name] = numpy.nan
                 python_code += parameter.to_python_code() + "\n"
@@ -218,7 +183,7 @@ class FitParametersList(ParametersList):
         return parameters_dictionary, python_code
 
     def set_functions_values(self, parameters_dictionary):
-        for parameter in self.get_parameters():
+        for parameter in self.__parameters:
             if parameter.function:
                 parameter.value = float(parameters_dictionary[parameter.parameter_name])
 
