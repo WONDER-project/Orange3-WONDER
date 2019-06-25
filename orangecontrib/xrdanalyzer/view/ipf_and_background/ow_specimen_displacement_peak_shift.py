@@ -66,6 +66,7 @@ class OWSpecimenDisplacementPeakShift(OWGenericWidget):
                 displacement.rescale(1e-6) # to m
 
                 self.fit_global_parameters.set_shift_parameters([SpecimenDisplacement(goniometer_radius=self.goniometer_radius, displacement=displacement)])
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

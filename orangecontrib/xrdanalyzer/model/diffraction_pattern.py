@@ -3,7 +3,7 @@ import inspect
 
 from orangecontrib.xrdanalyzer.util import congruence
 from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Utilities
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import ParametersList
 
 
 #---------------------------------------
@@ -59,9 +59,8 @@ class DiffractionPoint:
             congruence.checkPositiveNumber(self.twotheta, "twotheta")
         if self.twotheta is None:
             congruence.checkPositiveNumber(self.s, "s")
-        #congruence.checkPositiveNumber(self.intensity, "Intensity")
 
-class DiffractionPattern(FitParametersList):
+class DiffractionPattern(ParametersList):
 
     diffraction_pattern = None
     wavelength = None
@@ -117,53 +116,24 @@ class DiffractionPattern(FitParametersList):
         if not isinstance(diffraction_point, DiffractionPoint): raise ValueError ("diffraction point should be of type Diffraction Point")
 
         if self.diffraction_pattern is None:
-            self.diffraction_pattern = numpy.array([self._check_diffraction_point(diffraction_point)])
+            self.diffraction_pattern = numpy.array([self.__check_diffraction_point(diffraction_point)])
         else:
-            self.diffraction_pattern = numpy.append(self.diffraction_pattern, self._check_diffraction_point(diffraction_point))
+            self.diffraction_pattern = numpy.append(self.diffraction_pattern, self.__check_diffraction_point(diffraction_point))
 
     def set_diffraction_point(self, index, diffraction_point):
-        self._check_diffraction_pattern()
-        self.diffraction_pattern[index] = self._check_diffraction_point(diffraction_point)
+        self.__check_diffraction_pattern()
+        self.diffraction_pattern[index] = self.__check_diffraction_point(diffraction_point)
 
     def diffraction_points_count(self):
         return 0 if self.diffraction_pattern is None else len(self.diffraction_pattern)
 
     def get_diffraction_point(self, index):#
-        self._check_diffraction_pattern()
+        self.__check_diffraction_pattern()
 
         return self.diffraction_pattern[index]
 
-    def tuples(self):
-        n_points = self.diffraction_points_count()
-
-        twotheta = numpy.zeros(n_points)
-        intensity = numpy.zeros(n_points)
-        error = numpy.zeros(n_points)
-        s = numpy.zeros(n_points)
-
-        for index in range(n_points):
-            diffraction_point = self.get_diffraction_point(index)
-            twotheta[index] = diffraction_point.twotheta
-            intensity[index] = diffraction_point.intensity
-            error[index] = diffraction_point.error
-            s[index] = diffraction_point.s
-
-        return twotheta, intensity, error, s
-
-    def get_parameters(self):
-        parameters = [self.wavelength]
-
-        if not self.is_single_wavelength:
-            for secondary_wavelength, secondary_wavelength_weigth in zip(self.secondary_wavelengths,
-                                                                         self.secondary_wavelengths_weights):
-                parameters.extend([secondary_wavelength, secondary_wavelength_weigth])
-
-
-
-        return parameters
-
     def duplicate(self):
-        self._check_diffraction_pattern()
+        self.__check_diffraction_pattern()
 
         diffraction_pattern = DiffractionPattern(wavelength=None if self.wavelength is None else self.wavelength.duplicate())
         diffraction_pattern.diffraction_pattern = self.diffraction_pattern # not duplicate: too many infos and typically read-only
@@ -181,33 +151,13 @@ class DiffractionPattern(FitParametersList):
 
         return diffraction_pattern
 
-    def to_text(self):
-        text = "DIFFRACTION PATTERN\n"
-        text += "-----------------------------------\n"
-
-        if self.is_single_wavelength:
-            text += "Wavelength: " + self.wavelength.to_text() + "\n"
-
-        else:
-            text += "Principal Wavelength: " + self.wavelength.to_text() + \
-                    ", weight: " + str(self.get_principal_wavelenght_weight()) + "\n"
-
-            for secondary_wavelength, secondary_wavelength_weigth in zip(self.secondary_wavelengths,
-                                                                         self.secondary_wavelengths_weights):
-                text += "Wavelength: " + secondary_wavelength.to_text() + \
-                        ", weight: " + secondary_wavelength_weigth.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
-
     # "PRIVATE METHODS"
-    def _check_diffraction_pattern(self):
+    def __check_diffraction_pattern(self):
         if self.diffraction_pattern is None:
             raise AttributeError("diffraction pattern is "
                                  "not initialized")
 
-    def _check_diffraction_point(self, diffraction_point):
+    def __check_diffraction_point(self, diffraction_point):
         if not self.wavelength is None:
             if diffraction_point.s is None or diffraction_point.twotheta is None:
                 diffraction_point = DiffractionPoint(twotheta=diffraction_point.twotheta,

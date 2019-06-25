@@ -28,24 +28,20 @@ class CVector:
 
     #inline double &operator [] (int i) const { assert(i<n); return data[i]; }
     def __getitem__(self, index):
-        assert index < self.n
-
+        # assert  index < self.n
         return self.data[index]
 
     def __setitem__(self, index, value):
-        assert index < self.n
-
+        # assert  index < self.n
         self.data[index] = value
 
     #inline double &operator () (int i) const { assert(i<=n); return data[i-1]; }
     def getitem(self, i):
-        assert i <= self.n
-
+        # assert  i <= self.n
         return self.data[i-1]
 
     def setitem(self, i, value):
-        assert i <= self.n
-
+        # assert  i <= self.n
         self.data[i-1]=value
 
     #CVector &operator - ()
@@ -93,31 +89,28 @@ class CMatrix:
 
     #inline double *operator [] (int i)		  const { assert(i<n);  return idx[i]; }
     def __getitem__(self, index):
-        assert index < self.n
+        # assert  index < self.n
 
         return self.data[index, :]
 
     def __setitem__(self, index, value):
-        assert index < self.n
-
+        # assert  index < self.n
         self.data[index, :] = value
 
 
     #inline double &operator () (int i, int j) const	{ assert(j<=m); return idx[--i][--j]; }
 	#inline double *operator () (int i)		  const	{ assert(i<=n); return idx[--i]; }
     def getitem(self, i, j=None):
-        assert i <= self.n
-
+        # assert  i <= self.n
         if j is None:
             return self.data[i-1, :]
         else:
-            assert j <= self.m
+            # assert  j <= self.m
 
             return self.data[i-1, j-1]
 
     def setitem(self, i, j, value):
-        assert j <= self.m
-
+        # assert  j <= self.m
         self.data[i-1, j-1] = value
 
     def zero(self):
@@ -168,19 +161,17 @@ class CTriMatrix:
 	#	return *this;
 	#}
     def assign(self, other):
-        assert other.n == self.n
+        # assert  other.n == self.n
         self.__init__(other=other)
 
 
     #inline double &operator [] (int i) const { assert(i<n); return data[i]; }
     def __getitem__(self, index):
-        assert index < self.n
-
+        # assert  index < self.n
         return self.data[index]
 
     def __setitem__(self, index, value):
-        assert index < self.n
-
+        # assert  index < self.n
         self.data[index] = value
 
     #inline double &operator () (int i, int j) const
@@ -194,12 +185,11 @@ class CTriMatrix:
 	#inline double &operator () (int i) const { assert(i<=n*(n+1)/2); return data[i-1]; }
     def getitem(self, i, j=None):
         if j is None:
-            assert i <= self.n*(self.n + 1)/2
+            # assert  i <= self.n*(self.n + 1)/2
             return self.data[int(i-1)]
         else:
-            assert i <= self.n
-            assert j <= self.n
-
+            # assert  i <= self.n
+            # assert  j <= self.n
             i -=1
             j -=1
 
@@ -209,8 +199,7 @@ class CTriMatrix:
             return self.data[l+j]
 
     def setitem(self, i, value):
-        assert i <= self.n*(self.n + 1)/2
-
+        # assert  i <= self.n*(self.n + 1)/2
         self.data[int(i-1)]=value
 
     def chodec(self):
@@ -293,19 +282,3 @@ class CTriMatrix:
             return False
 
         return True
-
-
-
-
-if __name__=="__main__":
-
-    vector = CVector(10)
-
-    vector[2] = 1.4
-    vector.setitem(4, 25)
-
-    print(vector[2])
-    print(vector[3])
-    print(vector.getitem(4))
-    print(vector)
-    print(-vector)

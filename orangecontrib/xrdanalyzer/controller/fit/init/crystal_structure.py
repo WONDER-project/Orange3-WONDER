@@ -1,9 +1,10 @@
 import numpy
 
 import orangecontrib.xrdanalyzer.util.congruence as congruence
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParametersList, FitParameter, Boundary, PARAM_HWMAX, PARAM_HWMIN
-from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Utilities
-from orangecontrib.xrdanalyzer.controller.fit.init.crystal_structure_symmetry import Symmetry
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import ParametersList, FitParameter, Boundary, PARAM_HWMAX, PARAM_HWMIN
+from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Utilities, Symmetry
+
+
 
 class Reflection():
 
@@ -53,7 +54,7 @@ class Reflection():
     def get_s_hkl(self, wavelength):
         return self.get_q_hkl(wavelength)/(2*numpy.pi)
 
-class CrystalStructure(FitParametersList):
+class CrystalStructure(ParametersList):
 
     a = None
     b = None
@@ -292,57 +293,4 @@ class CrystalStructure(FitParametersList):
 
         return crystal_structure
 
-    def to_text(self):
-        text = "CRYSTAL STRUCTURE\n"
-        text += "-----------------------------------\n"
 
-        text += self.a.to_text() + "\n"
-        text += self.b.to_text() + "\n"
-        text += self.c.to_text() + "\n"
-        text += self.alpha.to_text() + "\n"
-        text += self.beta.to_text() + "\n"
-        text += self.gamma.to_text() + "\n"
-        text += "Symmetry: " + self.symmetry + "\n"
-        text += "Use Strucuture: " + str(self.use_structure) + "\n"
-        text += "Chemical Formula: " + str(self.formula) + "\n"
-        text += ("" if self.intensity_scale_factor is None else self.intensity_scale_factor.to_text()) + "\n"
-
-        text += "\nREFLECTIONS\n"
-        text += "h, k, l, intensity:\n"
-
-        for reflection in self.reflections:
-            text += reflection.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
-
-    def get_parameters(self):
-        parameters = super().get_parameters()
-
-        for reflection in self.reflections:
-            parameters.append(reflection.intensity)
-
-        return parameters
-
-if __name__=="__main__":
-    test = CrystalStructure.init_cube(a0=FitParameter(value=0.55, fixed=True), symmetry=Symmetry.BCC)
-
-    test = CrystalStructure(a=FitParameter(parameter_name="a", value=0.55), b=FitParameter(parameter_name="b", value=0.66), c=FitParameter(parameter_name="c", value=0.77),
-                            alpha=FitParameter(value=10), beta=FitParameter(value=20), gamma=FitParameter(value=30),
-                            symmetry=Symmetry.NONE)
-
-    test.add_reflection(Reflection(1, 0, 3, intensity=FitParameter(value=200, boundary=Boundary(min_value=10, max_value=100000))))
-    test.add_reflection(Reflection(2, 0, 0, intensity=FitParameter(value=300, boundary=Boundary(min_value=10, max_value=100000))))
-    test.add_reflection(Reflection(2, 1, 1, intensity=FitParameter(value=400)))
-
-    text = "1, 1, 0, I110 := crystal_structure_I200\n" + \
-           "2, 0, 0, crystal_structure_I200 2000, min 20, max 10000\n"  + \
-           "2, 1, 0, crystal_structure_I210 3000, max 30000\n"  + \
-           "3, 0, 0, crystal_structure_I300 4000\n"  + \
-           "3, 1, 0, crystal_structure_4100\n"  + \
-           "4, 4, 1, crystal_structure_I441 5000\n"
-
-    test.parse_reflections(text)
-
-    print(test.to_text())

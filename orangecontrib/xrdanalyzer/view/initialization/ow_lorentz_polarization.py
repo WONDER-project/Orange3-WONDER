@@ -120,6 +120,7 @@ class OWLorentzPolarization(OWGenericWidget):
                     self.fit_global_parameters.fit_initialization.thermal_polarization_parameters[0].twotheta_mono = None if (self.use_polarization_factor==0 or self.use_twotheta_mono==0) else self.twotheta_mono
                     self.fit_global_parameters.fit_initialization.thermal_polarization_parameters[0].degree_of_polarization = self.degree_of_polarization
                     self.fit_global_parameters.fit_initialization.thermal_polarization_parameters[0].beampath = self.beampath
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

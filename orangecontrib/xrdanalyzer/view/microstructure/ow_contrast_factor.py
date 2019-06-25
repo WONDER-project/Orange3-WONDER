@@ -89,6 +89,8 @@ class OWContrastFactor(OWGenericWidget):
                                                                                       As=FitParameter(parameter_name=KrivoglazWilkensModel.get_parameters_prefix() + "As", value=As, fixed=True),
                                                                                       Bs=FitParameter(parameter_name=KrivoglazWilkensModel.get_parameters_prefix() + "Bs", value=Bs, fixed=True))]
 
+                self.fit_global_parameters.regenerate_parameters()
+
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 
         except Exception as e:

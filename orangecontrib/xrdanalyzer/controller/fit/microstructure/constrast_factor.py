@@ -16,12 +16,12 @@ def param_eqn(a,b,c,d,c11,c12,c44): # parametrization equation
 
 #--- A parameters, low Zener ratio ----------------------#
 
-def A_lowZen_screw_FCC(c11, c12, c44): # calculation of parameter A for Zener ratio <=0.5 for screw dislocation
+def A_lowZen_screw_FCC(c11,c12,c44): # calculation of parameter A for Zener ratio <=0.5 for screw dislocation
                                      # in FCC <110>{111} slip system
     a = 0.0454
     b = 0.1704
-    c = 0.0901
-    d = 0.0275
+    c = 0.1056
+    d = 0.0221
     value = param_eqn(a,b,c,d,c11,c12,c44)
     return value
 
@@ -125,8 +125,8 @@ def B_lowZen_screw_FCC(c11,c12,c44): # calculation of parameter B for Zener rati
                                      # in FCC <110>{111} slip system
     a = 48.5946
     b = 0.0713
-    c = 9.7907
-    d = -58.552
+    c = 10.3165
+    d = -54.6536
     value = -param_eqn(a,b,c,d,c11,c12,c44) * A_lowZen_screw_FCC(c11,c12,c44)
     return value
 
@@ -361,7 +361,7 @@ def B_highZen_edge_BCC(c11,c12,c44): # calculation of parameter B for Zener rati
     return value
 
 
-from orangecontrib.xrdanalyzer.controller.fit.init.crystal_structure_symmetry import Symmetry
+from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Symmetry
 
 def calculate_A_B_coefficients(c11, c12, c44, symmetry=Symmetry.FCC):
     zener_ratio = zener(c11, c12, c44)

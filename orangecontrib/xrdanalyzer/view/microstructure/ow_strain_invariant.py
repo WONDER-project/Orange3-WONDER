@@ -120,6 +120,7 @@ class OWStrainInvariant(OWGenericWidget):
                                                                                            bb=self.populate_parameter("bb", InvariantPAH.get_parameters_prefix()),
                                                                                            e1=self.populate_parameter("e1", InvariantPAH.get_parameters_prefix()),
                                                                                            e4=self.populate_parameter("e4", InvariantPAH.get_parameters_prefix()))]
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

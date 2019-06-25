@@ -1,5 +1,5 @@
 
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import ParametersList
 
 class Beampath:
     PRIMARY = 0
@@ -17,7 +17,7 @@ class LorentzFormula:
     def tuple(cls):
         return ["1/[s\u22c5s(hkl)]", "1/s(hkl)\u00b2"]
 
-class ThermalPolarizationParameters(FitParametersList):
+class ThermalPolarizationParameters(ParametersList):
 
     debye_waller_factor = None
     use_lorentz_factor = False
@@ -59,17 +59,3 @@ class ThermalPolarizationParameters(FitParametersList):
                                              degree_of_polarization=self.degree_of_polarization,
                                              twotheta_mono=self.twotheta_mono)
 
-    def to_text(self):
-        text = "THERMAL/POLARIZATION PARAMETERS\n"
-        text += "-----------------------------------\n"
-        text += "Biso   : " + "" if self.debye_waller_factor is None else self.debye_waller_factor.to_text() + "\n"
-        text += "use LF : " + str(self.use_lorentz_factor) + "\n"
-        if self.lorentz_formula: text += "Formula :" + LorentzFormula.tuple()[self.lorentz_formula]
-        text += "use PF : " + str(self.use_polarization_factor) + "\n"
-        if self.use_polarization_factor:
-            text += "beampath : " + Beampath.tuple()[self.beampath] + "\n"
-            text += "Deg. Pol.: " + str(self.degree_of_polarization) + "\n"
-            if not self.twotheta_mono is None: text += "2th_m : " + str(self.twotheta_mono) + "\n"
-        text += "-----------------------------------\n"
-
-        return text

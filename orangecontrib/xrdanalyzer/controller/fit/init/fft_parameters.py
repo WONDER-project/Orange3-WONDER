@@ -1,5 +1,5 @@
 from orangecontrib.xrdanalyzer.util import congruence
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import ParametersList
 
 class FFTTypes:
     REAL_ONLY = 0
@@ -9,7 +9,7 @@ class FFTTypes:
     def tuple(cls):
         return ["Real Only", "Full"]
 
-class FFTInitParameters(FitParametersList):
+class FFTInitParameters(ParametersList):
 
     s_max = 9.0
     n_step = 4096
@@ -32,13 +32,3 @@ class FFTInitParameters(FitParametersList):
 
     def duplicate(self):
         return FFTInitParameters(s_max=self.s_max, n_step=self.n_step, fft_type=self.fft_type)
-
-    def to_text(self):
-        text = "FFT PARAMETERS\n"
-        text += "-----------------------------------\n"
-        text += "fft steps: " + str(self.n_step) + "\n"
-        text += "s max    : "  + str(self.s_max) + "\n"
-        text += "FFT Type : "  + FFTTypes.tuple()[self.fft_type] + "\n"
-        text += "-----------------------------------\n"
-
-        return text

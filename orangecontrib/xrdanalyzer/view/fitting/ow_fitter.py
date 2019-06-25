@@ -460,6 +460,7 @@ class OWFitter(OWGenericWidget):
 
     def send_current_fit(self):
         if not self.fit_global_parameters is None:
+            self.fit_global_parameters.regenerate_parameters()
             self.send("Fit Global Parameters", self.fit_global_parameters.duplicate())
 
     def set_data(self, data):
@@ -898,6 +899,8 @@ class OWFitter(OWGenericWidget):
             if self.current_iteration == 1:
                 self.tabs.setCurrentIndex(1)
                 self.tabs_plot.setCurrentIndex(0)
+
+        self.fitted_fit_global_parameters.regenerate_parameters()
 
         self.send("Fit Global Parameters", self.fitted_fit_global_parameters)
 

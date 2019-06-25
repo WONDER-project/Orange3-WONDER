@@ -1,6 +1,11 @@
 import numpy
 
 from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FreeInputParameters, FreeOutputParameters
+from orangecontrib.xrdanalyzer.controller.fit.instrument.background_parameters import ChebyshevBackground, ExpDecayBackground
+from orangecontrib.xrdanalyzer.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection, ZeroError, SpecimenDisplacement
+from orangecontrib.xrdanalyzer.controller.fit.microstructure.size import Distribution
+from orangecontrib.xrdanalyzer.controller.fit.microstructure.strain import InvariantPAH, KrivoglazWilkensModel, WarrenModel
 
 class FitGlobalParameters(FitParametersList):
 
@@ -22,7 +27,9 @@ class FitGlobalParameters(FitParametersList):
                  instrumental_parameters = None,
                  shift_parameters = {},
                  size_parameters = None,
-                 strain_parameters = None):
+                 strain_parameters = None,
+                 free_input_parameters = FreeInputParameters(),
+                 free_output_parameters = FreeOutputParameters()):
         super().__init__()
 
         self.fit_initialization = fit_initialization
@@ -31,8 +38,8 @@ class FitGlobalParameters(FitParametersList):
         self.shift_parameters = shift_parameters
         self.size_parameters = size_parameters
         self.strain_parameters = strain_parameters
-        self.free_input_parameters = FreeInputParameters()
-        self.free_output_parameters = FreeOutputParameters()
+        self.free_input_parameters = free_input_parameters
+        self.free_output_parameters = free_output_parameters
 
         self.n_max_iterations = 10
         self.convergence_reached = False
@@ -80,197 +87,9 @@ class FitGlobalParameters(FitParametersList):
             key = shift_parameters[0].__class__.__name__
             self.shift_parameters[key] = shift_parameters
 
-
-    def get_parameters(self):
-        parameters = []
-
-        if not self.fit_initialization is None:
-            parameters.extend(self.fit_initialization.get_parameters())
-
-        if not self.background_parameters is None:
-            for key in self.background_parameters.keys():
-                for background_parameters in self.background_parameters[key]:
-                    parameters.extend(background_parameters.get_parameters())
-
-        if not self.instrumental_parameters is None:
-            for instrumental_parameters in self.instrumental_parameters:
-                parameters.extend(instrumental_parameters.get_parameters())
-
-        if not self.shift_parameters is None:
-            for key in self.shift_parameters.keys():
-                for shift_parameters in self.shift_parameters[key]:
-                    parameters.extend(shift_parameters.get_parameters())
-
-        if not self.size_parameters is None:
-            for size_parameters in self.size_parameters:
-                parameters.extend(size_parameters.get_parameters())
-
-        if not self.strain_parameters is None:
-            for strain_parameters in self.strain_parameters:
-                parameters.extend(strain_parameters.get_parameters())
-
-        return numpy.array(parameters)
-
-    def tuple(self):
-        tuple = []
-
-        if not self.fit_initialization is None:
-            tuple.extend(self.fit_initialization.tuple())
-
-        if not self.background_parameters is None:
-            for key in self.background_parameters.keys():
-                for background_parameters in self.background_parameters[key]:
-                    tuple.extend(background_parameters.tuple())
-
-        if not self.instrumental_parameters is None:
-            for instrumental_parameters in self.instrumental_parameters:
-                tuple.extend(instrumental_parameters.tuple())
-
-        if not self.shift_parameters is None:
-            for key in self.shift_parameters.keys():
-                for shift_parameters in self.shift_parameters[key]:
-                    tuple.extend(shift_parameters.tuple())
-
-        if not self.size_parameters is None:
-            for size_parameters in self.size_parameters:
-                tuple.extend(size_parameters.tuple())
-
-        if not self.strain_parameters is None:
-            for strain_parameters in self.strain_parameters:
-                tuple.extend(strain_parameters.tuple())
-
-        return tuple
-
-    def append_to_tuple(self, parameters, boundaries):
-
-        if not self.fit_initialization is None:
-            parameters, boundaries = self.fit_initialization.append_to_tuple(parameters, boundaries)
-
-        if not self.background_parameters is None:
-            for key in self.background_parameters.keys():
-                for background_parameters in self.background_parameters[key]:
-                    parameters, boundaries = background_parameters.append_to_tuple(parameters, boundaries)
-
-        if not self.instrumental_parameters is None:
-            for instrumental_parameters in self.instrumental_parameters:
-                parameters, boundaries = instrumental_parameters.append_to_tuple(parameters, boundaries)
-
-        if not self.shift_parameters is None:
-            for key in self.shift_parameters.keys():
-                for shift_parameters in self.shift_parameters[key]:
-                    parameters, boundaries = shift_parameters.append_to_tuple(parameters, boundaries)
-
-        if not self.size_parameters is None:
-            for size_parameters in self.size_parameters:
-                parameters, boundaries = size_parameters.append_to_tuple(parameters, boundaries)
-
-        if not self.strain_parameters is None:
-            for strain_parameters in self.strain_parameters:
-                parameters, boundaries = strain_parameters.append_to_tuple(parameters, boundaries)
-
-        return parameters, boundaries
-
-    def to_text(self):
-        
-        text = "FIT GLOBAL PARAMETERS\n"
-        text += "###################################\n\n"
-
-        text += self.free_input_parameters.to_text()
-
-        if not self.fit_initialization is None:
-            text += self.fit_initialization.to_text()
-
-        if not self.background_parameters is None:
-            for key in self.background_parameters.keys():
-                for background_parameters in self.background_parameters[key]:
-                    text += background_parameters.to_text()
-            
-        if not self.instrumental_parameters is None:
-            for instrumental_parameters in self.instrumental_parameters:
-                text += instrumental_parameters.to_text()
-            
-        if not self.shift_parameters is None:
-            for key in self.shift_parameters.keys():
-                for shift_parameters in self.shift_parameters[key]:
-                    text += shift_parameters.to_text()
-
-        if not self.size_parameters is None:
-            for size_parameters in self.size_parameters:
-                text += size_parameters.to_text()
-
-        if not self.strain_parameters is None:
-            for strain_parameters in self.strain_parameters:
-                text += strain_parameters.to_text()
-        
-        text += self.free_output_parameters.to_text()
-
-        text += "\n###################################\n"
-
-        return text
-
-    @classmethod
-    def compute_functions(cls, parameters, free_input_parameters, free_output_parameters):
-
-        has_function = False
-
-        for parameter in parameters:
-            if parameter.function:
-                has_function = True
-                break
-
-        if has_function:
-            python_code = "import numpy\nfrom numpy import *\n\n"
-            python_code += free_input_parameters.to_python_code()
-
-            for parameter in parameters:
-                if not parameter.function: python_code += parameter.to_parameter_text() + "\n"
-
-            parameters_dictionary_fit = {}
-
-            for parameter in parameters:
-                if parameter.function:
-                    parameters_dictionary_fit[parameter.parameter_name] = numpy.nan
-                    python_code += parameter.to_python_code() + "\n"
-
-
-            parameters_dictionary_out, code_out = free_output_parameters.get_functions_data()
-
-            python_code += code_out
-
-            parameters_dictionary = {}
-            parameters_dictionary.update(parameters_dictionary_fit)
-            parameters_dictionary.update(parameters_dictionary_out)
-
-            exec(python_code, parameters_dictionary)
-
-            for parameter in parameters:
-                if parameter.function:
-                    parameter.value = float(parameters_dictionary[parameter.parameter_name])
-
-            free_output_parameters.set_functions_values(parameters_dictionary)
-
     def evaluate_functions(self):
         if self.has_functions() or self.free_output_parameters.get_parameters_count() > 0:
-            python_code = "import numpy\nfrom numpy import *\n\n"
-
-            python_code += self.free_input_parameters.to_python_code()
-
-            python_code += self.get_available_parameters()
-
-            parameters_dictionary_fit, code_fit = self.get_functions_data()
-            parameters_dictionary_out, code_out = self.free_output_parameters.get_functions_data()
-
-            python_code += code_fit
-            python_code += code_out
-
-            parameters_dictionary = {}
-            parameters_dictionary.update(parameters_dictionary_fit)
-            parameters_dictionary.update(parameters_dictionary_out)
-
-            exec(python_code, parameters_dictionary)
-
-            self.set_functions_values(parameters_dictionary)
-            self.free_output_parameters.set_functions_values(parameters_dictionary)
+            FitGlobalParameters.compute_functions(self.get_parameters(), self.__free_input_parameters, self.__free_output_parameters)
 
     def duplicate(self):
         self.evaluate_functions()
@@ -290,14 +109,14 @@ class FitGlobalParameters(FitParametersList):
                     background_parameters[key] = [None]*dimension
                     for index in range(dimension):
                         background_parameters[key][index]= background_parameters_list[index].duplicate()
-        
+
         if self.instrumental_parameters is None: instrumental_parameters = None
         else:
             dimension = len(self.instrumental_parameters)
             instrumental_parameters = [None]*dimension
             for index in range(dimension):
                 instrumental_parameters[index] = self.instrumental_parameters[index].duplicate()
-        
+
         if self.shift_parameters is None:
             shift_parameters = None
         else:
@@ -310,7 +129,7 @@ class FitGlobalParameters(FitParametersList):
                     dimension = len(shift_parameters_list)
                     shift_parameters[key] = [None]*dimension
                     for index in range(dimension):
-                        shift_parameters[key][index]= shift_parameters_list[index].duplicate() 
+                        shift_parameters[key][index]= shift_parameters_list[index].duplicate()
 
         if self.size_parameters is None: size_parameters = None
         else:
@@ -339,6 +158,424 @@ class FitGlobalParameters(FitParametersList):
 
         return fit_global_parameters
 
+    def regenerate_parameters(self):
+        self.clear_parameters()
+
+        fitted_parameters = self.get_parameters()
+
+        last_index = -1
+
+        if not self.fit_initialization.diffraction_patterns is None:
+            for index in range(len(self.fit_initialization.diffraction_patterns)):
+                diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
+                fitted_parameters[last_index + 1] = diffraction_pattern.wavelength
+
+                last_index += 1
+
+                if not diffraction_pattern.is_single_wavelength:
+                    for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
+                                                                                 diffraction_pattern.secondary_wavelengths_weights):
+                        fitted_parameters[last_index + 1] = secondary_wavelength
+                        fitted_parameters[last_index + 2] = secondary_wavelength_weigth
+                        last_index += 2
+
+        if not self.fit_initialization.crystal_structures is None:
+            for index in range(len(self.fit_initialization.crystal_structures)):
+                crystal_structure = self.fit_initialization.crystal_structures[index]
+
+                fitted_parameters[last_index + 1] = crystal_structure.a
+                fitted_parameters[last_index + 2] = crystal_structure.b
+                fitted_parameters[last_index + 3] = crystal_structure.c
+                fitted_parameters[last_index + 4] = crystal_structure.alpha
+                fitted_parameters[last_index + 5] = crystal_structure.beta
+                fitted_parameters[last_index + 6] = crystal_structure.gamma
+
+                if crystal_structure.use_structure:
+                    fitted_parameters[last_index + 7] = crystal_structure.intensity_scale_factor
+                    last_index += 7
+                else:
+                    last_index += 6
+
+                for reflection_index in range(crystal_structure.get_reflections_count()):
+                    fitted_parameters[last_index + 1 + reflection_index] = crystal_structure.get_reflection(reflection_index).intensity
+
+                last_index += crystal_structure.get_reflections_count()
+
+        if not self.fit_initialization.thermal_polarization_parameters is None:
+            for thermal_polarization_parameters in self.fit_initialization.thermal_polarization_parameters:
+                if not thermal_polarization_parameters.debye_waller_factor is None:
+                    fitted_parameters[last_index + 1] = thermal_polarization_parameters.debye_waller_factor
+
+                    last_index += thermal_polarization_parameters.get_parameters_count()
+
+        if not self.background_parameters is None:
+            for key in self.background_parameters.keys():
+                background_parameters_list = self.get_background_parameters(key)
+
+                if not background_parameters_list is None:
+                    for background_parameters in background_parameters_list:
+                        if key == ChebyshevBackground.__name__:
+                            fitted_parameters[last_index + 1]  = background_parameters.c0
+                            fitted_parameters[last_index + 2]  = background_parameters.c1
+                            fitted_parameters[last_index + 3]  = background_parameters.c2
+                            fitted_parameters[last_index + 4]  = background_parameters.c3
+                            fitted_parameters[last_index + 5]  = background_parameters.c4
+                            fitted_parameters[last_index + 6]  = background_parameters.c5
+                            fitted_parameters[last_index + 7]  = background_parameters.c6
+                            fitted_parameters[last_index + 8]  = background_parameters.c7
+                            fitted_parameters[last_index + 9]  = background_parameters.c8
+                            fitted_parameters[last_index + 10] = background_parameters.c9
+                        elif key == ExpDecayBackground.__name__:
+                            fitted_parameters[last_index + 1] = background_parameters.a0
+                            fitted_parameters[last_index + 2] = background_parameters.b0
+                            fitted_parameters[last_index + 3] = background_parameters.a1
+                            fitted_parameters[last_index + 4] = background_parameters.b1
+                            fitted_parameters[last_index + 5] = background_parameters.a2
+                            fitted_parameters[last_index + 6] = background_parameters.b2
+
+                        last_index += background_parameters.get_parameters_count()
+
+        if not self.instrumental_parameters is None:
+            for instrumental_parameters in self.instrumental_parameters:
+                fitted_parameters[last_index + 1] = instrumental_parameters.U
+                fitted_parameters[last_index + 2] = instrumental_parameters.V
+                fitted_parameters[last_index + 3] = instrumental_parameters.W
+                fitted_parameters[last_index + 4] = instrumental_parameters.a
+                fitted_parameters[last_index + 5] = instrumental_parameters.b
+                fitted_parameters[last_index + 6] = instrumental_parameters.c
+
+                last_index += instrumental_parameters.get_parameters_count()
+
+        if not self.shift_parameters is None:
+            for key in self.shift_parameters.keys():
+                shift_parameters_list = self.get_shift_parameters(key)
+
+                if not shift_parameters_list is None:
+                    for shift_parameters in shift_parameters_list:
+                        if key == Lab6TanCorrection.__name__:
+                            fitted_parameters[last_index + 1] = shift_parameters.ax
+                            fitted_parameters[last_index + 2] = shift_parameters.bx
+                            fitted_parameters[last_index + 3] = shift_parameters.cx
+                            fitted_parameters[last_index + 4] = shift_parameters.dx
+                            fitted_parameters[last_index + 5] = shift_parameters.ex
+                        elif key == ZeroError.__name__:
+                            fitted_parameters[last_index + 1] = shift_parameters.shift
+                        elif key == SpecimenDisplacement.__name__:
+                            fitted_parameters[last_index + 1] = shift_parameters.displacement
+
+                    last_index += shift_parameters.get_parameters_count()
+
+        if not self.size_parameters is None:
+            for size_parameters in self.size_parameters:
+                fitted_parameters[last_index + 1] = size_parameters.mu
+                if size_parameters.distribution == Distribution.LOGNORMAL:
+                    fitted_parameters[last_index + 2] = size_parameters.sigma
+
+                last_index += size_parameters.get_parameters_count()
+
+        if not self.strain_parameters is None:
+            for strain_parameters in self.strain_parameters:
+                if isinstance(strain_parameters, InvariantPAH):
+                    fitted_parameters[last_index + 1] = strain_parameters.aa
+                    fitted_parameters[last_index + 2] = strain_parameters.bb
+                    fitted_parameters[last_index + 3] = strain_parameters.e1 # in realtà è E1 dell'invariante PAH
+                    fitted_parameters[last_index + 4] = strain_parameters.e2 # in realtà è E1 dell'invariante PAH
+                    fitted_parameters[last_index + 5] = strain_parameters.e3 # in realtà è E1 dell'invariante PAH
+                    fitted_parameters[last_index + 6] = strain_parameters.e4 # in realtà è E4 dell'invariante PAH
+                    fitted_parameters[last_index + 7] = strain_parameters.e5 # in realtà è E4 dell'invariante PAH
+                    fitted_parameters[last_index + 8] = strain_parameters.e6 # in realtà è E4 dell'invariante PAH
+                elif isinstance(strain_parameters, KrivoglazWilkensModel):
+                    fitted_parameters[last_index + 1] = strain_parameters.rho
+                    fitted_parameters[last_index + 2] = strain_parameters.Re
+                    fitted_parameters[last_index + 3] = strain_parameters.Ae
+                    fitted_parameters[last_index + 4] = strain_parameters.Be
+                    fitted_parameters[last_index + 5] = strain_parameters.As
+                    fitted_parameters[last_index + 6] = strain_parameters.Bs
+                    fitted_parameters[last_index + 7] = strain_parameters.mix
+                    fitted_parameters[last_index + 8] = strain_parameters.b
+                elif isinstance(strain_parameters, WarrenModel):
+                    fitted_parameters[last_index + 1] = strain_parameters.average_cell_parameter
+
+                last_index += strain_parameters.get_parameters_count()
+
+        if self.has_functions(): self.evaluate_functions()
+
+
+    def from_fitted_parameters(self, fitted_parameters):
+        last_index = -1
+
+        if not self.fit_initialization.diffraction_patterns is None:
+            for index in range(len(self.fit_initialization.diffraction_patterns)):
+                diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
+                diffraction_pattern.wavelength.set_value(fitted_parameters[last_index + 1].value)
+
+                last_index += 1
+
+                if not diffraction_pattern.is_single_wavelength:
+                    for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
+                                                                                 diffraction_pattern.secondary_wavelengths_weights):
+                        secondary_wavelength.set_value(fitted_parameters[last_index + 1].value)
+                        secondary_wavelength_weigth.set_value(fitted_parameters[last_index + 2].value)
+                        last_index += 2
+
+        if not self.fit_initialization.crystal_structures is None:
+            for index in range(len(self.fit_initialization.crystal_structures)):
+                crystal_structure = self.fit_initialization.crystal_structures[index]
+
+                crystal_structure.a.set_value(fitted_parameters[last_index + 1].value)
+                crystal_structure.b.set_value(fitted_parameters[last_index + 2].value)
+                crystal_structure.c.set_value(fitted_parameters[last_index + 3].value)
+                crystal_structure.alpha.set_value(fitted_parameters[last_index + 4].value)
+                crystal_structure.beta.set_value(fitted_parameters[last_index + 5].value)
+                crystal_structure.gamma.set_value(fitted_parameters[last_index + 6].value)
+
+                if crystal_structure.use_structure:
+                    crystal_structure.intensity_scale_factor.set_value(fitted_parameters[last_index + 7].value)
+                    last_index += 7
+                else:
+                    last_index += 6
+
+                for reflection_index in range(crystal_structure.get_reflections_count()):
+                    crystal_structure.get_reflection(reflection_index).intensity.set_value(fitted_parameters[last_index + 1 + reflection_index].value)
+
+                last_index += crystal_structure.get_reflections_count()
+
+        if not self.fit_initialization.thermal_polarization_parameters is None:
+            for thermal_polarization_parameters in self.fit_initialization.thermal_polarization_parameters:
+                if not thermal_polarization_parameters.debye_waller_factor is None:
+                    thermal_polarization_parameters.debye_waller_factor.set_value(fitted_parameters[last_index + 1].value)
+
+                    last_index += thermal_polarization_parameters.get_parameters_count()
+
+        if not self.background_parameters is None:
+            for key in self.background_parameters.keys():
+                background_parameters_list = self.get_background_parameters(key)
+
+                if not background_parameters_list is None:
+                    for background_parameters in background_parameters_list:
+                        if key == ChebyshevBackground.__name__:
+                            background_parameters.c0.set_value(fitted_parameters[last_index + 1].value)
+                            background_parameters.c1.set_value(fitted_parameters[last_index + 2].value)
+                            background_parameters.c2.set_value(fitted_parameters[last_index + 3].value)
+                            background_parameters.c3.set_value(fitted_parameters[last_index + 4].value)
+                            background_parameters.c4.set_value(fitted_parameters[last_index + 5].value)
+                            background_parameters.c5.set_value(fitted_parameters[last_index + 6].value)
+                            background_parameters.c6.set_value(fitted_parameters[last_index + 7].value)
+                            background_parameters.c7.set_value(fitted_parameters[last_index + 8].value)
+                            background_parameters.c8.set_value(fitted_parameters[last_index + 9].value)
+                            background_parameters.c9.set_value(fitted_parameters[last_index + 10].value)
+                        elif key == ExpDecayBackground.__name__:
+                            background_parameters.a0.set_value(fitted_parameters[last_index + 1].value)
+                            background_parameters.b0.set_value(fitted_parameters[last_index + 2].value)
+                            background_parameters.a1.set_value(fitted_parameters[last_index + 3].value)
+                            background_parameters.b1.set_value(fitted_parameters[last_index + 4].value)
+                            background_parameters.a2.set_value(fitted_parameters[last_index + 5].value)
+                            background_parameters.b2.set_value(fitted_parameters[last_index + 6].value)
+
+                        last_index += background_parameters.get_parameters_count()
+
+        if not self.instrumental_parameters is None:
+            for instrumental_parameters in self.instrumental_parameters:
+                instrumental_parameters.U.set_value(fitted_parameters[last_index + 1].value)
+                instrumental_parameters.V.set_value(fitted_parameters[last_index + 2].value)
+                instrumental_parameters.W.set_value(fitted_parameters[last_index + 3].value)
+                instrumental_parameters.a.set_value(fitted_parameters[last_index + 4].value)
+                instrumental_parameters.b.set_value(fitted_parameters[last_index + 5].value)
+                instrumental_parameters.c.set_value(fitted_parameters[last_index + 6].value)
+
+                last_index += instrumental_parameters.get_parameters_count()
+
+        if not self.shift_parameters is None:
+            for key in self.shift_parameters.keys():
+                shift_parameters_list = self.get_shift_parameters(key)
+
+                if not shift_parameters_list is None:
+                    for shift_parameters in shift_parameters_list:
+                        if key == Lab6TanCorrection.__name__:
+                            shift_parameters.ax.set_value(fitted_parameters[last_index + 1].value)
+                            shift_parameters.bx.set_value(fitted_parameters[last_index + 2].value)
+                            shift_parameters.cx.set_value(fitted_parameters[last_index + 3].value)
+                            shift_parameters.dx.set_value(fitted_parameters[last_index + 4].value)
+                            shift_parameters.ex.set_value(fitted_parameters[last_index + 5].value)
+                        elif key == ZeroError.__name__:
+                            shift_parameters.shift.set_value(fitted_parameters[last_index + 1].value)
+                        elif key == SpecimenDisplacement.__name__:
+                            shift_parameters.displacement.set_value(fitted_parameters[last_index + 1].value)
+
+                    last_index += shift_parameters.get_parameters_count()
+
+        if not self.size_parameters is None:
+            for size_parameters in self.size_parameters:
+                size_parameters.mu.set_value(fitted_parameters[last_index + 1].value)
+                if size_parameters.distribution == Distribution.LOGNORMAL: size_parameters.sigma.set_value(fitted_parameters[last_index + 2].value)
+
+                last_index += size_parameters.get_parameters_count()
+
+        if not self.strain_parameters is None:
+            for strain_parameters in self.strain_parameters:
+                if isinstance(strain_parameters, InvariantPAH):
+                    strain_parameters.aa.set_value(fitted_parameters[last_index + 1].value)
+                    strain_parameters.bb.set_value(fitted_parameters[last_index + 2].value)
+                    strain_parameters.e1.set_value(fitted_parameters[last_index + 3].value) # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e2.set_value(fitted_parameters[last_index + 4].value) # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e3.set_value(fitted_parameters[last_index + 5].value) # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e4.set_value(fitted_parameters[last_index + 6].value) # in realtà è E4 dell'invariante PAH
+                    strain_parameters.e5.set_value(fitted_parameters[last_index + 7].value) # in realtà è E4 dell'invariante PAH
+                    strain_parameters.e6.set_value(fitted_parameters[last_index + 8].value) # in realtà è E4 dell'invariante PAH
+                elif isinstance(strain_parameters, KrivoglazWilkensModel):
+                    strain_parameters.rho.set_value(fitted_parameters[last_index + 1].value)
+                    strain_parameters.Re.set_value(fitted_parameters[last_index + 2].value)
+                    strain_parameters.Ae.set_value(fitted_parameters[last_index + 3].value)
+                    strain_parameters.Be.set_value(fitted_parameters[last_index + 4].value)
+                    strain_parameters.As.set_value(fitted_parameters[last_index + 5].value)
+                    strain_parameters.Bs.set_value(fitted_parameters[last_index + 6].value)
+                    strain_parameters.mix.set_value(fitted_parameters[last_index + 7].value)
+                    strain_parameters.b.set_value(fitted_parameters[last_index + 8].value)
+                elif isinstance(strain_parameters, WarrenModel):
+                    strain_parameters.average_cell_parameter.set_value(fitted_parameters[last_index + 1].value)
+
+                last_index += strain_parameters.get_parameters_count()
+
+        if self.has_functions(): self.evaluate_functions()
+
+    def from_fitted_errors(self, errors):
+        last_index = -1
+
+        if not self.fit_initialization.diffraction_patterns is None:
+            for index in range(len(self.fit_initialization.diffraction_patterns)):
+                diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
+                diffraction_pattern.wavelength.error = errors[(0 if last_index < 0 else last_index) + index]
+
+
+                if not diffraction_pattern.is_single_wavelength:
+                    last_index += 1
+
+                    for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
+                                                                                 diffraction_pattern.secondary_wavelengths_weights):
+                        secondary_wavelength.error = errors[last_index + 1]
+                        secondary_wavelength_weigth.error = errors[last_index + 2]
+                        last_index += 2
+
+            if last_index < 0: last_index = len(self.fit_initialization.diffraction_patterns) - 1
+
+        if not self.fit_initialization.crystal_structures is None:
+            for index in range(len(self.fit_initialization.crystal_structures)):
+                crystal_structure = self.fit_initialization.crystal_structures[index]
+
+                crystal_structure.a.error = errors[last_index + 1]
+                crystal_structure.b.error = errors[last_index + 2]
+                crystal_structure.c.error = errors[last_index + 3]
+                crystal_structure.alpha.error = errors[last_index + 4]
+                crystal_structure.beta.error = errors[last_index + 5]
+                crystal_structure.gamma.error = errors[last_index + 6]
+
+                if crystal_structure.use_structure:
+                    crystal_structure.intensity_scale_factor.error = errors[last_index + 7]
+                    last_index += 7
+                else:
+                    last_index += 6
+
+                for reflection_index in range(crystal_structure.get_reflections_count()):
+                    crystal_structure.get_reflection(reflection_index).intensity.error = errors[last_index+reflection_index]
+
+                last_index += crystal_structure.get_reflections_count()
+
+        if not self.fit_initialization.thermal_polarization_parameters is None:
+            for thermal_polarization_parameters in self.fit_initialization.thermal_polarization_parameters:
+                if not thermal_polarization_parameters.debye_waller_factor is None:
+                    thermal_polarization_parameters.debye_waller_factor.error = errors[last_index + 1]
+
+                    last_index += thermal_polarization_parameters.get_parameters_count()
+
+        if not self.background_parameters is None:
+            for key in self.background_parameters.keys():
+                background_parameters_list = self.get_background_parameters(key)
+
+                if not background_parameters_list is None:
+                    for background_parameters in background_parameters_list:
+                        if key == ChebyshevBackground.__name__:
+                            background_parameters.c0.error = errors[last_index + 1]
+                            background_parameters.c1.error = errors[last_index + 2]
+                            background_parameters.c2.error = errors[last_index + 3]
+                            background_parameters.c3.error = errors[last_index + 4]
+                            background_parameters.c4.error = errors[last_index + 5]
+                            background_parameters.c5.error = errors[last_index + 6]
+                            background_parameters.c6.error = errors[last_index + 7]
+                            background_parameters.c7.error = errors[last_index + 8]
+                            background_parameters.c8.error = errors[last_index + 9]
+                            background_parameters.c9.error = errors[last_index + 10]
+                        elif key == ExpDecayBackground.__name__:
+                            background_parameters.a0.error = errors[last_index + 1]
+                            background_parameters.b0.error = errors[last_index + 2]
+                            background_parameters.a1.error = errors[last_index + 3]
+                            background_parameters.b1.error = errors[last_index + 4]
+                            background_parameters.a2.error = errors[last_index + 5]
+                            background_parameters.b2.error = errors[last_index + 6]
+
+                        last_index += background_parameters.get_parameters_count()
+
+        if not self.instrumental_parameters is None:
+            for instrumental_parameters in self.instrumental_parameters:
+                instrumental_parameters.U.error = errors[last_index + 1]
+                instrumental_parameters.V.error = errors[last_index + 2]
+                instrumental_parameters.W.error = errors[last_index + 3]
+                instrumental_parameters.a.error = errors[last_index + 4]
+                instrumental_parameters.b.error = errors[last_index + 5]
+                instrumental_parameters.c.error = errors[last_index + 6]
+
+                last_index += instrumental_parameters.get_parameters_count()
+
+        if not self.shift_parameters is None:
+            for key in self.shift_parameters.keys():
+                shift_parameters_list = self.get_shift_parameters(key)
+
+                if not shift_parameters_list is None:
+                    for shift_parameters in shift_parameters_list:
+                        if key == Lab6TanCorrection.__name__:
+                            shift_parameters.ax.error = errors[last_index + 1]
+                            shift_parameters.bx.error = errors[last_index + 2]
+                            shift_parameters.cx.error = errors[last_index + 3]
+                            shift_parameters.dx.error = errors[last_index + 4]
+                            shift_parameters.ex.error = errors[last_index + 5]
+                        elif key == ZeroError.__name__:
+                            shift_parameters.shift.error = errors[last_index + 1]
+                        elif key == SpecimenDisplacement.__name__:
+                            shift_parameters.displacement.error = errors[last_index + 1]
+
+                        last_index += shift_parameters.get_parameters_count()
+
+        if not self.size_parameters is None:
+            for size_parameters in self.size_parameters:
+                size_parameters.mu.error    = errors[last_index + 1]
+                if size_parameters.distribution == Distribution.LOGNORMAL: size_parameters.sigma.error = errors[last_index + 2]
+
+                last_index += size_parameters.get_parameters_count()
+
+        if not self.strain_parameters is None:
+            for strain_parameters in self.strain_parameters:
+                if isinstance(strain_parameters, InvariantPAH):
+                    strain_parameters.aa.error = errors[last_index + 1]
+                    strain_parameters.bb.error = errors[last_index + 2]
+                    strain_parameters.e1.error = errors[last_index + 3] # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e2.error = errors[last_index + 4] # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e3.error = errors[last_index + 5] # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e4.error = errors[last_index + 6] # in realtà è E4 dell'invariante PAH
+                    strain_parameters.e5.error = errors[last_index + 7] # in realtà è E4 dell'invariante PAH
+                    strain_parameters.e6.error = errors[last_index + 8] # in realtà è E4 dell'invariante PAH
+                elif isinstance(strain_parameters, KrivoglazWilkensModel):
+                    strain_parameters.rho.error = errors[last_index + 1]
+                    strain_parameters.Re.error = errors[last_index + 2]
+                    strain_parameters.Ae.error = errors[last_index + 3]
+                    strain_parameters.Be.error = errors[last_index + 4]
+                    strain_parameters.As.error = errors[last_index + 5]
+                    strain_parameters.Bs.error = errors[last_index + 6]
+                    strain_parameters.mix.error = errors[last_index + 7]
+                    strain_parameters.b.error = errors[last_index + 8]
+                elif isinstance(strain_parameters, WarrenModel):
+                    strain_parameters.average_cell_parameter.error = errors[last_index + 1]
+
+                last_index += strain_parameters.get_parameters_count()
+
     def is_compatibile(self, other_fit_global_parameters):
         if other_fit_global_parameters is None: return False
 
@@ -352,6 +589,46 @@ class FitGlobalParameters(FitParametersList):
 
         return True
 
+    @classmethod
+    def compute_functions(cls, parameters, free_input_parameters, free_output_parameters):
+
+        has_function = False
+
+        for parameter in parameters:
+            if parameter.function:
+                has_function = True
+                break
+
+        if has_function:
+            python_code = "import numpy\nfrom numpy import *\n\n"
+            python_code += free_input_parameters.to_python_code()
+
+            for parameter in parameters:
+                if not parameter.function: python_code += parameter.to_parameter_text() + "\n"
+
+            parameters_dictionary_fit = {}
+
+            for parameter in parameters:
+                if parameter.function:
+                    parameters_dictionary_fit[parameter.parameter_name] = numpy.nan
+                    python_code += parameter.to_python_code() + "\n"
+
+            parameters_dictionary_out, code_out = free_output_parameters.get_functions_data()
+
+            python_code += code_out
+
+            parameters_dictionary = {}
+            parameters_dictionary.update(parameters_dictionary_fit)
+            parameters_dictionary.update(parameters_dictionary_out)
+
+            exec(python_code, parameters_dictionary)
+
+            for parameter in parameters:
+                if parameter.function:
+                    parameter.value = float(parameters_dictionary[parameter.parameter_name])
+
+            free_output_parameters.set_functions_values(parameters_dictionary)
+
 class FitSpaceParameters:
     def __init__(self, fit_global_parameters):
         s_max   = fit_global_parameters.fit_initialization.fft_parameters.s_max
@@ -362,67 +639,3 @@ class FitSpaceParameters:
 
         self.L_max = (n_steps - 1) * self.dL
         self.L = numpy.linspace(self.dL, self.L_max + self.dL, n_steps)
-
-
-######################################################################################################
-######################################################################################################
-######################################################################################################
-######################################################################################################
-
-
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParameter, FreeInputParameters, FreeOutputParameters, Boundary
-from orangecontrib.xrdanalyzer.controller.fit.init.fit_initialization import FitInitialization
-from orangecontrib.xrdanalyzer.controller.fit.init.crystal_structure import CrystalStructure, Reflection
-from orangecontrib.xrdanalyzer.controller.fit.init.fft_parameters import FFTInitParameters
-from orangecontrib.xrdanalyzer.controller.fit.instrument.background_parameters import ChebyshevBackground
-from orangecontrib.xrdanalyzer.controller.fit.instrument.instrumental_parameters import Caglioti, Lab6TanCorrection
-from orangecontrib.xrdanalyzer.controller.fit.microstructure.size import SizeParameters, Distribution, Shape
-from orangecontrib.xrdanalyzer.controller.fit.microstructure.strain import InvariantPAHLaueGroup14, InvariantPAH
-
-if __name__ == "__main__":
-
-    fit_global_parameters = FitGlobalParameters()
-
-    fit_global_parameters.free_input_parameters.set_parameter("A", 10)
-    fit_global_parameters.free_input_parameters.set_parameter("C", 20)
-
-    parameter_prefix = Caglioti.get_parameters_prefix()
-    fit_global_parameters.instrumental_parameters = Caglioti(a=FitParameter(parameter_name=parameter_prefix + "a", value=0.5, boundary=Boundary(min_value=-10, max_value=10)),
-                                                             b=FitParameter(parameter_name=parameter_prefix + "b", value=0.001, boundary=Boundary(min_value=0, max_value=10)),
-                                                             c=FitParameter(parameter_name=parameter_prefix + "c", function=True, function_value="numpy.exp(A +C)"),
-                                                             U=FitParameter(parameter_name=parameter_prefix + "U", function=True, function_value="numpy.exp(-(A +C))"),
-                                                             V=FitParameter(parameter_name=parameter_prefix + "V", value=0.001, fixed=True),
-                                                             W=FitParameter(parameter_name=parameter_prefix + "W", value=-0.001, fixed=True))
-
-    parameter_prefix = InvariantPAH.get_parameters_prefix()
-    fit_global_parameters.strain_parameters = InvariantPAHLaueGroup14(aa=FitParameter(parameter_name=parameter_prefix + "aa", value=2.0, boundary=Boundary(min_value=0, max_value=10)),
-                                                                      bb=FitParameter(parameter_name=parameter_prefix + "bb", value=3.0, boundary=Boundary(min_value=0, max_value=10)),
-                                                                      e1=FitParameter(parameter_name=parameter_prefix + "e1", function=True, function_value=parameter_prefix + "aa + " + parameter_prefix + "bb"),
-                                                                      e4=FitParameter(parameter_name=parameter_prefix + "e4", function=True, function_value=parameter_prefix + "aa**2 + " + parameter_prefix + "bb**2"))
-
-
-    fit_global_parameters.free_output_parameters.set_formula("out1 = caglioti_U + numpy.abs(caglioti_W)")
-
-    fit_global_parameters.evaluate_functions()
-
-    print(fit_global_parameters.to_text())
-
-    '''
-    free_p = FreeInputParameters()
-
-    free_p.set_parameter("A", 10)
-    free_p.set_parameter("C", 20)
-
-    free_parameters_python_text = free_p.to_python_code()
-
-
-    parameter = FitParameter(parameter_name="param1", function=True, function_value="numpy.exp(A +C)")
-
-    out = {parameter.parameter_name : numpy.nan}
-
-    exec("import numpy\n\n" + free_parameters_python_text + parameter.to_python_code(), out)
-
-    parameter.set_value(float(out[parameter.parameter_name]))
-
-    print("OUTPUT", parameter.value)
-    '''

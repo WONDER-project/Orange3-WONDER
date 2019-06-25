@@ -1,4 +1,5 @@
 import numpy
+import copy
 
 from orangecontrib.xrdanalyzer.util import congruence
 
@@ -17,7 +18,6 @@ class Boundary:
         self.max_value = max_value
 
 class FitParameter:
-
     def __init__(self,
                  value=None,
                  parameter_name="",
@@ -131,34 +131,28 @@ class FitParameter:
         return not self.fixed and not self.function
 
 class ParametersList:
-    def to_text(self):
-        raise NotImplementedError()
-
-    def to_python_code(self):
-        raise NotImplementedError()
-
     def duplicate(self):
         raise NotImplementedError
 
 
 class FitParametersList(ParametersList):
-    __parameters = numpy.empty(10000)
+    __parameters = numpy.full(10000, None)
 
     @classmethod
     def get_parameters_prefix(cls):
         return ""
 
     def get_parameters_count(self):
-        return len(self.get_parameters())
+        return len(self.__parameters[numpy.where(not self.__parameters is None)])
 
     def get_parameters(self):
-        return self.__parameters
+        return self.__parameters[numpy.where(not self.__parameters is None)]
 
-    def to_text(self):
-        raise NotImplementedError()
+    def clear_parameters(self):
+        self.__parameters.fill(None)
 
     def has_functions(self):
-        for parameter in self.get_parameters():
+        for parameter in self.__parameters[numpy.where(not self.__parameters is None)]:
             if parameter.function: return True
 
         return False
@@ -166,7 +160,7 @@ class FitParametersList(ParametersList):
     def get_available_parameters(self):
         text = ""
 
-        for parameter in self.__parameters:
+        for parameter in self.__parameters[numpy.where(not self.__parameters is None)]:
             if not parameter.function: text += parameter.to_parameter_text() + "\n"
 
         return text
@@ -175,18 +169,15 @@ class FitParametersList(ParametersList):
         parameters_dictionary = {}
         python_code = ""
 
-        for parameter in self.__parameters:
+        for parameter in self.__parameters[numpy.where(not self.__parameters is None)]:
             if parameter.function:
                 parameters_dictionary[parameter.parameter_name] = numpy.nan
                 python_code += parameter.to_python_code() + "\n"
 
         return parameters_dictionary, python_code
 
-    def set_functions_values(self, parameters_dictionary):
-        for parameter in self.__parameters:
-            if parameter.function:
-                parameter.value = float(parameters_dictionary[parameter.parameter_name])
-
+    def regenerate_parameters(self):
+        raise NotImplementedError()
 
 class FreeInputParameters(ParametersList):
     def __init__(self):

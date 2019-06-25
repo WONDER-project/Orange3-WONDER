@@ -103,6 +103,7 @@ class OWCalibrationPeakShift(OWGenericWidget):
                                                                                    cx=self.populate_parameter("cx", Lab6TanCorrection.get_parameters_prefix()),
                                                                                    dx=self.populate_parameter("dx", Lab6TanCorrection.get_parameters_prefix()),
                                                                                    ex=self.populate_parameter("ex", Lab6TanCorrection.get_parameters_prefix()))])
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

@@ -11,11 +11,10 @@ from orangecontrib.xrdanalyzer.util.widgets.ow_generic_widget import OWGenericWi
 from orangecontrib.xrdanalyzer.util.gui.gui_utility import gui, ConfirmDialog, ConfirmTextDialog, ShowTextDialog
 
 from orangecontrib.xrdanalyzer.util import congruence
-from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Utilities, list_of_s_bragg
+from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Utilities, list_of_s_bragg, Symmetry
 from orangecontrib.xrdanalyzer.controller.fit.fit_global_parameters import FitGlobalParameters
 from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParameter, Boundary
 from orangecontrib.xrdanalyzer.controller.fit.init.crystal_structure import CrystalStructure, Reflection
-from orangecontrib.xrdanalyzer.controller.fit.init.crystal_structure_symmetry import Symmetry
 
 class OWCrystalStructure(OWGenericWidget):
 
@@ -190,6 +189,8 @@ class OWCrystalStructure(OWGenericWidget):
                 self.fit_global_parameters.fit_initialization.crystal_structures = []
                 for index in range(len(self.crystal_structure_box_array)):
                     self.crystal_structure_box_array[index].append_fit_initialization()
+
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

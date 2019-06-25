@@ -736,7 +736,10 @@ class OWDiffractionPattern(OWGenericWidget):
             self.tabs.setCurrentIndex(self.diffraction_pattern_tabs.currentIndex())
             self.tabs_data_plot[self.diffraction_pattern_tabs.currentIndex()].setCurrentIndex(1)
 
-            self.send("Fit Global Parameters", FitGlobalParameters(fit_initialization=FitInitialization(diffraction_patterns=self.diffraction_patterns)))
+            fit_global_parameters = FitGlobalParameters(fit_initialization=FitInitialization(diffraction_patterns=self.diffraction_patterns))
+            fit_global_parameters.regenerate_parameters()
+
+            self.send("Fit Global Parameters", fit_global_parameters)
 
         except Exception as e:
             QMessageBox.critical(self, "Error during load",

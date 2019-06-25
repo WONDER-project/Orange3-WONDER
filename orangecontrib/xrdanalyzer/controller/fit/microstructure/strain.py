@@ -1,6 +1,6 @@
 import numpy
 
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import Boundary, FitParameter, FitParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParameter, ParametersList
 
 class LaueGroup:
 
@@ -34,7 +34,7 @@ class LaueGroup:
     def tuple(cls):
         return ["-1", "2/m", "2/mmm", "4/m", "4/mmm", "-3R", "-31mR", "-3", "-3m1", "-31m", "6/m", "6/mmm", "m3", "m3m"]
 
-class InvariantPAH(FitParametersList):
+class InvariantPAH(ParametersList):
     aa = None
     bb = None
     laue_id = 1
@@ -118,35 +118,6 @@ class InvariantPAH(FitParametersList):
         if not self.e15 is None: invariant += 4*(self.e15.value*(l**2)*h*k)
 
         return invariant
-
-    def to_text(self):
-        text = "STRAIN - INVARIANT PAH\n"
-        text += "-----------------------------------\n"
-
-        text += self.aa.to_text() + "\n"
-        text += self.bb.to_text() + "\n"
-
-        text += "Laue Group: " + str(self.laue_id) + ", " + LaueGroup.get_laue_group(self.laue_id) + "\n"
-
-        if not self.e1  is None: text += self.e1.to_text() + "\n"
-        if not self.e2  is None: text += self.e2.to_text() + "\n"
-        if not self.e3  is None: text += self.e3.to_text() + "\n"
-        if not self.e4  is None: text += self.e4.to_text() + "\n"
-        if not self.e5  is None: text += self.e5.to_text() + "\n"
-        if not self.e6  is None: text += self.e6.to_text() + "\n"
-        if not self.e7  is None: text += self.e7.to_text() + "\n"
-        if not self.e8  is None: text += self.e8.to_text() + "\n"
-        if not self.e9  is None: text += self.e9.to_text() + "\n"
-        if not self.e10 is None: text += self.e10.to_text() + "\n"
-        if not self.e11 is None: text += self.e11.to_text() + "\n"
-        if not self.e12 is None: text += self.e12.to_text() + "\n"
-        if not self.e13 is None: text += self.e13.to_text() + "\n"
-        if not self.e14 is None: text += self.e14.to_text() + "\n"
-        if not self.e15 is None: text += self.e15.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
 
     def duplicate(self):
         return InvariantPAH(aa=None if self.aa is None else self.aa.duplicate(),
@@ -390,7 +361,7 @@ class InvariantPAHLaueGroup14(InvariantPAHCubic):
                  e4  = FitParameter(parameter_name="e4" , value=1e-4)):
         super(InvariantPAHLaueGroup14, self).__init__(aa, bb, 14, e1, e4)
 
-class KrivoglazWilkensModel(FitParametersList):
+class KrivoglazWilkensModel(ParametersList):
     rho = None
     Re  = None
     Ae  = None
@@ -414,7 +385,7 @@ class KrivoglazWilkensModel(FitParametersList):
                  mix= None,
                  b  = None,
                  ):
-        super(FitParametersList, self).__init__()
+        super(ParametersList, self).__init__()
 
         self.rho = rho
         self.Re  = Re
@@ -424,24 +395,6 @@ class KrivoglazWilkensModel(FitParametersList):
         self.Bs  = Bs
         self.mix = mix
         self.b   = b
-
-    def to_text(self):
-        text = "STRAIN - KRIVOGLAZ-WILKENS MODEL\n"
-        text += "-----------------------------------\n"
-
-        text += "" if self.rho is None else self.rho.to_text() + "\n"
-        text += "" if self.Re  is None else self.Re .to_text() + "\n"
-        text += "" if self.Ae  is None else self.Ae .to_text() + "\n"
-        text += "" if self.Be  is None else self.Be .to_text() + "\n"
-        text += "" if self.As  is None else self.As .to_text() + "\n"
-        text += "" if self.Bs  is None else self.Bs .to_text() + "\n"
-        text += "" if self.mix is None else self.mix.to_text() + "\n"
-        text += "" if self.b   is None else self.b  .to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
-
 
     def duplicate(self):
         return KrivoglazWilkensModel(rho = None if self.rho is None else self.rho.duplicate(),
@@ -472,7 +425,7 @@ class KrivoglazWilkensModel(FitParametersList):
         return L, DL
 
 
-class WarrenModel(FitParametersList):
+class WarrenModel(ParametersList):
     average_cell_parameter = None
 
     @classmethod
@@ -481,20 +434,9 @@ class WarrenModel(FitParametersList):
 
     def __init__(self,
                  average_cell_parameter=None):
-        super(FitParametersList, self).__init__()
+        super(ParametersList, self).__init__()
 
         self.average_cell_parameter = average_cell_parameter
-
-
-    def to_text(self):
-        text = "STRAIN - WARREN MODEL\n"
-        text += "-----------------------------------\n"
-
-        text += self.average_cell_parameter.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
 
     def duplicate(self):
         return WarrenModel(average_cell_parameter=None if self.average_cell_parameter is None else self.average_cell_parameter.duplicate())

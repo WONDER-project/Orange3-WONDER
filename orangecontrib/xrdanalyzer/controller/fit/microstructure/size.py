@@ -1,6 +1,6 @@
 import numpy
 
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import Boundary, FitParameter, FitParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParameter, ParametersList
 
 class Shape:
     NONE = "none"
@@ -35,7 +35,7 @@ class Normalization:
 
 from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import lognormal_distribution
 
-class SizeParameters(FitParametersList):
+class SizeParameters(ParametersList):
 
     shape = Shape.SPHERE
     distribution = Distribution.LOGNORMAL
@@ -57,25 +57,6 @@ class SizeParameters(FitParametersList):
         self.sigma = sigma
         self.add_saxs = add_saxs
         self.normalize_to = normalize_to
-
-    def to_text(self):
-        text = "SIZE\n"
-        text += "-----------------------------------\n"
-
-        text += "Shape: " + self.shape + "\n"
-        text += "Distribution: " + self.distribution + "\n"
-
-        text += self.mu.to_text() + "\n"
-        if not self.sigma is None: text += self.sigma.to_text() + "\n"
-
-        if self.distribution == Distribution.DELTA:
-            text += "Add SAXS: " + str(self.add_saxs) + "\n"
-            text += "Normalize to: " + Normalization.tuple()[self.normalize_to] + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
-
 
     def duplicate(self):
         return SizeParameters(shape=self.shape,
@@ -112,11 +93,3 @@ class SizeParameters(FitParametersList):
 
         return x, y, D_min, D_max
 
-
-if __name__=="__main__":
-    fpl = SizeParameters(shape=Shape.SPHERE,
-                         distribution=Distribution.DELTA,
-                         mu=FitParameter(value=10, parameter_name="mu"),
-                         sigma=None, add_saxs=True)
-
-    print(fpl.get_parameters())

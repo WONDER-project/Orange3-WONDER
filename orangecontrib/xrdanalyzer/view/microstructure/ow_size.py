@@ -126,6 +126,7 @@ class OWSize(OWGenericWidget):
                                                                              mu=self.populate_parameter("mu", SizeParameters.get_parameters_prefix()),
                                                                              sigma=None if self.cb_distribution.currentText() == Distribution.DELTA else self.populate_parameter("sigma", SizeParameters.get_parameters_prefix()),
                                                                              add_saxs=self.add_saxs if self.cb_distribution.currentText() == Distribution.DELTA else False)]
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

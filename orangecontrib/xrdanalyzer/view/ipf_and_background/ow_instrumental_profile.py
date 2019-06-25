@@ -125,6 +125,7 @@ class OWInstrumentalProfile(OWGenericWidget):
                                                                                a=self.populate_parameter("a", Caglioti.get_parameters_prefix()),
                                                                                b=self.populate_parameter("b", Caglioti.get_parameters_prefix()),
                                                                                c=self.populate_parameter("c", Caglioti.get_parameters_prefix()))]
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

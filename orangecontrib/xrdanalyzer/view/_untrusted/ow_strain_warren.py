@@ -51,6 +51,7 @@ class OWStrainWarren(OWGenericWidget):
         try:
             if not self.fit_global_parameters is None:
                 self.fit_global_parameters.strain_parameters = WarrenModel(average_cell_parameter=self.populate_parameter("average_cell_parameter", WarrenModel.get_parameters_prefix()))
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

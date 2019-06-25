@@ -1,6 +1,6 @@
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import ParametersList
 
-class ChebyshevBackground(FitParametersList):
+class ChebyshevBackground(ParametersList):
     c0 = None
     c1 = None
     c2 = None
@@ -30,25 +30,6 @@ class ChebyshevBackground(FitParametersList):
         self.c8 = c8
         self.c9 = c9
 
-    def to_text(self):
-        text = "BACKGROUND PARAMETERS\n"
-        text += "-----------------------------------\n"
-
-        text += self.c0.to_text() + "\n"
-        text += self.c1.to_text() + "\n"
-        text += self.c2.to_text() + "\n"
-        text += self.c3.to_text() + "\n"
-        text += self.c4.to_text() + "\n"
-        text += self.c5.to_text() + "\n"
-        text += self.c6.to_text() + "\n"
-        text += self.c7.to_text() + "\n"
-        text += self.c8.to_text() + "\n"
-        text += self.c9.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-        
-        return text       
-
     def duplicate(self):
         return ChebyshevBackground(c0=None if self.c0 is None else self.c0.duplicate(),
                                    c1=None if self.c1 is None else self.c1.duplicate(),
@@ -61,7 +42,7 @@ class ChebyshevBackground(FitParametersList):
                                    c8=None if self.c8 is None else self.c8.duplicate(),
                                    c9=None if self.c9 is None else self.c9.duplicate())
 
-class ExpDecayBackground(FitParametersList):
+class ExpDecayBackground(ParametersList):
     a0 = None
     b0 = None
     a1 = None
@@ -82,21 +63,6 @@ class ExpDecayBackground(FitParametersList):
         self.b1 = b1
         self.a2 = a2
         self.b2 = b2
-
-    def to_text(self):
-        text = "BACKGROUND PARAMETERS\n"
-        text += "-----------------------------------\n"
-
-        text += self.a0.to_text() + "\n"
-        text += self.b0.to_text() + "\n"
-        text += self.a1.to_text() + "\n"
-        text += self.b1.to_text() + "\n"
-        text += self.a2.to_text() + "\n"
-        text += self.b2.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
 
     def duplicate(self):
         return ExpDecayBackground(a0=None if self.a0 is None else self.a0.duplicate(),

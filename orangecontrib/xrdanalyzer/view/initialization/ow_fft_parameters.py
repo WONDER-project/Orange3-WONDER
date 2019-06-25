@@ -60,6 +60,7 @@ class OWFFTParameters(OWGenericWidget):
                 self.fit_global_parameters.fit_initialization.fft_parameters = FFTInitParameters(s_max=self.s_max,
                                                                                                  n_step=int(self.cb_n_step.currentText()),
                                                                                                  fft_type=self.fft_type)
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

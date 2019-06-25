@@ -89,6 +89,8 @@ class OWDebyeWaller(OWGenericWidget):
                     else:
                         self.fit_global_parameters.fit_initialization.thermal_polarization_parameters[0].debye_waller_factor = debye_waller_factor
 
+                    self.fit_global_parameters.regenerate_parameters()
+
                     self.send("Fit Global Parameters", self.fit_global_parameters)
 
         except Exception as e:

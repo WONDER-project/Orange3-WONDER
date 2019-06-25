@@ -1,13 +1,12 @@
 
 from orangecontrib.xrdanalyzer.controller.fit.init.crystal_structure import CrystalStructure
-from orangecontrib.xrdanalyzer.controller.fit.init.crystal_structure_symmetry import Symmetry
 from orangecontrib.xrdanalyzer.controller.fit.init.fft_parameters import FFTTypes
 from orangecontrib.xrdanalyzer.controller.fit.init.thermal_polarization_parameters import Beampath, LorentzFormula
 from orangecontrib.xrdanalyzer.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection, ZeroError, SpecimenDisplacement
 from orangecontrib.xrdanalyzer.controller.fit.instrument.background_parameters import ChebyshevBackground, ExpDecayBackground
 from orangecontrib.xrdanalyzer.controller.fit.microstructure.size import Distribution, Normalization
 from orangecontrib.xrdanalyzer.controller.fit.microstructure.strain import InvariantPAH, WarrenModel, KrivoglazWilkensModel
-from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Utilities
+from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Utilities, Symmetry
 from orangecontrib.xrdanalyzer.util.general_functions import ChemicalFormulaParser
 
 

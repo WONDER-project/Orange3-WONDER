@@ -1,6 +1,6 @@
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import Boundary, FitParameter, FitParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import Boundary, FitParameter, ParametersList
 
-class Caglioti(FitParametersList):
+class Caglioti(ParametersList):
     U = None
     V = None
     W = None
@@ -22,21 +22,6 @@ class Caglioti(FitParametersList):
         self.b = b
         self.c = c
 
-    def to_text(self):
-        text = "INSTRUMENTAL PARAMETERS\n"
-        text += "-----------------------------------\n"
-
-        text += self.U.to_text() + "\n"
-        text += self.V.to_text() + "\n"
-        text += self.W.to_text() + "\n"
-        text += self.a.to_text() + "\n"
-        text += self.b.to_text() + "\n"
-        text += self.c.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
-
     def duplicate(self):
         return Caglioti(U=None if self.U is None else self.U.duplicate(),
                         V=None if self.V is None else self.V.duplicate(),
@@ -45,7 +30,7 @@ class Caglioti(FitParametersList):
                         b=None if self.b is None else self.b.duplicate(),
                         c=None if self.c is None else self.c.duplicate())
 
-class Lab6TanCorrection(FitParametersList):
+class Lab6TanCorrection(ParametersList):
     ax = None
     bx = None
     cx = None
@@ -65,20 +50,6 @@ class Lab6TanCorrection(FitParametersList):
         self.dx = dx
         self.ex = ex
 
-    def to_text(self):
-        text = "LAB6 TAN-CORRECTION\n"
-        text += "-----------------------------------\n"
-
-        text += self.ax.to_text() + "\n"
-        text += self.bx.to_text() + "\n"
-        text += self.cx.to_text() + "\n"
-        text += self.dx.to_text() + "\n"
-        text += self.ex.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
-
     def duplicate(self):
         return Lab6TanCorrection(ax=None if self.ax is None else self.ax.duplicate(),
                                  bx=None if self.bx is None else self.bx.duplicate(),
@@ -87,7 +58,7 @@ class Lab6TanCorrection(FitParametersList):
                                  ex=None if self.ex is None else self.ex.duplicate())
 
 
-class ZeroError(FitParametersList):
+class ZeroError(ParametersList):
     shift = None
 
     @classmethod
@@ -99,21 +70,11 @@ class ZeroError(FitParametersList):
 
         self.shift = shift
 
-    def to_text(self):
-        text = "ZERO ERROR\n"
-        text += "-----------------------------------\n"
-
-        text += self.shift.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
-
     def duplicate(self):
         return ZeroError(shift=None if self.shift is None else self.shift.duplicate())
 
 
-class SpecimenDisplacement(FitParametersList):
+class SpecimenDisplacement(ParametersList):
     goniometer_radius = 1.0
     displacement = None
 
@@ -127,30 +88,6 @@ class SpecimenDisplacement(FitParametersList):
         self.goniometer_radius = goniometer_radius
         self.displacement = displacement
 
-    def to_text(self):
-        text = "SPECIMEN DISPLACEMENT\n"
-        text += "-----------------------------------\n"
-
-        text += "Goniometer Radius: " + str(self.goniometer_radius) + "\n"
-        text += self.displacement.to_text() + "\n"
-
-        text += "-----------------------------------\n"
-
-        return text
-
     def duplicate(self):
         return SpecimenDisplacement(goniometer_radius=self.goniometer_radius,
                                     displacement=None if self.displacement is None else self.displacement.duplicate())
-
-
-if __name__=="__main__":
-    test = Caglioti(U=FitParameter(parameter_name="U", value=1.0, fixed=True),
-                    V=FitParameter(parameter_name="V", value=2.0, boundary=Boundary(max_value=10.0)),
-                    W=FitParameter(parameter_name="W", value=3.0, boundary=Boundary(min_value=-10.0)),
-                    a=FitParameter(parameter_name="a", value=4.0, fixed=True),
-                    b=FitParameter(parameter_name="b", value=5.0, boundary=Boundary(min_value=-10.0, max_value=10.0)),
-                    c=FitParameter(parameter_name="c", value=6.0, boundary=Boundary(min_value=-10.0, max_value=10.0)))
-
-    print(test.tuple())
-    print("\n")
-    print(test.to_text())

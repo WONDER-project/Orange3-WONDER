@@ -498,6 +498,7 @@ class OWChebyshevBackground(OWGenericWidget):
                     background_parameters.append(self.chebyshev_box_array[index].send_background())
 
                 self.fit_global_parameters.set_background_parameters(background_parameters)
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

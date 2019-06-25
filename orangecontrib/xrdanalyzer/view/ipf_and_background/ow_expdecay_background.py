@@ -116,6 +116,7 @@ class OWExpDecayBackground(OWGenericWidget):
                                                                                         b1=self.populate_parameter("b1", ExpDecayBackground.get_parameters_prefix()),
                                                                                         a2=self.populate_parameter("a2", ExpDecayBackground.get_parameters_prefix()),
                                                                                         b2=self.populate_parameter("b2", ExpDecayBackground.get_parameters_prefix()))])
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

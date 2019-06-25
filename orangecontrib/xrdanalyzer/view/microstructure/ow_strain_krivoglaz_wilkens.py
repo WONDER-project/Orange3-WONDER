@@ -157,6 +157,7 @@ class OWStrainKW(OWGenericWidget):
                                                                                       Bs=self.populate_parameter("Bs", KrivoglazWilkensModel.get_parameters_prefix()),
                                                                                       mix=self.populate_parameter("mix", KrivoglazWilkensModel.get_parameters_prefix()),
                                                                                       b=self.populate_parameter("b", KrivoglazWilkensModel.get_parameters_prefix()))]
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 

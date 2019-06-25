@@ -61,6 +61,7 @@ class OWFreeInputParameters(OWGenericWidget):
                 self.free_input_parameters = self.text_area_free_in.toPlainText()
 
                 self.fit_global_parameters.free_input_parameters.parse_values(self.free_input_parameters)
+                self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
 
