@@ -143,16 +143,20 @@ class FitParametersList(ParametersList):
         return ""
 
     def get_parameters_count(self):
-        return len(self.__parameters[numpy.where(not self.__parameters is None)])
+        return len(self.__parameters[numpy.where(self.__parameters != None)])
 
-    def get_parameters(self):
-        return self.__parameters[numpy.where(not self.__parameters is None)]
+    def get_parameters(self, good_only=True):
+        if not good_only: return self.__parameters
+        else: return self.__parameters[numpy.where(self.__parameters != None)]
 
     def clear_parameters(self):
         self.__parameters.fill(None)
 
+    def replace_parameters(self, parameters):
+        self.__parameters = parameters
+
     def has_functions(self):
-        for parameter in self.__parameters[numpy.where(not self.__parameters is None)]:
+        for parameter in self.__parameters[numpy.where(self.__parameters != None)]:
             if parameter.function: return True
 
         return False
@@ -160,7 +164,7 @@ class FitParametersList(ParametersList):
     def get_available_parameters(self):
         text = ""
 
-        for parameter in self.__parameters[numpy.where(not self.__parameters is None)]:
+        for parameter in self.__parameters[numpy.where(self.__parameters != None)]:
             if not parameter.function: text += parameter.to_parameter_text() + "\n"
 
         return text
@@ -169,7 +173,7 @@ class FitParametersList(ParametersList):
         parameters_dictionary = {}
         python_code = ""
 
-        for parameter in self.__parameters[numpy.where(not self.__parameters is None)]:
+        for parameter in self.__parameters[numpy.where(self.__parameters != None)]:
             if parameter.function:
                 parameters_dictionary[parameter.parameter_name] = numpy.nan
                 python_code += parameter.to_python_code() + "\n"

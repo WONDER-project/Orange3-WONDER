@@ -4,7 +4,6 @@ from orangecontrib.xrdanalyzer.controller.fit.init.fft_parameters import FFTType
 from orangecontrib.xrdanalyzer.controller.fit.init.thermal_polarization_parameters import Beampath, LorentzFormula
 from orangecontrib.xrdanalyzer.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection, ZeroError, SpecimenDisplacement
 from orangecontrib.xrdanalyzer.controller.fit.instrument.background_parameters import ChebyshevBackground, ExpDecayBackground
-from orangecontrib.xrdanalyzer.controller.fit.microstructure.size import Distribution, Normalization
 from orangecontrib.xrdanalyzer.controller.fit.microstructure.strain import InvariantPAH, WarrenModel, KrivoglazWilkensModel
 from orangecontrib.xrdanalyzer.controller.fit.util.fit_utilities import Utilities, Symmetry
 from orangecontrib.xrdanalyzer.util.general_functions import ChemicalFormulaParser
@@ -19,6 +18,23 @@ from orangecontrib.xrdanalyzer.util.general_functions import ChemicalFormulaPars
 #
 #################################################
 
+class Distribution:
+    DELTA = "delta"
+    LOGNORMAL = "lognormal"
+    GAMMA = "gamma"
+    YORK = "york"
+
+    @classmethod
+    def tuple(cls):
+        return [cls.DELTA, cls.LOGNORMAL, cls.GAMMA, cls.YORK]
+
+class Normalization:
+    NORMALIZE_TO_N = 0
+    NORMALIZE_TO_N2 = 1
+
+    @classmethod
+    def tuple(cls):
+        return ["to N", "to N\u00b2"]
 
 
 def fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index = 0):

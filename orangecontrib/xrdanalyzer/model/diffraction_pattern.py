@@ -151,6 +151,23 @@ class DiffractionPattern(ParametersList):
 
         return diffraction_pattern
 
+    def tuples(self):
+        n_points = self.diffraction_points_count()
+
+        twotheta = numpy.zeros(n_points)
+        intensity = numpy.zeros(n_points)
+        error = numpy.zeros(n_points)
+        s = numpy.zeros(n_points)
+
+        for index in range(n_points):
+            diffraction_point = self.get_diffraction_point(index)
+            twotheta[index] = diffraction_point.twotheta
+            intensity[index] = diffraction_point.intensity
+            error[index] = diffraction_point.error
+            s[index] = diffraction_point.s
+
+        return twotheta, intensity, error, s
+
     # "PRIVATE METHODS"
     def __check_diffraction_pattern(self):
         if self.diffraction_pattern is None:

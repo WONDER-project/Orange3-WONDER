@@ -1,6 +1,7 @@
 import numpy
 
-from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import FitParameter, ParametersList
+from orangecontrib.xrdanalyzer.controller.fit.fit_parameter import ParametersList
+from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import Normalization, Distribution, lognormal_distribution
 
 class Shape:
     NONE = "none"
@@ -14,26 +15,6 @@ class Shape:
     def tuple(cls):
         return [cls.NONE, cls.SPHERE, cls.CUBE, cls.TETRAHEDRON, cls.OCTAHEDRON, cls.CYLINDER]
 
-
-class Distribution:
-    DELTA = "delta"
-    LOGNORMAL = "lognormal"
-    GAMMA = "gamma"
-    YORK = "york"
-
-    @classmethod
-    def tuple(cls):
-        return [cls.DELTA, cls.LOGNORMAL, cls.GAMMA, cls.YORK]
-
-class Normalization:
-    NORMALIZE_TO_N = 0
-    NORMALIZE_TO_N2 = 1
-
-    @classmethod
-    def tuple(cls):
-        return ["to N", "to N\u00b2"]
-
-from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import lognormal_distribution
 
 class SizeParameters(ParametersList):
 

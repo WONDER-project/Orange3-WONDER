@@ -9,7 +9,8 @@ from orangecontrib.xrdanalyzer.util.widgets.ow_generic_widget import OWGenericWi
 from orangecontrib.xrdanalyzer.util.gui.gui_utility import gui, ShowTextDialog
 from orangecontrib.xrdanalyzer.util import congruence
 from orangecontrib.xrdanalyzer.controller.fit.fit_global_parameters import FitGlobalParameters
-from orangecontrib.xrdanalyzer.controller.fit.microstructure.size import SizeParameters, Shape, Distribution, Normalization
+from orangecontrib.xrdanalyzer.controller.fit.microstructure.size import SizeParameters, Shape
+from orangecontrib.xrdanalyzer.controller.fit.wppm_functions import Distribution, Normalization
 
 class OWSize(OWGenericWidget):
 
