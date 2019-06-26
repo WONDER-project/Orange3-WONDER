@@ -129,15 +129,7 @@ class FitGlobalParameters(ParametersList):
             self.shift_parameters[key] = shift_parameters
 
     def evaluate_functions(self):
-        if self.has_functions() or self.free_output_parameters.get_parameters_count() > 0:
-            FitGlobalParameters.compute_functions(self.get_parameters(), self.free_input_parameters, self.free_output_parameters)
-
-    def duplicate(self):
-        fit_global_parameters = super(FitGlobalParameters, self).duplicate()
-        fit_global_parameters.regenerate_parameters()
-        fit_global_parameters.evaluate_functions()
-
-        return fit_global_parameters
+        FitGlobalParameters.compute_functions(self.get_parameters(), self.free_input_parameters, self.free_output_parameters)
 
     def regenerate_parameters(self):
         self.clear_parameters()
@@ -282,6 +274,7 @@ class FitGlobalParameters(ParametersList):
 
         self.evaluate_functions()
 
+    '''
     def from_fitted_parameters(self, fitted_parameters):
         last_index = -1
 
@@ -420,9 +413,10 @@ class FitGlobalParameters(ParametersList):
         self.replace_parameters(fitted_parameters)
 
         return self
-    
     '''
     def from_fitted_parameters(self, fitted_parameters):
+        FitGlobalParameters.compute_functions(fitted_parameters, self.free_input_parameters, self.free_output_parameters)
+
         last_index = -1
 
         if not self.fit_initialization.diffraction_patterns is None:
@@ -562,7 +556,7 @@ class FitGlobalParameters(ParametersList):
         self.replace_parameters(fitted_parameters)
 
         return self
-    '''
+    #'''
     
     def from_fitted_errors(self, errors):
         last_index = -1
@@ -726,17 +720,16 @@ class FitGlobalParameters(ParametersList):
                 has_function = True
                 break
 
-        if has_function:
+        if has_function or free_output_parameters.get_parameters_count() > 0:
             python_code = "import numpy\nfrom numpy import *\n\n"
             python_code += free_input_parameters.to_python_code()
-
-            for parameter in parameters:
-                if not parameter.function: python_code += parameter.to_parameter_text() + "\n"
 
             parameters_dictionary_fit = {}
 
             for parameter in parameters:
-                if parameter.function:
+                if not parameter.function:
+                    python_code += parameter.to_parameter_text() + "\n"
+                else:
                     parameters_dictionary_fit[parameter.parameter_name] = numpy.nan
                     python_code += parameter.to_python_code() + "\n"
 
