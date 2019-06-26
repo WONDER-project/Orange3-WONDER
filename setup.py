@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 with io.open('about.md', 'r', encoding='utf-8') as f:
     ABOUT = f.read()
 
-NAME = 'Orange3-WONDER'
+NAME = 'Orange3-WONDER-1'
 
 MAJOR = 1
 MINOR = 0
@@ -33,34 +33,15 @@ CLASSIFIERS = [
 
 KEYWORDS = [
     'orange3 add-on',
-    'orange3-wonder'
+    'orange3-wonder-1'
 ]
 
 PACKAGES = find_packages()
 
 PACKAGE_DATA = {
-    'orangecontrib.xrdanalyzer.view.widgets'           : ['icons/*.*'], # to be removed
-    'orangecontrib.xrdanalyzer.view.initialization'    : ['icons/*.*', 'data/*.*'],
-    'orangecontrib.xrdanalyzer.view.ipf_and_background': ['icons/*.*'],
-    'orangecontrib.xrdanalyzer.view.thermal_properties': ['icons/*.*'],
-    'orangecontrib.xrdanalyzer.view.microstructure'    : ['icons/*.*'],
-    'orangecontrib.xrdanalyzer.view.fitting'           : ['icons/*.*'],
-    'orangecontrib.xrdanalyzer.view._untrusted'        : ['icons/*.*'],
-
-    'orangecontrib.xrdanalyzer.controller.fit.data': ['*.*', 'delta_l_files/*.*'],
+    'orangecontrib.wonder.view.wonder'        : ['icons/*.*', 'data/*.*'],
+    'orangecontrib.wonder.controller.fit.data': ['*.*', 'delta_l_files/*.*'],
 }
-
-NAMESPACE_PACAKGES = ["orangecontrib",
-                      "orangecontrib.xrdanalyzer",
-                      "orangecontrib.xrdanalyzer.view",
-                      "orangecontrib.xrdanalyzer.view.widgets",
-                      "orangecontrib.xrdanalyzer.view.initialization",    
-                      "orangecontrib.xrdanalyzer.view.ipf_and_background",
-                      "orangecontrib.xrdanalyzer.view.thermal_properties",
-                      "orangecontrib.xrdanalyzer.view.microstructure",    
-                      "orangecontrib.xrdanalyzer.view.fitting",           
-                      "orangecontrib.xrdanalyzer.view._untrusted",
-                      ]
 
 INSTALL_REQUIRES = sorted(set(
     line.partition('#')[0].strip()
@@ -68,16 +49,10 @@ INSTALL_REQUIRES = sorted(set(
 
 ENTRY_POINTS = {
     'orange.widgets':
-        (#'OLD STRUCTURE! = orangecontrib.xrdanalyzer.view.widgets',
-         'Initialization = orangecontrib.xrdanalyzer.view.initialization',
-         'Instrument and Background = orangecontrib.xrdanalyzer.view.ipf_and_background',
-         'Thermal Properties = orangecontrib.xrdanalyzer.view.thermal_properties',
-         'Microstructure = orangecontrib.xrdanalyzer.view.microstructure',
-         'Fitting = orangecontrib.xrdanalyzer.view.fitting',
-         #'Untrusted = orangecontrib.xrdanalyzer.view._untrusted',
+        ('Wonder = orangecontrib.wonder.view.wonder',
          ),
     'orange3.addon':
-        ('Orange3-WONDER = orangecontrib.xrdanalyzer',)
+        ('Orange3-WONDER = orangecontrib.wonder',)
 
 
 
@@ -102,5 +77,6 @@ if __name__ == '__main__':
         classifiers=CLASSIFIERS,
         install_requires=INSTALL_REQUIRES,
         namespace_packages=['orangecontrib'],
+        #namespace_packages=NAMESPACE_PACAKGES,
         entry_points=ENTRY_POINTS
     )

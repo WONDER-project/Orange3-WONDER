@@ -1,9 +1,9 @@
-recursive-include orangecontrib/xrdanalyzer *.svg *.png *.jpg
-recursive-include orangecontrib/xrdanalyzer *.pyx
+recursive-include orangecontrib/wonder *.svg *.png *.jpg
+recursive-include orangecontrib/wonder *.pyx
 
-recursive-include orangecontrib/xrdanalyzer/controller/fit/data *.dat
-recursive-include orangecontrib/xrdanalyzer/controller/fit/data/delta_l_files *.FTinfo
-recursive-include orangecontrib/xrdanalyzer/view/initialization/data *.dat
+recursive-include orangecontrib/wonder/controller/fit/data *.dat
+recursive-include orangecontrib/wonder/controller/fit/data/delta_l_files *.FTinfo
+recursive-include orangecontrib/wonder/view/wonder/data *.dat
 
 include requirements.txt
 include README.md
