@@ -26,7 +26,6 @@ from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters impo
 from orangecontrib.wonder.controller.fit.wppm_functions import caglioti_fwhm, caglioti_eta, delta_two_theta_lab6
 
 
-
 class OWFitter(OWGenericWidget):
     name = "Fitter"
     description = "Fitter"
@@ -447,6 +446,10 @@ class OWFitter(OWGenericWidget):
                     raise FitNotStartedException(str(e))
 
         except Exception as e:
+            print("DIO CANE")
+            for parameter in self.fit_global_parameters.get_parameters():
+                print(parameter.to_text())
+
             QMessageBox.critical(self, "Error",
                                  str(e),
                                  QMessageBox.Ok)

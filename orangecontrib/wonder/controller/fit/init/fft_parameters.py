@@ -28,7 +28,3 @@ class FFTInitParameters(ParametersList):
         self.n_step = n_step
         self.fft_type = fft_type
 
-        # THESE PARAMETERS ARE FIXED BY DEFAULT, THEY ARE NOT PASSED TO THE LIST
-
-    def duplicate(self):
-        return FFTInitParameters(s_max=self.s_max, n_step=self.n_step, fft_type=self.fft_type)

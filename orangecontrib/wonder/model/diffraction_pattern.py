@@ -1,5 +1,6 @@
 import numpy
 import inspect
+import copy
 
 from orangecontrib.wonder.util import congruence
 from orangecontrib.wonder.controller.fit.util.fit_utilities import Utilities
@@ -135,38 +136,13 @@ class DiffractionPattern(ParametersList):
     def duplicate(self):
         self.__check_diffraction_pattern()
 
-        diffraction_pattern = DiffractionPattern(wavelength=None if self.wavelength is None else self.wavelength.duplicate())
-        diffraction_pattern.diffraction_pattern = self.diffraction_pattern # not duplicate: too many infos and typically read-only
-
-        if not self.is_single_wavelength:
-            secondary_wavelengths = []
-            secondary_wavelengths_weights = []
-            for secondary_wavelength, secondary_wavelength_weigth in zip(self.secondary_wavelengths,
-                                                                         self.secondary_wavelengths_weights):
-                secondary_wavelengths.append(secondary_wavelength.duplicate())
-                secondary_wavelengths_weights.append(secondary_wavelength_weigth.duplicate())
-
-            diffraction_pattern.set_multiple_wavelengths(secondary_wavelengths=secondary_wavelengths,
-                                                         secondary_wavelengths_weights=secondary_wavelengths_weights)
-
-        return diffraction_pattern
+        return super(DiffractionPattern, self).duplicate()
 
     def tuples(self):
-        n_points = self.diffraction_points_count()
+        data = [[diffraction_point.twotheta, diffraction_point.intensity,diffraction_point.error, diffraction_point.s] for diffraction_point in self.diffraction_pattern]
+        data = numpy.array(data)
 
-        twotheta = numpy.zeros(n_points)
-        intensity = numpy.zeros(n_points)
-        error = numpy.zeros(n_points)
-        s = numpy.zeros(n_points)
-
-        for index in range(n_points):
-            diffraction_point = self.get_diffraction_point(index)
-            twotheta[index] = diffraction_point.twotheta
-            intensity[index] = diffraction_point.intensity
-            error[index] = diffraction_point.error
-            s[index] = diffraction_point.s
-
-        return twotheta, intensity, error, s
+        return data[:, 0], data[:, 1], data[:, 2], data[:, 3]
 
     # "PRIVATE METHODS"
     def __check_diffraction_pattern(self):

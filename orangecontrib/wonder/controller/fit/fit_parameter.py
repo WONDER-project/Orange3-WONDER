@@ -119,6 +119,8 @@ class FitParameter:
         return self.parameter_name + " = " + self.function_value
 
     def duplicate(self):
+        return copy.deepcopy(self)
+
         return FitParameter(parameter_name=self.parameter_name,
                             value=self.value,
                             fixed=self.fixed,
@@ -130,58 +132,14 @@ class FitParameter:
     def is_variable(self):
         return not self.fixed and not self.function
 
+
 class ParametersList:
-    def duplicate(self):
-        raise NotImplementedError
-
-
-class FitParametersList(ParametersList):
-    __parameters = numpy.full(10000, None)
-
     @classmethod
     def get_parameters_prefix(cls):
         return ""
 
-    def get_parameters_count(self):
-        return len(self.__parameters[numpy.where(self.__parameters != None)])
-
-    def get_parameters(self, good_only=True):
-        if not good_only: return self.__parameters
-        else: return self.__parameters[numpy.where(self.__parameters != None)]
-
-    def clear_parameters(self):
-        self.__parameters.fill(None)
-
-    def replace_parameters(self, parameters):
-        self.__parameters = parameters
-
-    def has_functions(self):
-        for parameter in self.__parameters[numpy.where(self.__parameters != None)]:
-            if parameter.function: return True
-
-        return False
-
-    def get_available_parameters(self):
-        text = ""
-
-        for parameter in self.__parameters[numpy.where(self.__parameters != None)]:
-            if not parameter.function: text += parameter.to_parameter_text() + "\n"
-
-        return text
-
-    def get_functions_data(self):
-        parameters_dictionary = {}
-        python_code = ""
-
-        for parameter in self.__parameters[numpy.where(self.__parameters != None)]:
-            if parameter.function:
-                parameters_dictionary[parameter.parameter_name] = numpy.nan
-                python_code += parameter.to_python_code() + "\n"
-
-        return parameters_dictionary, python_code
-
-    def regenerate_parameters(self):
-        raise NotImplementedError()
+    def duplicate(self):
+        return copy.deepcopy(self)
 
 class FreeInputParameters(ParametersList):
     def __init__(self):
@@ -276,16 +234,6 @@ class FreeInputParameters(ParametersList):
 
         return python_text
 
-    def duplicate(self):
-        new_free_input_parameters = FreeInputParameters()
-
-        if not self.parameters_dictionary is None:
-            for name in self.parameters_dictionary.keys():
-                new_free_input_parameters.set_parameter(name, self.parameters_dictionary[name])
-                
-        return new_free_input_parameters
-
-
 
 class FreeOutputParameter:
     def __init__(self, expression=None, value=None):
@@ -293,6 +241,8 @@ class FreeOutputParameter:
         self.value = value
     
     def duplicate(self):
+        return copy.deepcopy(self)
+
         return FreeOutputParameter(expression=self.expression, value=self.value)
     
 class FreeOutputParameters(ParametersList):
@@ -422,21 +372,24 @@ class FreeOutputParameters(ParametersList):
         return text
 
     def as_parameters(self):
-        parameters = []
-
         if not self.parameters_dictionary is None:
-            for name in self.parameters_dictionary.keys():
+            keys = self.parameters_dictionary.keys()
+            parameters = numpy.full(len(keys), None)
+
+            i = 0
+            for name in keys:
                 parameter = self.parameters_dictionary[name]
 
-                fit_parameter = FitParameter(value=parameter.value,
+                parameters[i] = FitParameter(value=parameter.value,
                                              parameter_name=name,
                                              function=True,
                                              function_value=parameter.expression,
                                              output_parameter=True)
+                i += 1
 
-                parameters.append(fit_parameter)
-
-        return parameters
+            return parameters
+        else:
+            return []
 
     def get_functions_data(self):
         self._check_dictionary()
@@ -453,12 +406,3 @@ class FreeOutputParameters(ParametersList):
     def set_functions_values(self, parameters_dictionary):
         for parameter_name in self.parameters_dictionary.keys():
            self.set_parameter_value(parameter_name, float(parameters_dictionary[parameter_name]))
-
-    def duplicate(self):
-        new_free_ouput_parameters = FreeOutputParameters()
-
-        if not self.parameters_dictionary is None:
-            for name in self.parameters_dictionary.keys():
-                new_free_ouput_parameters.set_parameter(name, self.parameters_dictionary[name].duplicate())
-                
-        return new_free_ouput_parameters

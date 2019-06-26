@@ -39,15 +39,6 @@ class SizeParameters(ParametersList):
         self.add_saxs = add_saxs
         self.normalize_to = normalize_to
 
-    def duplicate(self):
-        return SizeParameters(shape=self.shape,
-                              distribution=self.distribution,
-                              mu=None if self.mu is None else self.mu.duplicate(),
-                              sigma=None if self.sigma is None else self.sigma.duplicate(),
-                              add_saxs=self.add_saxs,
-                              normalize_to=self.normalize_to)
-
-
     def get_distribution(self, auto=True, D_min=None, D_max=None):
         if auto:
             D_min = 0

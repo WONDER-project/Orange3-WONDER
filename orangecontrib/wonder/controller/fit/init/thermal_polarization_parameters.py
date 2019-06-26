@@ -49,13 +49,3 @@ class ThermalPolarizationParameters(ParametersList):
     @classmethod
     def get_parameters_prefix(cls):
         return "tp_"
-
-    def duplicate(self):
-        return ThermalPolarizationParameters(debye_waller_factor=None if self.debye_waller_factor is None else self.debye_waller_factor.duplicate(),
-                                             use_lorentz_factor=self.use_lorentz_factor,
-                                             lorentz_formula=self.lorentz_formula,
-                                             use_polarization_factor=self.use_polarization_factor,
-                                             beampath=self.beampath,
-                                             degree_of_polarization=self.degree_of_polarization,
-                                             twotheta_mono=self.twotheta_mono)
-

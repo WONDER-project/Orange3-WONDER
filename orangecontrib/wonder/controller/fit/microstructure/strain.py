@@ -119,28 +119,6 @@ class InvariantPAH(ParametersList):
 
         return invariant
 
-    def duplicate(self):
-        return InvariantPAH(aa=None if self.aa is None else self.aa.duplicate(),
-                            bb=None if self.bb is None else self.bb.duplicate(),
-                            laue_id=self.laue_id,
-                            e1 = None if self.e1  is None else self.e1.duplicate(),
-                            e2 = None if self.e2  is None else self.e2.duplicate(),
-                            e3 = None if self.e3  is None else self.e3.duplicate(),
-                            e4 = None if self.e4  is None else self.e4.duplicate(),
-                            e5 = None if self.e5  is None else self.e5.duplicate(),
-                            e6 = None if self.e6  is None else self.e6.duplicate(),
-                            e7 = None if self.e7  is None else self.e7.duplicate(),
-                            e8 = None if self.e8  is None else self.e8.duplicate(),
-                            e9 = None if self.e9  is None else self.e9.duplicate(),
-                            e10= None if self.e10 is None else self.e10.duplicate(),
-                            e11= None if self.e11 is None else self.e11.duplicate(),
-                            e12= None if self.e12 is None else self.e12.duplicate(),
-                            e13= None if self.e13 is None else self.e13.duplicate(),
-                            e14= None if self.e14 is None else self.e14.duplicate(),
-                            e15= None if self.e15 is None else self.e15.duplicate())
-
-
-
     def get_warren_plot(self, h, k, l, L_max=50):
         step = L_max/100
         L = numpy.arange(start=step, stop=L_max + step, step=step)
@@ -396,17 +374,6 @@ class KrivoglazWilkensModel(ParametersList):
         self.mix = mix
         self.b   = b
 
-    def duplicate(self):
-        return KrivoglazWilkensModel(rho = None if self.rho is None else self.rho.duplicate(),
-                                     Re  = None if self.Re  is None else self.Re.duplicate(),
-                                     Ae  = None if self.Ae  is None else self.Ae.duplicate(),
-                                     Be  = None if self.Be  is None else self.Be.duplicate(),
-                                     As  = None if self.As  is None else self.As.duplicate(),
-                                     Bs  = None if self.Bs  is None else self.Bs.duplicate(),
-                                     mix = None if self.mix is None else self.mix.duplicate(),
-                                     b   = None if self.b   is None else self.b.duplicate())
-
-
     def get_warren_plot(self, h, k, l, L_max=50):
         step = L_max/100
         L = numpy.arange(start=step, stop=L_max + step, step=step)
@@ -438,7 +405,5 @@ class WarrenModel(ParametersList):
 
         self.average_cell_parameter = average_cell_parameter
 
-    def duplicate(self):
-        return WarrenModel(average_cell_parameter=None if self.average_cell_parameter is None else self.average_cell_parameter.duplicate())
 
 

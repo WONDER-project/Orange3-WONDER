@@ -30,18 +30,6 @@ class ChebyshevBackground(ParametersList):
         self.c8 = c8
         self.c9 = c9
 
-    def duplicate(self):
-        return ChebyshevBackground(c0=None if self.c0 is None else self.c0.duplicate(),
-                                   c1=None if self.c1 is None else self.c1.duplicate(),
-                                   c2=None if self.c2 is None else self.c2.duplicate(),
-                                   c3=None if self.c3 is None else self.c3.duplicate(),
-                                   c4=None if self.c4 is None else self.c4.duplicate(),
-                                   c5=None if self.c5 is None else self.c5.duplicate(),
-                                   c6=None if self.c6 is None else self.c6.duplicate(),
-                                   c7=None if self.c7 is None else self.c7.duplicate(),
-                                   c8=None if self.c8 is None else self.c8.duplicate(),
-                                   c9=None if self.c9 is None else self.c9.duplicate())
-
 class ExpDecayBackground(ParametersList):
     a0 = None
     b0 = None
@@ -63,11 +51,3 @@ class ExpDecayBackground(ParametersList):
         self.b1 = b1
         self.a2 = a2
         self.b2 = b2
-
-    def duplicate(self):
-        return ExpDecayBackground(a0=None if self.a0 is None else self.a0.duplicate(),
-                                  b0=None if self.b0 is None else self.b0.duplicate(),
-                                  a1=None if self.a1 is None else self.a1.duplicate(),
-                                  b1=None if self.b1 is None else self.b1.duplicate(),
-                                  a2=None if self.a2 is None else self.a2.duplicate(),
-                                  b2=None if self.b2 is None else self.b2.duplicate())

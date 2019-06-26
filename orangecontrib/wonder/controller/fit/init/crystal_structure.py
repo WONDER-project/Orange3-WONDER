@@ -273,24 +273,4 @@ class CrystalStructure(ParametersList):
 
         return excluded_reflection
 
-    def duplicate(self):
-        crystal_structure = CrystalStructure(a=None if self.a is None else self.a.duplicate(),
-                                             b=None if self.b is None else self.b.duplicate(),
-                                             c=None if self.c is None else self.c.duplicate(),
-                                             alpha=None if self.alpha is None else self.alpha.duplicate(),
-                                             beta=None if self.beta is None else self.beta.duplicate(),
-                                             gamma=None if self.gamma is None else self.gamma.duplicate(),
-                                             symmetry=self.symmetry,
-                                             use_structure=self.use_structure,
-                                             formula=self.formula,
-                                             intensity_scale_factor=None if self.intensity_scale_factor is None else self.intensity_scale_factor.duplicate())
-
-        for reflection in self.reflections:
-            reflection_copy = Reflection(h=reflection.h, k=reflection.k, l=reflection.l, intensity=None if reflection.intensity is None else reflection.intensity.duplicate())
-            reflection_copy.d_spacing = reflection.d_spacing
-
-            crystal_structure.add_reflection(reflection_copy)
-
-        return crystal_structure
-
 
