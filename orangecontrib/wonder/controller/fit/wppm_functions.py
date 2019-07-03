@@ -455,7 +455,6 @@ def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern
 import numpy
 from scipy.special import erfc
 import os
-from Orange.canvas import resources
 
 ######################################################################
 # THERMAL AND POLARIZATION
@@ -590,7 +589,7 @@ def load_warren_files():
     delta_l_dict = {}
     delta_l2_dict = {}
 
-    path = os.path.join(resources.package_dirname("orangecontrib.wonder.controller.fit"), "data")
+    path = os.path.join(os.path.dirname(__file__), "data")
     path = os.path.join(path, "delta_l_files")
 
     filenames = os.listdir(path)
@@ -652,7 +651,7 @@ def strain_warren_function(L, h, k, l, lattice_parameter, average_lattice_parame
 def load_atomic_scattering_factor_coefficients():
     atomic_scattering_factor_coefficients = {}
 
-    path = os.path.join(resources.package_dirname("orangecontrib.wonder.controller.fit"), "data")
+    path = os.path.join(os.path.dirname(__file__), "data")
     file_name = os.path.join(path, "atomic_scattering_factor_coefficients.dat")
 
     file = open(file_name, "r")
