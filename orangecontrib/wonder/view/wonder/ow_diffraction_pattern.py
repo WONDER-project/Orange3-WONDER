@@ -8,7 +8,6 @@ from silx.gui.plot.PlotWindow import PlotWindow
 
 from Orange.widgets.settings import Setting
 from Orange.widgets import gui as orangegui
-from Orange.canvas import resources
 
 from orangecontrib.wonder.util.widgets.ow_generic_widget import OWGenericWidget
 from orangecontrib.wonder.util.gui.gui_utility import gui, ConfirmDialog
@@ -30,7 +29,7 @@ class Wavelenght:
 wavelengths_data = {}
 
 def load_data_files():
-    directory_files = resources.package_dirname("orangecontrib.wonder.view.wonder") + "/data"
+    directory_files = os.path.join(os.path.dirname(__file__), "data")
 
     try:
         for path, dirs, files in os.walk(directory_files):
