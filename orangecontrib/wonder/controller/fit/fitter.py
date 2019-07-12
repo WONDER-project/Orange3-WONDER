@@ -24,7 +24,7 @@ class FitterInterface:
     def init_fitter(self, fit_global_parameters=None):
         raise NotImplementedError("Abstract")
 
-    def do_fit(self, fit_global_parameters=None, current_iteration=0):
+    def do_fit(self, fit_global_parameters=None, current_iteration=0, compute_pattern=True):
         raise NotImplementedError("Abstract")
 
 

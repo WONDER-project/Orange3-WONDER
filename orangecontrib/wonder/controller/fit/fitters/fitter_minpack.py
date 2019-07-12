@@ -140,7 +140,7 @@ class FitterMinpack(FitterInterface):
 
         print("Fitter Initialization done.")
 
-    def do_fit(self, current_fit_global_parameters, current_iteration):
+    def do_fit(self, current_fit_global_parameters, current_iteration, compute_pattern):
         print("Fitter - Begin iteration nr. " + str(current_iteration))
 
         self.fit_global_parameters = current_fit_global_parameters.duplicate()
@@ -172,10 +172,6 @@ class FitterMinpack(FitterInterface):
                     j += 1
                     self.initialpar.setitem(j, self.parameters[i].value)
                     self.currpar.setitem(j, self.initialpar.getitem(j))
-
-            print("point 1, currparr")
-            for index in range(0, self.currpar.getSize()):
-                print(self.currpar.getitem(index+1))
 
             # emulate C++ do ... while cycle
             do_cycle = True
@@ -223,10 +219,6 @@ class FitterMinpack(FitterInterface):
 
                                 # check number of parameters reaching convergence
                                 if (abs(self.g.getitem(i))<=abs(PRCSN*self.currpar.getitem(i))): n0 += 1
-
-                        print("point 2, parameters")
-                        for index in range(0, self.nprm):
-                            print(str(self.parameters[index]))
 
                         # calculate functions
                         if self.has_functions:

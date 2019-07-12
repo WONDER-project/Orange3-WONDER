@@ -942,7 +942,8 @@ class FitThread(QThread):
                 self.fitter_widget.fitted_fit_global_parameters, \
                 self.fitter_widget.fit_data = \
                     self.fitter_widget.fitter.do_fit(current_fit_global_parameters=self.fitter_widget.fitted_fit_global_parameters,
-                                                     current_iteration=iteration)
+                                                     current_iteration=iteration,
+                                                     compute_pattern=self.fitter_widget.is_interactive==1 or iteration==self.fitter_widget.n_iterations)
 
                 self.update.emit()
 

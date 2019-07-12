@@ -2,7 +2,7 @@ from orangecontrib.wonder.controller.fit.fitter import FitterInterface
 
 from orangecontrib.wonder.model.diffraction_pattern import DiffractionPattern, DiffractionPoint
 from orangecontrib.wonder.controller.fit.fit_parameter import PARAM_ERR
-from orangecontrib.wonder.controller.fit.fitters.fitter_minpack_util import *
+from orangecontrib.wonder.controller.fit.fitters.fitter_minpack_util_new import *
 from orangecontrib.wonder.controller.fit.wppm_functions import fit_function_direct
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters
 
@@ -130,19 +130,11 @@ class FitterMinpackNew(FitterInterface):
         self.conver = False
         self.exitflag  = False
 
-        populate_variables([parameter.value for parameter in self.parameters], self.nprm, self.nfit)
-
-
-        #j = 0
-        #for  i in range (0, self.nprm):
-        #    parameter = self.parameters[i]
-        #    if parameter.is_variable():
-        #        j += 1
-        #        self.initialpar.setitem(j, parameter.value)
+        populate_variables(self.parameters, self.nprm, self.initialpar)
 
         print("Fitter Initialization done.")
 
-    def do_fit(self, current_fit_global_parameters, current_iteration):
+    def do_fit(self, current_fit_global_parameters, current_iteration, compute_pattern):
         print("Fitter - Begin iteration nr. " + str(current_iteration))
 
         self.fit_global_parameters = current_fit_global_parameters.duplicate()
@@ -171,17 +163,6 @@ class FitterMinpackNew(FitterInterface):
             populate_variables(self.parameters, self.nprm, self.initialpar)
             self.currpar.set_attributes(self.initialpar.get_attributes())
 
-            #j = 0
-            #for i in range(0, self.nprm):
-            #    if self.parameters[i].is_variable():
-            #        j += 1
-            #        self.initialpar.setitem(j, self.parameters[i].value)
-            #        self.currpar.setitem(j, self.initialpar.getitem(j))
-
-            print("point 1, currparr")
-            for index in range(0, self.currpar.getSize()):
-                print(self.currpar.getitem(index+1))
-
             # emulate C++ do ... while cycle
             do_cycle = True
 
@@ -192,15 +173,7 @@ class FitterMinpackNew(FitterInterface):
                 self.conver = False
 
                 #set the diagonal of A to be A*(1+lambda)+phi*lambda
-                da = self._phi*self._lambda
-
-                for jj in range(1, self.nfit+1):
-                    self.g.setitem(jj, -self.grad.getitem(jj))
-                    l = int(jj*(jj+1)/2)
-                    self.a.setitem(l, self.c.getitem(l)*(1.0 + self._lambda) + da)
-                    if jj > 1:
-                        for i in range (1, jj):
-                            self.a.setitem(l-i, self.c.getitem(l-i))
+                self.__set_A_diagonal()
 
                 if self.a.chodec() == 0: # Cholesky decomposition
                     # the matrix is inverted, so calculate g (change in the
@@ -228,10 +201,6 @@ class FitterMinpackNew(FitterInterface):
 
                                 # check number of parameters reaching convergence
                                 if (abs(self.g.getitem(i))<=abs(PRCSN*self.currpar.getitem(i))): n0 += 1
-
-                        print("point 2, parameters")
-                        for index in range(0, self.nprm):
-                            print(str(self.parameters[index]))
 
                         # calculate functions
                         if self.has_functions:
@@ -331,7 +300,10 @@ class FitterMinpackNew(FitterInterface):
         fit_global_parameters_out = self.fit_global_parameters_aux.from_fitted_parameters(self.parameters).duplicate()
         fit_global_parameters_out.set_convergence_reached(self.conver)
 
-        fitted_patterns = self.build_fitted_diffraction_pattern(fit_global_parameters=fit_global_parameters_out)
+        if compute_pattern:
+            fitted_patterns = self.build_fitted_diffraction_pattern(fit_global_parameters=fit_global_parameters_out)
+        else:
+            fitted_patterns = None
 
         self.conver = False
 
@@ -616,16 +588,37 @@ class FitterMinpackNew(FitterInterface):
 
         return ss
 
+    def __set_A_diagonal(self):
+        set_A_diagonal(self.g.get_attributes(),
+                       self.grad.get_attributes(),
+                       self.a.get_attributes(),
+                       self.c.get_attributes(),
+                       self.nfit,
+                       self._lambda,
+                       self._phi)
+
 from numba import jit
 
-
-@jit(nopython=True)
-def populate_variables(parameters, nprm, nfit):
-    variables = numpy.zeros(nfit)
-    j = -1
-    for  i in range (nprm):
+@jit
+def populate_variables(parameters, nprm, initialpar):
+    j = 0
+    for  i in range (0, nprm):
         parameter = parameters[i]
 
         if parameter.is_variable():
             j += 1
-            variables[j] = parameter
+            initialpar.setitem(j, parameter.value)
+
+@jit(nopython=True)
+def set_A_diagonal(data_g, data_grad, data_a, data_c, n, _lambda, _phi):
+    da = _lambda*_phi
+
+    for jj in range(1, n+1):
+        setitem_cvector(data_g, n, jj, -getitem_cvector(data_grad, n, jj))
+
+        l = int(jj*(jj+1)/2)
+
+        setitem_ctrimatrix(data_a, n, l, getitem_ctrimatrix(data_c, n, l)*(1.0 + _lambda) + da)
+        if jj > 1:
+            for i in range (1, jj):
+                setitem_ctrimatrix(data_a, n, l-i, getitem_ctrimatrix(data_c, n, l-i))
