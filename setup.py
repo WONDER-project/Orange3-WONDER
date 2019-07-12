@@ -52,7 +52,7 @@ ENTRY_POINTS = {
         ('Wonder = orangecontrib.wonder.view.wonder',
          ),
     'orange3.addon':
-        ('Orange3-WONDER = orangecontrib.wonder',)
+        ('Orange3-WONDER-1 = orangecontrib.wonder',)
 
 
 
