@@ -12,7 +12,7 @@ NAME = 'Orange3-WONDER-1'
 
 MAJOR = 1
 MINOR = 0
-MICRO = 0
+MICRO = 1
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 AUTHOR = 'Luca Rebuffi, Paolo Scardi, Alberto Flor'
@@ -49,7 +49,7 @@ INSTALL_REQUIRES = sorted(set(
 
 ENTRY_POINTS = {
     'orange.widgets':
-        ('Wonder = orangecontrib.wonder.view.wonder',
+        ('Wonder 1 = orangecontrib.wonder.view.wonder',
          ),
     'orange3.addon':
         ('Orange3-WONDER-1 = orangecontrib.wonder',)
