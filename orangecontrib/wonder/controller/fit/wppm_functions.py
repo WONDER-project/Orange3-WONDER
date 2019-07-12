@@ -36,6 +36,10 @@ class Normalization:
     def tuple(cls):
         return ["to N", "to N\u00b2"]
 
+def _wrapper_fit_function_direct(parameters):
+	twotheta, fit_global_parameters, diffraction_pattern_index = parameters
+
+	return fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index)
 
 def fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index = 0):
     wavelength = fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index].wavelength.value

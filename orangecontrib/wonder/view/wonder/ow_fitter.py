@@ -919,6 +919,7 @@ class OWFitter(OWGenericWidget):
         if self.IS_DEVELOP: raise self.thread_exception
 
 from PyQt5.QtCore import QThread, pyqtSignal
+import time
 
 class FitThread(QThread):
 
@@ -935,6 +936,8 @@ class FitThread(QThread):
         try:
             self.begin.emit()
 
+            t0 = time.clock()
+
             for iteration in range(1, self.fitter_widget.n_iterations + 1):
                 if self.fitter_widget.stop_fit: break
 
@@ -949,6 +952,9 @@ class FitThread(QThread):
 
                 if self.fitter_widget.stop_fit: break
                 if self.fitter_widget.fitted_fit_global_parameters.is_convergence_reached(): break
+
+            print("Fit duration: ", round(time.clock()-t0, 3), " seconds")
+
         except Exception as exception:
             self.fitter_widget.thread_exception = exception
 
