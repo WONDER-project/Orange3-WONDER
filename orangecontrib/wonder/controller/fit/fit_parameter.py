@@ -82,12 +82,12 @@ class FitParameter:
 
                 if self.boundary.max_value != PARAM_HWMAX:
                     if self.value > self.boundary.max_value:
-                        self.value = self.boundary.max_value - (self.value - self.boundary.max_value)/2
+                        self.value = max(self.boundary.min_value,
+                                         self.boundary.max_value - (self.value - self.boundary.max_value)/2)
             else:
                 if self.boundary is None: self.boundary = Boundary(min_value=self.value, max_value=self.value + 1e-12)
 
-    def to_text(self):
-
+    def __str__(self):
         if self.function:
             text = self.to_python_code() + " = " + str(self.value)
         else:
@@ -120,14 +120,6 @@ class FitParameter:
 
     def duplicate(self):
         return copy.deepcopy(self)
-
-        return FitParameter(parameter_name=self.parameter_name,
-                            value=self.value,
-                            fixed=self.fixed,
-                            function=self.function,
-                            function_value=self.function_value,
-                            boundary=None if self.boundary is None else Boundary(min_value=self.boundary.min_value,
-                                                                                 max_value=self.boundary.max_value))
 
     def is_variable(self):
         return not self.fixed and not self.function

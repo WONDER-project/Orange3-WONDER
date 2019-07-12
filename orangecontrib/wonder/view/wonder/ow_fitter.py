@@ -425,9 +425,9 @@ class OWFitter(OWGenericWidget):
                 sys.stdout = EmittingStream(textWritten=self.write_stdout)
 
                 if self.is_incremental == 0 or (self.is_incremental == 1 and self.current_iteration == 0):
-                    self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
+                    #self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
 
-                    self.fitter.init_fitter(initial_fit_global_parameters)
+                    #self.fitter.init_fitter(initial_fit_global_parameters)
                     self.current_wss = []
                     self.current_gof = []
                     self.current_iteration = 0 if self.is_incremental == 0 else self.current_iteration
@@ -446,10 +446,6 @@ class OWFitter(OWGenericWidget):
                     raise FitNotStartedException(str(e))
 
         except Exception as e:
-            print("DIO CANE")
-            for parameter in self.fit_global_parameters.get_parameters():
-                print(parameter.to_text())
-
             QMessageBox.critical(self, "Error",
                                  str(e),
                                  QMessageBox.Ok)

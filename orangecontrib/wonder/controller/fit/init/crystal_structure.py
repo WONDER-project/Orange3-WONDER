@@ -24,7 +24,7 @@ class Reflection():
         self.intensity = intensity
 
     def to_text(self):
-        return str(self.h) + ", " + str(self.k) + ", " + str(self.l) + ", "  + self.intensity.to_text()
+        return str(self.h) + ", " + str(self.k) + ", " + str(self.l) + ", "  + str(self.intensity)
 
     def to_row(self):
         text = str(self.h) + ", " + str(self.k) + ", " + str(self.l) + ", " + self.intensity.parameter_name + " "

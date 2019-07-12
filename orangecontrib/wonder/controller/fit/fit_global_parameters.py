@@ -59,12 +59,6 @@ class FitGlobalParameters(ParametersList):
     def replace_parameters(self, parameters):
         self.__parameters = parameters
 
-    def has_functions(self):
-        for parameter in self.__parameters[numpy.where(self.__parameters != None)]:
-            if parameter.function: return True
-
-        return False
-
     def get_available_parameters(self):
         text = ""
 
@@ -415,8 +409,6 @@ class FitGlobalParameters(ParametersList):
         return self
     '''
     def from_fitted_parameters(self, fitted_parameters):
-        FitGlobalParameters.compute_functions(fitted_parameters, self.free_input_parameters, self.free_output_parameters)
-
         last_index = -1
 
         if not self.fit_initialization.diffraction_patterns is None:
@@ -554,6 +546,7 @@ class FitGlobalParameters(ParametersList):
                     last_index += 1
 
         self.replace_parameters(fitted_parameters)
+        self.evaluate_functions()
 
         return self
     #'''
@@ -712,15 +705,15 @@ class FitGlobalParameters(ParametersList):
         return True
 
     @classmethod
-    def compute_functions(cls, parameters, free_input_parameters, free_output_parameters):
-        has_function = False
-
+    def parameters_have_functions(cls, parameters):
         for parameter in parameters:
-            if parameter.function:
-                has_function = True
-                break
+            if parameter.function: return True
+        return False
 
-        if has_function or free_output_parameters.get_parameters_count() > 0:
+    @classmethod
+    def compute_functions(cls, parameters, free_input_parameters, free_output_parameters):
+
+        if cls.parameters_have_functions(parameters) or free_output_parameters.get_parameters_count() > 0:
             python_code = "import numpy\nfrom numpy import *\n\n"
             python_code += free_input_parameters.to_python_code()
 
@@ -748,6 +741,15 @@ class FitGlobalParameters(ParametersList):
                     parameter.value = float(parameters_dictionary[parameter.parameter_name])
 
             free_output_parameters.set_functions_values(parameters_dictionary)
+
+    def __str__(self):
+        parameters = self.get_parameters(good_only=True)
+        text = ""
+
+        for parameter in parameters:
+            text += str(parameter) + "\n"
+
+        return text
 
 class FitSpaceParameters:
     def __init__(self, fit_global_parameters):

@@ -58,7 +58,7 @@ class MinpackData:
 
         return text
 
-class FitterMinpack(FitterInterface):
+class FitterMinpackNew(FitterInterface):
 
     def __init__(self):
         super().__init__()
@@ -130,13 +130,15 @@ class FitterMinpack(FitterInterface):
         self.conver = False
         self.exitflag  = False
 
-        j = 0
-        for  i in range (0, self.nprm):
-            parameter = self.parameters[i]
+        populate_variables([parameter.value for parameter in self.parameters], self.nprm, self.nfit)
 
-            if parameter.is_variable():
-                j += 1
-                self.initialpar.setitem(j, parameter.value)
+
+        #j = 0
+        #for  i in range (0, self.nprm):
+        #    parameter = self.parameters[i]
+        #    if parameter.is_variable():
+        #        j += 1
+        #        self.initialpar.setitem(j, parameter.value)
 
         print("Fitter Initialization done.")
 
@@ -166,12 +168,15 @@ class FitterMinpack(FitterInterface):
 
             self.c.assign(self.a) #save the matrix A and the current value of the parameters
 
-            j = 0
-            for i in range(0, self.nprm):
-                if self.parameters[i].is_variable():
-                    j += 1
-                    self.initialpar.setitem(j, self.parameters[i].value)
-                    self.currpar.setitem(j, self.initialpar.getitem(j))
+            populate_variables(self.parameters, self.nprm, self.initialpar)
+            self.currpar.set_attributes(self.initialpar.get_attributes())
+
+            #j = 0
+            #for i in range(0, self.nprm):
+            #    if self.parameters[i].is_variable():
+            #        j += 1
+            #        self.initialpar.setitem(j, self.parameters[i].value)
+            #        self.currpar.setitem(j, self.initialpar.getitem(j))
 
             print("point 1, currparr")
             for index in range(0, self.currpar.getSize()):
@@ -611,4 +616,16 @@ class FitterMinpack(FitterInterface):
 
         return ss
 
+from numba import jit
 
+
+@jit(nopython=True)
+def populate_variables(parameters, nprm, nfit):
+    variables = numpy.zeros(nfit)
+    j = -1
+    for  i in range (nprm):
+        parameter = parameters[i]
+
+        if parameter.is_variable():
+            j += 1
+            variables[j] = parameter

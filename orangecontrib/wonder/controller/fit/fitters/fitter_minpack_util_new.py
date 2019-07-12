@@ -9,40 +9,46 @@ import numpy
 class CVector:
 
     def __init__(self, _n=0):
-        self._create_attributes(_n)
+        self.__create_attributes(_n)
 
     def setSize(self, _n):
         if self.n != _n:
-            self._create_attributes(_n)
+            self.__create_attributes(_n)
 
-    def _create_attributes(self, _n):
+    def __create_attributes(self, _n):
         self.n = _n
 
         if self.n > 0:
-            self.data = numpy.zeros(self.n)
+            self.__data = numpy.zeros(self.n)
         else:
-            self.data = None
+            self.__data = None
 
     def getSize(self):
         return self.n
 
+    def set_attributes(self, data):
+        self.__data = copy.deepcopy(data)
+
+    def get_attributes(self):
+        return self.__data
+
     #inline double &operator [] (int i) const { assert(i<n); return data[i]; }
     def __getitem__(self, index):
         assert  index < self.n
-        return self.data[index]
+        return self.__data[index]
 
     def __setitem__(self, index, value):
         assert  index < self.n
-        self.data[index] = value
+        self.__data[index] = value
 
     #inline double &operator () (int i) const { assert(i<=n); return data[i-1]; }
     def getitem(self, i):
         assert  i <= self.n
-        return self.data[i-1]
+        return self.__data[i - 1]
 
     def setitem(self, i, value):
         assert  i <= self.n
-        self.data[i-1]=value
+        self.__data[i - 1]=value
 
     #CVector &operator - ()
 	#{
@@ -52,7 +58,7 @@ class CVector:
 	#}
     def __neg__(self):
         for i in range(0, self.n):
-            self.data[i] = -self.data[i]
+            self.__data[i] = -self.__data[i]
 
         return self;
 
@@ -61,8 +67,8 @@ class CVector:
 
     def __str__(self):
         str = ""
-        if not self.data is None:
-            for item in self.data:
+        if not self.__data is None:
+            for item in self.__data:
                 str += "%4.4f\n"%item
         return str
 
