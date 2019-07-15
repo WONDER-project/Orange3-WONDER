@@ -70,9 +70,6 @@ class CVector:
                 str += "%4.4f\n"%item
         return str
 
-
-
-
 class CMatrix:
 
     def __init__(self, _n=0, _m=0):
@@ -96,6 +93,10 @@ class CMatrix:
 
     def get_attributes(self):
         return self.__data
+
+    def set_attributes(self, data):
+        self.__data = copy.deepcopy(data)
+        self.__n, self.__m = self.__data.shape()
 
     #inline double *operator [] (int i)		  const { assert(i<n);  return idx[i]; }
     def __getitem__(self, index):
