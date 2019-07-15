@@ -114,7 +114,7 @@ class FitterMinpackNew(FitterInterface):
         self.c = self.__get_zero_trimatrix() #CTriMatrix(_n=self.nr_parameters_to_fit)
 
         self.g                    = self.__get_zero_vector()
-        self.gradient                 = self.__get_zero_vector()
+        self.gradient             = self.__get_zero_vector()
         self.current_pararameters = self.__get_zero_vector()
         self.initial_parameters   = self.__get_zero_vector()
 
