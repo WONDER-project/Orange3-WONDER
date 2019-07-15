@@ -30,7 +30,7 @@ class CVector:
         return self.__n
 
     def set_attributes(self, data):
-        self.__data = copy.deepcopy(data)
+        self.__data = data
 
     def get_attributes(self):
         return self.__data
@@ -95,8 +95,8 @@ class CMatrix:
         return self.__data
 
     def set_attributes(self, data):
-        self.__data = copy.deepcopy(data)
-        self.__n, self.__m = self.__data.shape()
+        self.__data = data
+        self.__n, self.__m = self.__data.shape
 
     #inline double *operator [] (int i)		  const { assert(i<n);  return idx[i]; }
     def __getitem__(self, index):
@@ -197,8 +197,8 @@ class CTriMatrix:
     def chodec(self):
         return _chodec_ctrimatrix(self.__data, self.__n)
 
-    def choback(self, g=CVector()):
-        _choback_ctrimatrix(self.__data, self.__n, g.get_attributes())
+    def choback(self, g):
+        _choback_ctrimatrix(self.__data, self.__n, g)
 
     def zero(self):
         self.__init__(self.__n)

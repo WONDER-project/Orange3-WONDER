@@ -111,10 +111,16 @@ class FitterMinpackNew(FitterInterface):
 
         self.a = CTriMatrix(_n=self.nr_parameters_to_fit)
         self.c = CTriMatrix(_n=self.nr_parameters_to_fit)
-        self.g = CVector(_n=self.nr_parameters_to_fit)
-        self.grad = CVector(_n=self.nr_parameters_to_fit)
-        self.current_pararameters = CVector(_n=self.nr_parameters_to_fit)
-        self.initial_parameters = CVector(_n=self.nr_parameters_to_fit)
+
+        #self.g = CVector(_n=self.nr_parameters_to_fit)
+        #self.grad = CVector(_n=self.nr_parameters_to_fit)
+        #self.current_pararameters = CVector(_n=self.nr_parameters_to_fit)
+        #self.initial_parameters = CVector(_n=self.nr_parameters_to_fit)
+
+        self.g                    = numpy.zeros(self.nr_parameters_to_fit)
+        self.grad                 = numpy.zeros(self.nr_parameters_to_fit)
+        self.current_pararameters = numpy.zeros(self.nr_parameters_to_fit)
+        self.initial_parameters   = numpy.zeros(self.nr_parameters_to_fit)
 
         self.mighell = False
 
@@ -154,14 +160,14 @@ class FitterMinpackNew(FitterInterface):
 
             #zero the working arrays
             self.a.zero()
-            self.grad.zero()
+            self.grad = numpy.zeros(self.nr_parameters_to_fit)
 
             self.set()
 
             self.c.assign(self.a) #save the matrix A and the current value of the parameters
 
             self.__populate_variables()
-            self.current_pararameters.set_attributes(self.initial_parameters.get_attributes())
+            self.current_pararameters = copy.deepcopy(self.initial_parameters)
 
             # emulate C++ do ... while cycle
             do_cycle = True
@@ -193,14 +199,10 @@ class FitterMinpackNew(FitterInterface):
                         nr_0_elements_in_g = 0
                         i = 0
                         for j in self.variable_indexes:
-                            i += 1
-
-                            # update value of parameter
-                            #  apply the required constraints (min/max)
-                            self.parameters[j].set_value(self.current_pararameters.getitem(i) + nr_cycles * self.g.getitem(i))
-
+                            self.parameters[j].set_value(self.current_pararameters[i] + nr_cycles * self.g[i])
                             # check number of parameters reaching convergence
-                            if (abs(self.g.getitem(i))<=abs(PRCSN*self.current_pararameters.getitem(i))): nr_0_elements_in_g += 1
+                            if (abs(self.g[i])<=abs(PRCSN*self.current_pararameters[i])): nr_0_elements_in_g += 1
+                            i += 1
 
                         # calculate functions
                         if self.has_functions:
@@ -229,10 +231,10 @@ class FitterMinpackNew(FitterInterface):
 
                         i = 0
                         for j in self.variable_indexes:
-                            i += 1
                             # update value of parameter
                             #  apply the required constraints (min/max)
-                            self.parameters[j].set_value(self.current_pararameters.getitem(i) + nr_cycles * self.g.getitem(i))
+                            self.parameters[j].set_value(self.current_pararameters[i] + nr_cycles * self.g[i])
+                            i += 1
 
                         # calculate functions
                         if self.has_functions:
@@ -249,9 +251,8 @@ class FitterMinpackNew(FitterInterface):
                         self.old_wss     = self.wss
                         self.exit_flag   = True
 
-                        for ii in range(1, len(self.variable_indexes) + 1):
-                            # update value of parameter
-                            self.initial_parameters.setitem(ii, self.current_pararameters.getitem(ii) + nr_cycles * self.g.getitem(ii))
+                        for i in range(self.nr_parameters_to_fit):
+                            self.initial_parameters[i] = self.current_pararameters[i] + nr_cycles * self.g[i]
 
                     self.build_minpack_data()
 
@@ -273,10 +274,10 @@ class FitterMinpackNew(FitterInterface):
                 # last line of the while loop
                 do_cycle = not self.exit_flag and not self.converged
 
-            j = 0
+            j = -1
             for i in self.variable_indexes:
                 j += 1
-                self.parameters[i].set_value(self.initial_parameters.getitem(j))
+                self.parameters[i].set_value(self.initial_parameters[j])
 
             if self.has_functions:
                 FitGlobalParameters.compute_functions(self.parameters,
@@ -296,13 +297,13 @@ class FitterMinpackNew(FitterInterface):
         errors = numpy.zeros(self.nr_parameters)
 
         self.a.zero()
-        self.grad.zero()
+        self.grad = numpy.zeros(self.nr_parameters_to_fit)
         self.set()
 
         if self.a.chodec() == 0: # Cholesky decomposition
             k = 0
             for i in self.variable_indexes:
-                self.g.zero()
+                self.g = numpy.zeros(self.nr_parameters_to_fit)
                 self.g[k] = 1.0
                 self.a.choback(self.g)
                 errors[i] = numpy.sqrt(numpy.abs(self.g[k]))
@@ -326,21 +327,21 @@ class FitterMinpackNew(FitterInterface):
     def set(self):
         fitted_values_list = self.get_fitted_values_list()
 
-        fmm = self.get_weighted_delta(fitted_values_list)
-        deriv = self.get_derivative(fitted_values_list)
+        weighted_delta = self.get_weighted_delta(fitted_values_list)
+        derivative     = self.get_derivative(fitted_values_list)
 
         for index in range(self.diffraction_patterns_number):
-            deriv_i = deriv[index]
-            fmm_i = fmm[index]
+            derivative_i = derivative[index]
+            weighted_delta_i = weighted_delta[index]
 
             for i in range(1, self.nr_points_list[index] + 1):
-                for jj in range(1, self.nr_parameters_to_fit + 1):
+                for j in range(1, self.nr_parameters_to_fit + 1):
 
-                    l = int(jj * (jj - 1) / 2)
-                    self.grad.setitem(jj, self.grad.getitem(jj) + deriv_i.getitem(jj, i) * fmm_i[i - 1])
+                    l = int(j * (j - 1) / 2)
+                    self.grad[j-1] = self.grad[j-1] + derivative_i.getitem(j, i) * weighted_delta_i[i - 1]
 
-                    for k in range(1, jj + 1):
-                        self.a.setitem(l + k, self.a.getitem(l + k) + deriv_i.getitem(jj, i) * deriv_i.getitem(k, i))
+                    for k in range(1, j + 1):
+                        self.a.setitem(l + k, self.a.getitem(l + k) + derivative_i.getitem(j, i) * derivative_i.getitem(k, i))
 
     def finalize_fit(self):
         pass
@@ -407,18 +408,10 @@ class FitterMinpackNew(FitterInterface):
             error_experimental = self.error_experimental_list[index]
             fitted_values = fitted_values_list[index]
 
-            fmm_i = numpy.zeros(self.nr_points_list[index])
+            cursor = numpy.where(error_experimental!=0.0)
 
-            for i in range (0, self.nr_points_list[index]):
-                if error_experimental[i] == 0:
-                    fmm_i[i] = 0
-                else:
-                    fmm_i[i] = (fitted_values[i] - intensity_experimental[i])/error_experimental[i]
-
-            #nonzero_error = numpy.where(error_experimental!=0.0)
-            #fmm_i[nonzero_error] = (y[nonzero_error] - intensity_experimental[nonzero_error])/error_experimental[nonzero_error]
-
-            fmm[index] = fmm_i
+            fmm[index]         = numpy.zeros(self.nr_points_list[index])
+            fmm[index][cursor] = (fitted_values[cursor] - intensity_experimental[cursor])/error_experimental[cursor]
 
         return fmm
 
@@ -430,13 +423,12 @@ class FitterMinpackNew(FitterInterface):
         for index in range(self.diffraction_patterns_number):
             twotheta_experimental = self.twotheta_experimental_list[index]
             error_experimental = self.error_experimental_list[index]
-
             fitted_values = fitted_values_list[index]
 
-            nr_points_i = self.nr_points_list[index]
-            derivative_i = CMatrix(self.nr_parameters_to_fit, nr_points_i)
+            nr_points_i  = self.nr_points_list[index]
+            derivative_i = numpy.zeros((self.nr_parameters_to_fit, nr_points_i))
 
-            jj = 0
+            j = 0
             for k in self.variable_indexes:
                 parameter = self.parameters[k]
 
@@ -448,14 +440,14 @@ class FitterMinpackNew(FitterInterface):
                     d = pk*step
                     parameter.set_value(pk * (1.0 + step))
 
-                    derivative_i[jj] = fit_function_direct(twotheta_experimental,
+                    derivative_i[j, :] = fit_function_direct(twotheta_experimental,
                                                            self.fit_global_parameters.from_fitted_parameters(self.parameters),
                                                            diffraction_pattern_index=index)
                 else:
                     d = step
                     parameter.set_value(pk + d)
 
-                    derivative_i[jj] = fit_function_direct(twotheta_experimental,
+                    derivative_i[j, :] = fit_function_direct(twotheta_experimental,
                                                            self.fit_global_parameters.from_fitted_parameters(self.parameters),
                                                            diffraction_pattern_index=index)
 
@@ -463,12 +455,13 @@ class FitterMinpackNew(FitterInterface):
 
                 for i in range(0, nr_points_i):
                     if error_experimental[i] == 0:
-                        derivative_i[jj][i] = 0.0
+                        derivative_i[j, i] = 0.0
                     else:
-                        derivative_i[jj][i] = (derivative_i[jj][i] - fitted_values[i]) / (d * error_experimental[i])
-                jj += 1
+                        derivative_i[j, i] = (derivative_i[j, i] - fitted_values[i]) / (d * error_experimental[i])
+                j += 1
 
-            derivative[index] = derivative_i
+            derivative[index] = CMatrix()
+            derivative[index].set_attributes(derivative_i)
 
         return derivative
 
@@ -511,8 +504,8 @@ class FitterMinpackNew(FitterInterface):
         return ssq
 
     def __set_A_diagonal(self):
-        set_A_diagonal(self.g.get_attributes(),
-                       self.grad.get_attributes(),
+        set_A_diagonal(self.g,
+                       self.grad,
                        self.a.get_attributes(),
                        self.c.get_attributes(),
                        self.nr_parameters_to_fit,
@@ -520,33 +513,31 @@ class FitterMinpackNew(FitterInterface):
                        self._phi)
 
     def __populate_variables(self):
-        populate_variables(self.parameters, self.nr_parameters, self.initial_parameters)
+        populate_variables(self.parameters, self.variable_indexes, self.initial_parameters)
 
 # performance improvement
 from numba import jit
 
 @jit
-def populate_variables(parameters, nprm, initial_parameters):
+def populate_variables(parameters, variable_indexes, initial_parameters):
     j = 0
-    for  i in range (0, nprm):
-        parameter = parameters[i]
-
-        if parameter.is_variable():
-            j += 1
-            initial_parameters.setitem(j, parameter.value)
+    for i in variable_indexes:
+        initial_parameters[j] = parameters[i].value
+        j += 1
 
 @jit(nopython=True)
 def set_A_diagonal(data_g, data_grad, data_a, data_c, n, _lambda, _phi):
     da = _lambda*_phi
 
-    for jj in range(1, n+1):
-        setitem_cvector(data_g, n, jj, -getitem_cvector(data_grad, n, jj))
+    for j in range(1, n+1):
+        data_g[j-1] = -data_grad[j-1]
+        #setitem_cvector(data_g, n, j, -getitem_cvector(data_grad, n, j))
 
-        l = int(jj*(jj+1)/2)
+        l = int(j*(j+1)/2)
 
         setitem_ctrimatrix(data_a, n, l, getitem_ctrimatrix(data_c, n, l)*(1.0 + _lambda) + da)
-        if jj > 1:
-            for i in range (1, jj):
+        if j > 1:
+            for i in range (1, j):
                 setitem_ctrimatrix(data_a, n, l-i, getitem_ctrimatrix(data_c, n, l-i))
 
 @jit(nopython=True)
