@@ -1,5 +1,6 @@
 h5py
-Orange3>=3.20
+numba
+Orange3>=3.22
 numpy
 scipy
 matplotlib
