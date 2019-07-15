@@ -2,12 +2,13 @@ from orangecontrib.wonder.controller.fit.fitter import FitterInterface
 
 from orangecontrib.wonder.model.diffraction_pattern import DiffractionPattern, DiffractionPoint
 from orangecontrib.wonder.controller.fit.fit_parameter import PARAM_ERR
-from orangecontrib.wonder.controller.fit.fitters.fitter_minpack_util_new import *
 from orangecontrib.wonder.controller.fit.wppm_functions import fit_function_direct
-from orangecontrib.wonder.controller.fit.wppm_functions_multipool import fit_function_direct_multipool
+#from orangecontrib.wonder.controller.fit.wppm_functions_multipool import fit_function_direct_multipool
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters
 
+import numpy
 import time
+import copy
 
 PRCSN = 2.5E-7
 
@@ -109,18 +110,13 @@ class FitterMinpackNew(FitterInterface):
             if self.parameters[i].is_variable():
                 self.variable_indexes.append(i)
 
-        self.a = CTriMatrix(_n=self.nr_parameters_to_fit)
-        self.c = CTriMatrix(_n=self.nr_parameters_to_fit)
+        self.a = self.__get_zero_trimatrix() #CTriMatrix(_n=self.nr_parameters_to_fit)
+        self.c = self.__get_zero_trimatrix() #CTriMatrix(_n=self.nr_parameters_to_fit)
 
-        #self.g = CVector(_n=self.nr_parameters_to_fit)
-        #self.grad = CVector(_n=self.nr_parameters_to_fit)
-        #self.current_pararameters = CVector(_n=self.nr_parameters_to_fit)
-        #self.initial_parameters = CVector(_n=self.nr_parameters_to_fit)
-
-        self.g                    = numpy.zeros(self.nr_parameters_to_fit)
-        self.grad                 = numpy.zeros(self.nr_parameters_to_fit)
-        self.current_pararameters = numpy.zeros(self.nr_parameters_to_fit)
-        self.initial_parameters   = numpy.zeros(self.nr_parameters_to_fit)
+        self.g                    = self.__get_zero_vector()
+        self.gradient                 = self.__get_zero_vector()
+        self.current_pararameters = self.__get_zero_vector()
+        self.initial_parameters   = self.__get_zero_vector()
 
         self.mighell = False
 
@@ -156,15 +152,15 @@ class FitterMinpackNew(FitterInterface):
             #number of increments in lambda
             self.nr_increments = 0
 
-            start_time = time.clock()
+            #start_time = time.clock()
 
             #zero the working arrays
-            self.a.zero()
-            self.grad = numpy.zeros(self.nr_parameters_to_fit)
+            self.a        = self.__get_zero_trimatrix()
+            self.gradient = self.__get_zero_vector()
 
             self.set()
 
-            self.c.assign(self.a) #save the matrix A and the current value of the parameters
+            self.c = copy.deepcopy(self.a) #save the matrix A and the current value of the parameters
 
             self.__populate_variables()
             self.current_pararameters = copy.deepcopy(self.initial_parameters)
@@ -179,13 +175,13 @@ class FitterMinpackNew(FitterInterface):
                 self.converged = False
 
                 #set the diagonal of A to be A*(1+lambda)+phi*lambda
-                self.__set_A_diagonal()
+                self.__set_a_diagonal()
 
-                if self.a.chodec() == 0: # Cholesky decomposition
+                if self.__cholesky_decomposition_a() == 0: # Cholesky decomposition
                     # the matrix is inverted, so calculate g (change in the
                     # parameters) by back substitution
 
-                    self.a.choback(self.g)
+                    self.__cholesky_back_substitution_a()
 
                     previous_wss = self.old_wss
                     nr_cycles = 1
@@ -201,7 +197,7 @@ class FitterMinpackNew(FitterInterface):
                         for j in self.variable_indexes:
                             self.parameters[j].set_value(self.current_pararameters[i] + nr_cycles * self.g[i])
                             # check number of parameters reaching convergence
-                            if (abs(self.g[i])<=abs(PRCSN*self.current_pararameters[i])): nr_0_elements_in_g += 1
+                            if (abs(self.g[i]) <= abs(PRCSN*self.current_pararameters[i])): nr_0_elements_in_g += 1
                             i += 1
 
                         # calculate functions
@@ -296,16 +292,17 @@ class FitterMinpackNew(FitterInterface):
 
         errors = numpy.zeros(self.nr_parameters)
 
-        self.a.zero()
-        self.grad = numpy.zeros(self.nr_parameters_to_fit)
+        self.a = self.__get_zero_trimatrix()
+        self.gradient = self.__get_zero_vector()
+
         self.set()
 
-        if self.a.chodec() == 0: # Cholesky decomposition
+        if self.__cholesky_decomposition_a() == 0: # Cholesky decomposition
             k = 0
             for i in self.variable_indexes:
                 self.g = numpy.zeros(self.nr_parameters_to_fit)
                 self.g[k] = 1.0
-                self.a.choback(self.g)
+                self.__cholesky_back_substitution_a()
                 errors[i] = numpy.sqrt(numpy.abs(self.g[k]))
                 k += 1
         else:
@@ -327,21 +324,21 @@ class FitterMinpackNew(FitterInterface):
     def set(self):
         fitted_values_list = self.get_fitted_values_list()
 
-        weighted_delta = self.get_weighted_delta(fitted_values_list)
-        derivative     = self.get_derivative(fitted_values_list)
+        weighted_delta = self.__get_weighted_delta(fitted_values_list)
+        derivative     = self.__get_derivative(fitted_values_list)
 
         for index in range(self.diffraction_patterns_number):
             derivative_i = derivative[index]
             weighted_delta_i = weighted_delta[index]
 
-            for i in range(1, self.nr_points_list[index] + 1):
-                for j in range(1, self.nr_parameters_to_fit + 1):
+            for i in range(self.nr_points_list[index]):
+                for j in range(self.nr_parameters_to_fit):
+                    l = int(j * (j + 1) / 2)
 
-                    l = int(j * (j - 1) / 2)
-                    self.grad[j-1] = self.grad[j-1] + derivative_i.getitem(j, i) * weighted_delta_i[i - 1]
+                    self.gradient[j] += derivative_i[j, i] * weighted_delta_i[i]
 
-                    for k in range(1, j + 1):
-                        self.a.setitem(l + k, self.a.getitem(l + k) + derivative_i.getitem(j, i) * derivative_i.getitem(k, i))
+                    for k in range(j+1):
+                        self.a[l+k] += derivative_i[j, i] * derivative_i[k, i]
 
     def finalize_fit(self):
         pass
@@ -398,24 +395,20 @@ class FitterMinpackNew(FitterInterface):
 
         return nr_parameters_to_fit
 
-    def get_weighted_delta(self, fitted_values_list=None):
+    def __get_weighted_delta(self, fitted_values_list=None):
         if fitted_values_list is None: fitted_values_list = self.get_fitted_values_list()
 
-        fmm = numpy.full(self.diffraction_patterns_number, None)
+        weighted_delta = numpy.full(self.diffraction_patterns_number, None)
 
         for index in range(self.diffraction_patterns_number):
-            intensity_experimental = self.intensity_experimental_list[index]
-            error_experimental = self.error_experimental_list[index]
-            fitted_values = fitted_values_list[index]
+            weighted_delta[index] = get_weighted_delta(fitted_values_list[index],
+                                                       self.intensity_experimental_list[index],
+                                                       self.error_experimental_list[index],
+                                                       self.nr_points_list[index])
 
-            cursor = numpy.where(error_experimental!=0.0)
+        return weighted_delta
 
-            fmm[index]         = numpy.zeros(self.nr_points_list[index])
-            fmm[index][cursor] = (fitted_values[cursor] - intensity_experimental[cursor])/error_experimental[cursor]
-
-        return fmm
-
-    def get_derivative(self, fitted_values_list=None):
+    def __get_derivative(self, fitted_values_list=None):
         if fitted_values_list is None: fitted_values_list = self.get_fitted_values_list()
 
         derivative = numpy.full(self.diffraction_patterns_number, None)
@@ -441,27 +434,23 @@ class FitterMinpackNew(FitterInterface):
                     parameter.set_value(pk * (1.0 + step))
 
                     derivative_i[j, :] = fit_function_direct(twotheta_experimental,
-                                                           self.fit_global_parameters.from_fitted_parameters(self.parameters),
-                                                           diffraction_pattern_index=index)
+                                                             self.fit_global_parameters.from_fitted_parameters(self.parameters),
+                                                             diffraction_pattern_index=index)
                 else:
                     d = step
                     parameter.set_value(pk + d)
 
                     derivative_i[j, :] = fit_function_direct(twotheta_experimental,
-                                                           self.fit_global_parameters.from_fitted_parameters(self.parameters),
-                                                           diffraction_pattern_index=index)
+                                                             self.fit_global_parameters.from_fitted_parameters(self.parameters),
+                                                             diffraction_pattern_index=index)
 
                 parameter.set_value(pk)
 
-                for i in range(0, nr_points_i):
-                    if error_experimental[i] == 0:
-                        derivative_i[j, i] = 0.0
-                    else:
-                        derivative_i[j, i] = (derivative_i[j, i] - fitted_values[i]) / (d * error_experimental[i])
+                set_derivative(derivative_i, fitted_values, error_experimental, nr_points_i, d, j)
+
                 j += 1
 
-            derivative[index] = CMatrix()
-            derivative[index].set_attributes(derivative_i)
+            derivative[index] = derivative_i
 
         return derivative
 
@@ -471,11 +460,11 @@ class FitterMinpackNew(FitterInterface):
         wssq = 0.0
 
         for index in range(self.diffraction_patterns_number):
-            fitted_values = fitted_values_list[index]
-            intensity_experimental = self.intensity_experimental_list[index]
-            error_experimental = self.error_experimental_list[index]
-
-            wssq += get_wssq(fitted_values, intensity_experimental, error_experimental, self.nr_points_list[index], self.mighell)
+            wssq += get_wssq(fitted_values_list[index],
+                             self.intensity_experimental_list[index],
+                             self.error_experimental_list[index],
+                             self.nr_points_list[index],
+                             self.mighell)
 
         return wssq
 
@@ -485,11 +474,11 @@ class FitterMinpackNew(FitterInterface):
         wssq = 0.0
 
         for index in range(self.diffraction_patterns_number):
-            fitted_values = fitted_values_list[index]
-            intensity_experimental = self.intensity_experimental_list[index]
-            error_experimental = self.error_experimental_list[index]
-
-            wssq += get_wssq_from_data(fitted_values , intensity_experimental, error_experimental, self.nr_points_list[index], self.mighell)
+            wssq += get_wssq_from_data(fitted_values_list[index],
+                                       self.intensity_experimental_list[index],
+                                       self.error_experimental_list[index],
+                                       self.nr_points_list[index],
+                                       self.mighell)
 
         return wssq
 
@@ -499,21 +488,37 @@ class FitterMinpackNew(FitterInterface):
         ssq = 0.0
 
         for index in range(self.diffraction_patterns_number):
-            ssq += get_ssq_from_data(fitted_values_list[index], self.intensity_experimental_list[index], self.nr_points_list[index], self.mighell)
+            ssq += get_ssq_from_data(fitted_values_list[index],
+                                     self.intensity_experimental_list[index],
+                                     self.nr_points_list[index],
+                                     self.mighell)
 
         return ssq
 
-    def __set_A_diagonal(self):
-        set_A_diagonal(self.g,
-                       self.grad,
-                       self.a.get_attributes(),
-                       self.c.get_attributes(),
+    def __set_a_diagonal(self):
+        set_a_diagonal(self.g,
+                       self.gradient,
+                       self.a,
+                       self.c,
                        self.nr_parameters_to_fit,
                        self._lambda,
                        self._phi)
 
+    def __cholesky_decomposition_a(self):
+        return cholesky_decomposition_a(self.a, self.nr_parameters_to_fit)
+
+    def __cholesky_back_substitution_a(self):
+        cholesky_back_substitution_a(self.a, self.nr_parameters_to_fit, self.g)
+
     def __populate_variables(self):
-        populate_variables(self.parameters, self.variable_indexes, self.initial_parameters)
+        self.initial_parameters[:] = [parameter.value for parameter in self.parameters[self.variable_indexes]]
+
+    def __get_zero_vector(self):
+        return numpy.zeros(self.nr_parameters_to_fit)
+
+    def __get_zero_trimatrix(self):
+        return numpy.zeros(int(self.nr_parameters_to_fit * (self.nr_parameters_to_fit + 1) / 2))
+
 
 # performance improvement
 from numba import jit
@@ -526,19 +531,81 @@ def populate_variables(parameters, variable_indexes, initial_parameters):
         j += 1
 
 @jit(nopython=True)
-def set_A_diagonal(data_g, data_grad, data_a, data_c, n, _lambda, _phi):
+def set_a_diagonal(g, grad, a, c, n, _lambda, _phi):
     da = _lambda*_phi
-
     for j in range(1, n+1):
-        data_g[j-1] = -data_grad[j-1]
-        #setitem_cvector(data_g, n, j, -getitem_cvector(data_grad, n, j))
-
-        l = int(j*(j+1)/2)
-
-        setitem_ctrimatrix(data_a, n, l, getitem_ctrimatrix(data_c, n, l)*(1.0 + _lambda) + da)
+        g[j-1] = -grad[j-1]
+        l = int(j*(j+1)/2)-1
+        a[l] = c[l] *(1.0 + _lambda) + da
         if j > 1:
-            for i in range (1, j):
-                setitem_ctrimatrix(data_a, n, l-i, getitem_ctrimatrix(data_c, n, l-i))
+            for i in range(1, j):
+                a[l-i] = c[l-i]
+
+@jit(nopython=True)
+def cholesky_decomposition_a(a, n):
+    for j in range(1, n+1):
+        l = int(j*(j+1)/2) - 1
+
+        if j>1:
+            for i in range(j, n+1):
+                k1 = int(i*(i-1)/2+j) - 1
+                f = a[k1]
+                for k in range(1, j): f -= a[k1-k]*a[l-k]
+                a[k1] = f
+
+        if a[l] > 0:
+            f = numpy.sqrt(a[l])
+            for i in range(j, n+1):
+                a[int(i*(i-1)/2+j) - 1] /= f
+        else:
+            return -1 # negative diagonal
+
+    return 0
+
+@jit(nopython=True)
+def cholesky_back_substitution_a(a, n, g):
+    g[0] /= a[0]
+
+    if n > 1:
+        l=0
+        for i in range(1, n):
+            k=i
+            for j in range(k):
+                l += 1
+                g[i] -= a[l]*g[j]
+            l += 1
+            g[i] /= a[l]
+
+    g[int(n-1)] /= a[int(n*(n+1)/2)-1]
+
+    if n > 1:
+        for k1 in range(2, n + 1):
+            i = n + 2 - k1
+            k = i-1
+            l = int(i*k/2)
+
+            for j in range(k):
+                g[j] -= g[k]*a[l+j]
+
+            g[k-1] /= a[l-1]
+
+@jit(nopython=True)
+def get_weighted_delta(fitted_values, intensity_experimental, error_experimental, nr_points):
+    weighted_delta_i = numpy.zeros(nr_points)
+
+    for i in range(nr_points):
+        if error_experimental[i] != 0.0:
+            weighted_delta_i[i] = (fitted_values[i] - intensity_experimental[i])/error_experimental[i]
+
+    return weighted_delta_i
+
+@jit(nopython=True)
+def set_derivative(derivative, fitted_values, error_experimental, nr_points, d, j):
+    for i in range(0, nr_points):
+        if error_experimental[i] == 0:
+            derivative[j, i] = 0.0
+        else:
+            derivative[j, i] = (derivative[j, i] - fitted_values[i]) / (d * error_experimental[i])
 
 @jit(nopython=True)
 def get_wssq(fitted_values, intensity_experimental, error_experimental, nr_points, mighell):
