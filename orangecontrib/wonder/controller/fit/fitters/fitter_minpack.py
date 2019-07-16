@@ -57,11 +57,11 @@ class MinpackData:
 
     def print_fit_data(self):
         print("\nCurrent fit results:\n\n",
-              "  LAMBDA: %d \n" % self.calc_lambda,
-              "  wss: %d \n" % self.wss,
-              "  ss : %d \n" % self.ss,
-              "  wsq: %d \n" % self.wsq,
-              "  gof: %d \n" % self.gof())
+              "  LAMBDA: %f \n" % self.calc_lambda,
+              "  wss: %f \n" % self.wss,
+              "  ss : %f \n" % self.ss,
+              "  wsq: %f \n" % self.wsq,
+              "  gof: %f \n" % self.gof())
 
 class FitterMinpack(FitterInterface):
 
@@ -281,7 +281,7 @@ class FitterMinpack(FitterInterface):
                                                       current_fit_global_parameters.free_input_parameters,
                                                       current_fit_global_parameters.free_output_parameters)
 
-        if compute_errors:
+        if compute_errors or self.converged:
             errors = numpy.zeros(self.nr_parameters)
 
             self.__initialize_a_and_gradient()
@@ -303,7 +303,7 @@ class FitterMinpack(FitterInterface):
 
         fit_global_parameters_out.set_convergence_reached(self.converged)
 
-        if compute_pattern:
+        if compute_pattern or self.converged:
             fitted_patterns = self.build_fitted_diffraction_pattern(fit_global_parameters=fit_global_parameters_out)
         else:
             fitted_patterns = None

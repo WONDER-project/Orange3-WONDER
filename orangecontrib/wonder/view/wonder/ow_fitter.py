@@ -121,7 +121,6 @@ class OWFitter(OWGenericWidget):
 
         self.cb_fitter = orangegui.comboBox(main_box, self, "fitter_name", label="Fit algorithm", items=FitterName.tuple(), orientation="horizontal")
 
-
         iteration_box = gui.widgetBox(main_box, "", orientation="horizontal", width=250)
 
         gui.lineEdit(iteration_box, self, "n_iterations", "Nr. Iterations", labelWidth=80, valueType=int, validator=QIntValidator())
@@ -272,7 +271,6 @@ class OWFitter(OWGenericWidget):
 
         boxl.layout().addWidget(self.plot_ipf_fwhm)
 
-
         box = gui.widgetBox(self.tab_plot_eta, "", orientation="horizontal")
 
         boxl = gui.widgetBox(box, "", orientation="vertical")
@@ -343,11 +341,18 @@ class OWFitter(OWGenericWidget):
 
     def set_interactive(self):
         self.cb_show_wss_gof.setEnabled(self.is_interactive==1)
+
         if not self.fit_global_parameters is None:
-            self.cb_show_ipf.setEnabled(not self.fit_global_parameters.instrumental_parameters is None and self.is_interactive==1)
-            self.cb_show_shift.setEnabled(not self.fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__) is None and self.is_interactive==1)
-            self.cb_show_size.setEnabled(not self.fit_global_parameters.size_parameters is None and self.is_interactive==1)
-            self.cb_show_warren.setEnabled(not self.fit_global_parameters.strain_parameters is None and self.is_interactive==1)
+            if self.is_interactive == 1:
+                self.cb_show_ipf.setEnabled(not self.fit_global_parameters.instrumental_parameters is None)
+                self.cb_show_shift.setEnabled(not self.fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__) is None)
+                self.cb_show_size.setEnabled(not self.fit_global_parameters.size_parameters is None)
+                self.cb_show_warren.setEnabled(not self.fit_global_parameters.strain_parameters is None)
+            else:
+                self.cb_show_ipf.setEnabled(False)
+                self.cb_show_shift.setEnabled(False)
+                self.cb_show_size.setEnabled(False)
+                self.cb_show_warren.setEnabled(False)
         else:
             self.cb_show_ipf.setEnabled(self.is_interactive==1)
             self.cb_show_shift.setEnabled(self.is_interactive==1)
@@ -474,6 +479,8 @@ class OWFitter(OWGenericWidget):
                 self.current_iteration = 0
 
                 self.fit_global_parameters = data.duplicate()
+
+                self.set_interactive()
 
                 # keep existing text!
                 existing_free_output_parameters = FreeOutputParameters()
@@ -759,34 +766,38 @@ class OWFitter(OWGenericWidget):
 
         if is_init:
             self.build_plot_fit()
-            self.x = [None]*diffraction_pattern_number
-            self.y = [None]*diffraction_pattern_number
+            self.x = numpy.full(diffraction_pattern_number, None)
+            self.y = numpy.full(diffraction_pattern_number, None)
 
         for diffraction_pattern_index in range(diffraction_pattern_number):
             diffraction_pattern = self.fitted_fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index]
             fitted_pattern = self.fitted_patterns[diffraction_pattern_index]
 
-            if is_init:
-                x = []
-                y = []
-                yf = []
-                res = []
+            nr_points = fitted_pattern.diffraction_points_count()
 
-                for index in range(0, fitted_pattern.diffraction_points_count()):
-                    x.append(diffraction_pattern.get_diffraction_point(index).twotheta)
-                    y.append(diffraction_pattern.get_diffraction_point(index).intensity)
-                    yf.append(fitted_pattern.get_diffraction_point(index).intensity)
-                    res.append(fitted_pattern.get_diffraction_point(index).error)
+            yf = numpy.zeros(nr_points)
+            res = numpy.zeros(nr_points)
+
+            if is_init:
+                x = numpy.zeros(nr_points)
+                y = numpy.zeros(nr_points)
+
+                i = -1
+                for point, fit in zip(diffraction_pattern.diffraction_pattern, fitted_pattern.diffraction_pattern):
+                    i += 1
+                    x[i]  = point.twotheta
+                    y[i]  = point.intensity
+                    yf[i]  = fit.intensity
+                    res[i] = fit.error
 
                 self.x[diffraction_pattern_index] = numpy.array(x)
                 self.y[diffraction_pattern_index] = numpy.array(y)
             else:
-                yf = []
-                res = []
-
-                for index in range(0, fitted_pattern.diffraction_points_count()):
-                    yf.append(fitted_pattern.get_diffraction_point(index).intensity)
-                    res.append(fitted_pattern.get_diffraction_point(index).error)
+                i = -1
+                for fit in fitted_pattern.diffraction_pattern:
+                    i += 1
+                    yf[i]  = fit.intensity
+                    res[i] = fit.error
 
             res = -10 + (res-numpy.max(res))
 
@@ -824,6 +835,8 @@ class OWFitter(OWGenericWidget):
             self.plot_strain.addCurve(x, y, legend="hhh", color='red')
             x, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 0, L_max=self.D_max)
             self.plot_strain.addCurve(x, y, legend="hh0", color='green')
+
+        self.set_interactive()
 
 ##########################################
 # THREADING

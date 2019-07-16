@@ -76,7 +76,7 @@ class DiffractionPattern(ParametersList):
 
     def __init__(self, n_points = 0, wavelength = None):
         if n_points > 0:
-            self.diffraction_pattern = numpy.array([None]*n_points)
+            self.diffraction_pattern = numpy.full(n_points, None)
         else:
             self.diffraction_pattern = None
 
