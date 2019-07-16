@@ -416,19 +416,17 @@ class FitGlobalParameters(ParametersList):
         if not self.fit_initialization.diffraction_patterns is None:
             for index in range(len(self.fit_initialization.diffraction_patterns)):
                 diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
-                diffraction_pattern.wavelength.error = errors[(0 if last_index < 0 else last_index) + index]
+                diffraction_pattern.wavelength.error = errors[last_index + 1]
 
+                last_index += 1
 
                 if not diffraction_pattern.is_single_wavelength:
-                    last_index += 1
 
                     for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
                                                                                  diffraction_pattern.secondary_wavelengths_weights):
                         secondary_wavelength.error = errors[last_index + 1]
                         secondary_wavelength_weigth.error = errors[last_index + 2]
                         last_index += 2
-
-            if last_index < 0: last_index = len(self.fit_initialization.diffraction_patterns) - 1
 
         if not self.fit_initialization.crystal_structures is None:
             for index in range(len(self.fit_initialization.crystal_structures)):
@@ -549,6 +547,209 @@ class FitGlobalParameters(ParametersList):
                 elif isinstance(strain_parameters, WarrenModel):
                     strain_parameters.average_cell_parameter.error = errors[last_index + 1]
                     last_index += 1
+
+    def from_fitted_parameters_and_errors(self, fitted_parameters, errors):
+        last_index = -1
+
+        if not self.fit_initialization.diffraction_patterns is None:
+            for index in range(len(self.fit_initialization.diffraction_patterns)):
+                diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
+                diffraction_pattern.wavelength.set_value(fitted_parameters[last_index + 1].value)
+                diffraction_pattern.wavelength.error = errors[last_index + 1]
+
+                last_index += 1
+
+                if not diffraction_pattern.is_single_wavelength:
+                    for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
+                                                                                 diffraction_pattern.secondary_wavelengths_weights):
+                        secondary_wavelength.set_value(fitted_parameters[last_index + 1].value)
+                        secondary_wavelength_weigth.set_value(fitted_parameters[last_index + 2].value)
+                        secondary_wavelength.error = errors[last_index + 1]
+                        secondary_wavelength_weigth.error = errors[last_index + 2]
+                        last_index += 2
+
+        if not self.fit_initialization.crystal_structures is None:
+            for index in range(len(self.fit_initialization.crystal_structures)):
+                crystal_structure = self.fit_initialization.crystal_structures[index]
+
+                crystal_structure.a.set_value(fitted_parameters[last_index + 1].value)
+                crystal_structure.b.set_value(fitted_parameters[last_index + 2].value)
+                crystal_structure.c.set_value(fitted_parameters[last_index + 3].value)
+                crystal_structure.alpha.set_value(fitted_parameters[last_index + 4].value)
+                crystal_structure.beta.set_value(fitted_parameters[last_index + 5].value)
+                crystal_structure.gamma.set_value(fitted_parameters[last_index + 6].value)
+                crystal_structure.a.error = errors[last_index + 1]
+                crystal_structure.b.error = errors[last_index + 2]
+                crystal_structure.c.error = errors[last_index + 3]
+                crystal_structure.alpha.error = errors[last_index + 4]
+                crystal_structure.beta.error = errors[last_index + 5]
+                crystal_structure.gamma.error = errors[last_index + 6]
+
+                if crystal_structure.use_structure:
+                    crystal_structure.intensity_scale_factor.set_value(fitted_parameters[last_index + 7].value)
+                    crystal_structure.intensity_scale_factor.error = errors[last_index + 7]
+                    last_index += 7
+                else:
+                    last_index += 6
+
+                for reflection_index in range(crystal_structure.get_reflections_count()):
+                    intensity = crystal_structure.get_reflection(reflection_index).intensity
+                    intensity.set_value(fitted_parameters[last_index + 1 + reflection_index].value)
+                    intensity.error = errors[last_index+reflection_index]
+
+                last_index += crystal_structure.get_reflections_count()
+
+        if not self.fit_initialization.thermal_polarization_parameters is None:
+            for thermal_polarization_parameters in self.fit_initialization.thermal_polarization_parameters:
+                if not thermal_polarization_parameters.debye_waller_factor is None:
+                    thermal_polarization_parameters.debye_waller_factor.set_value(fitted_parameters[last_index + 1].value)
+                    thermal_polarization_parameters.debye_waller_factor.error = errors[last_index + 1]
+                    last_index += 1
+
+        if not self.background_parameters is None:
+            for key in self.background_parameters.keys():
+                background_parameters_list = self.get_background_parameters(key)
+
+                if not background_parameters_list is None:
+                    for background_parameters in background_parameters_list:
+                        if key == ChebyshevBackground.__name__:
+                            background_parameters.c0.set_value(fitted_parameters[last_index + 1].value)
+                            background_parameters.c1.set_value(fitted_parameters[last_index + 2].value)
+                            background_parameters.c2.set_value(fitted_parameters[last_index + 3].value)
+                            background_parameters.c3.set_value(fitted_parameters[last_index + 4].value)
+                            background_parameters.c4.set_value(fitted_parameters[last_index + 5].value)
+                            background_parameters.c5.set_value(fitted_parameters[last_index + 6].value)
+                            background_parameters.c6.set_value(fitted_parameters[last_index + 7].value)
+                            background_parameters.c7.set_value(fitted_parameters[last_index + 8].value)
+                            background_parameters.c8.set_value(fitted_parameters[last_index + 9].value)
+                            background_parameters.c9.set_value(fitted_parameters[last_index + 10].value)
+                            background_parameters.c0.error = errors[last_index + 1]
+                            background_parameters.c1.error = errors[last_index + 2]
+                            background_parameters.c2.error = errors[last_index + 3]
+                            background_parameters.c3.error = errors[last_index + 4]
+                            background_parameters.c4.error = errors[last_index + 5]
+                            background_parameters.c5.error = errors[last_index + 6]
+                            background_parameters.c6.error = errors[last_index + 7]
+                            background_parameters.c7.error = errors[last_index + 8]
+                            background_parameters.c8.error = errors[last_index + 9]
+                            background_parameters.c9.error = errors[last_index + 10]
+                            last_index += 10
+                        elif key == ExpDecayBackground.__name__:
+                            background_parameters.a0.set_value(fitted_parameters[last_index + 1].value)
+                            background_parameters.b0.set_value(fitted_parameters[last_index + 2].value)
+                            background_parameters.a1.set_value(fitted_parameters[last_index + 3].value)
+                            background_parameters.b1.set_value(fitted_parameters[last_index + 4].value)
+                            background_parameters.a2.set_value(fitted_parameters[last_index + 5].value)
+                            background_parameters.b2.set_value(fitted_parameters[last_index + 6].value)
+                            background_parameters.a0.error = errors[last_index + 1]
+                            background_parameters.b0.error = errors[last_index + 2]
+                            background_parameters.a1.error = errors[last_index + 3]
+                            background_parameters.b1.error = errors[last_index + 4]
+                            background_parameters.a2.error = errors[last_index + 5]
+                            background_parameters.b2.error = errors[last_index + 6]
+                            last_index += 6
+
+        if not self.instrumental_parameters is None:
+            for instrumental_parameters in self.instrumental_parameters:
+                instrumental_parameters.U.set_value(fitted_parameters[last_index + 1].value)
+                instrumental_parameters.V.set_value(fitted_parameters[last_index + 2].value)
+                instrumental_parameters.W.set_value(fitted_parameters[last_index + 3].value)
+                instrumental_parameters.a.set_value(fitted_parameters[last_index + 4].value)
+                instrumental_parameters.b.set_value(fitted_parameters[last_index + 5].value)
+                instrumental_parameters.c.set_value(fitted_parameters[last_index + 6].value)
+                instrumental_parameters.U.error = errors[last_index + 1]
+                instrumental_parameters.V.error = errors[last_index + 2]
+                instrumental_parameters.W.error = errors[last_index + 3]
+                instrumental_parameters.a.error = errors[last_index + 4]
+                instrumental_parameters.b.error = errors[last_index + 5]
+                instrumental_parameters.c.error = errors[last_index + 6]
+                last_index += 6
+
+        if not self.shift_parameters is None:
+            for key in self.shift_parameters.keys():
+                shift_parameters_list = self.get_shift_parameters(key)
+
+                if not shift_parameters_list is None:
+                    for shift_parameters in shift_parameters_list:
+                        if key == Lab6TanCorrection.__name__:
+                            shift_parameters.ax.set_value(fitted_parameters[last_index + 1].value)
+                            shift_parameters.bx.set_value(fitted_parameters[last_index + 2].value)
+                            shift_parameters.cx.set_value(fitted_parameters[last_index + 3].value)
+                            shift_parameters.dx.set_value(fitted_parameters[last_index + 4].value)
+                            shift_parameters.ex.set_value(fitted_parameters[last_index + 5].value)
+                            shift_parameters.ax.error = errors[last_index + 1]
+                            shift_parameters.bx.error = errors[last_index + 2]
+                            shift_parameters.cx.error = errors[last_index + 3]
+                            shift_parameters.dx.error = errors[last_index + 4]
+                            shift_parameters.ex.error = errors[last_index + 5]
+                            last_index += 5
+                        elif key == ZeroError.__name__:
+                            shift_parameters.shift.set_value(fitted_parameters[last_index + 1].value)
+                            shift_parameters.shift.error = errors[last_index + 1]
+                            last_index += 1
+                        elif key == SpecimenDisplacement.__name__:
+                            shift_parameters.displacement.set_value(fitted_parameters[last_index + 1].value)
+                            shift_parameters.displacement.error = errors[last_index + 1]
+                            last_index += 1
+
+        if not self.size_parameters is None:
+            for size_parameters in self.size_parameters:
+                size_parameters.mu.set_value(fitted_parameters[last_index + 1].value)
+                size_parameters.mu.error    = errors[last_index + 1]
+                if size_parameters.distribution == Distribution.LOGNORMAL:
+                    size_parameters.sigma.set_value(fitted_parameters[last_index + 2].value)
+                    size_parameters.sigma.error = errors[last_index + 2]
+                    last_index += 2
+                else:
+                    last_index += 1
+
+        if not self.strain_parameters is None:
+            for strain_parameters in self.strain_parameters:
+                if isinstance(strain_parameters, InvariantPAH):
+                    strain_parameters.aa.set_value(fitted_parameters[last_index + 1].value)
+                    strain_parameters.bb.set_value(fitted_parameters[last_index + 2].value)
+                    strain_parameters.e1.set_value(fitted_parameters[last_index + 3].value) # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e2.set_value(fitted_parameters[last_index + 4].value) # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e3.set_value(fitted_parameters[last_index + 5].value) # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e4.set_value(fitted_parameters[last_index + 6].value) # in realtà è E4 dell'invariante PAH
+                    strain_parameters.e5.set_value(fitted_parameters[last_index + 7].value) # in realtà è E4 dell'invariante PAH
+                    strain_parameters.e6.set_value(fitted_parameters[last_index + 8].value) # in realtà è E4 dell'invariante PAH
+                    strain_parameters.aa.error = errors[last_index + 1]
+                    strain_parameters.bb.error = errors[last_index + 2]
+                    strain_parameters.e1.error = errors[last_index + 3] # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e2.error = errors[last_index + 4] # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e3.error = errors[last_index + 5] # in realtà è E1 dell'invariante PAH
+                    strain_parameters.e4.error = errors[last_index + 6] # in realtà è E4 dell'invariante PAH
+                    strain_parameters.e5.error = errors[last_index + 7] # in realtà è E4 dell'invariante PAH
+                    strain_parameters.e6.error = errors[last_index + 8] # in realtà è E4 dell'invariante PAH
+                    last_index += 8
+                elif isinstance(strain_parameters, KrivoglazWilkensModel):
+                    strain_parameters.rho.set_value(fitted_parameters[last_index + 1].value)
+                    strain_parameters.Re.set_value(fitted_parameters[last_index + 2].value)
+                    strain_parameters.Ae.set_value(fitted_parameters[last_index + 3].value)
+                    strain_parameters.Be.set_value(fitted_parameters[last_index + 4].value)
+                    strain_parameters.As.set_value(fitted_parameters[last_index + 5].value)
+                    strain_parameters.Bs.set_value(fitted_parameters[last_index + 6].value)
+                    strain_parameters.mix.set_value(fitted_parameters[last_index + 7].value)
+                    strain_parameters.b.set_value(fitted_parameters[last_index + 8].value)
+                    strain_parameters.rho.error = errors[last_index + 1]
+                    strain_parameters.Re.error = errors[last_index + 2]
+                    strain_parameters.Ae.error = errors[last_index + 3]
+                    strain_parameters.Be.error = errors[last_index + 4]
+                    strain_parameters.As.error = errors[last_index + 5]
+                    strain_parameters.Bs.error = errors[last_index + 6]
+                    strain_parameters.mix.error = errors[last_index + 7]
+                    strain_parameters.b.error = errors[last_index + 8]
+                    last_index += 8
+                elif isinstance(strain_parameters, WarrenModel):
+                    strain_parameters.average_cell_parameter.set_value(fitted_parameters[last_index + 1].value)
+                    strain_parameters.average_cell_parameter.error = errors[last_index + 1]
+                    last_index += 1
+
+        self.replace_parameters(fitted_parameters)
+        self.evaluate_functions()
+
+        return self
 
     def is_compatibile(self, other_fit_global_parameters):
         if other_fit_global_parameters is None: return False

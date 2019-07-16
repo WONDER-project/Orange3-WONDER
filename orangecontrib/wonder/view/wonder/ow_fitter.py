@@ -36,7 +36,7 @@ class OWFitter(OWGenericWidget):
     standard_output = sys.stdout
 
     fitter_name = Setting(0)
-    fitting_method = Setting(0)
+    fitting_method = Setting(1)
 
     n_iterations = Setting(5)
     is_incremental = Setting(1)
@@ -946,7 +946,8 @@ class FitThread(QThread):
                 self.fitter_widget.fit_data = \
                     self.fitter_widget.fitter.do_fit(current_fit_global_parameters=self.fitter_widget.fitted_fit_global_parameters,
                                                      current_iteration=iteration,
-                                                     compute_pattern=self.fitter_widget.is_interactive==1 or iteration==self.fitter_widget.n_iterations)
+                                                     compute_pattern=self.fitter_widget.is_interactive==1 or iteration==self.fitter_widget.n_iterations,
+                                                     compute_errors=self.fitter_widget.is_interactive==1 or iteration==self.fitter_widget.n_iterations)
 
                 self.update.emit()
 
