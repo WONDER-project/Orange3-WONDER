@@ -58,6 +58,7 @@ class OWFitter(OWGenericWidget):
     outputs = [("Fit Global Parameters", FitGlobalParameters)]
 
     fit_global_parameters = None
+    initial_fit_global_parameters = None
     fitted_fit_global_parameters = None
     current_wss = []
     current_gof = []
@@ -124,7 +125,9 @@ class OWFitter(OWGenericWidget):
         iteration_box = gui.widgetBox(main_box, "", orientation="horizontal", width=250)
 
         gui.lineEdit(iteration_box, self, "n_iterations", "Nr. Iterations", labelWidth=80, valueType=int, validator=QIntValidator())
-        orangegui.checkBox(iteration_box, self, "is_incremental", "Incremental")
+        orangegui.checkBox(iteration_box, self, "is_incremental", "Incremental", callback=self.set_incremental)
+
+        self.was_incremental = self.is_incremental
 
         iteration_box = gui.widgetBox(main_box, "", orientation="vertical", width=250)
 
@@ -339,6 +342,44 @@ class OWFitter(OWGenericWidget):
         self.table_fit_out = self.create_table_widget()
         self.tab_fit_out.layout().addWidget(self.table_fit_out, alignment=Qt.AlignHCenter)
 
+    def set_incremental(self, is_init=False):
+        if self.is_incremental == 0:
+            initialize = True
+
+            if self.was_incremental == 1:
+                answer = QMessageBox.question(self, 'Set Incremental', "Unchecking incremental mode will make the fit begin from initially received parameters, continue?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+                if (answer == QMessageBox.No):
+                    initialize          = False
+                    self.is_incremental = 1
+        else:
+            initialize = self.current_iteration == 0
+
+        if initialize:
+            self.fit_global_parameters = self.initial_fit_global_parameters.duplicate()
+
+            self.fitted_fit_global_parameters = self.fit_global_parameters.duplicate()
+            self.fitted_fit_global_parameters.evaluate_functions()
+
+            self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
+            self.fitter.init_fitter(self.fitted_fit_global_parameters)
+
+            self.current_wss = []
+            self.current_gof = []
+            self.current_iteration = 0 if self.is_incremental == 0 else self.current_iteration
+
+            if is_init: sys.stdout = EmittingStream(textWritten=self.write_stdout)
+
+            self.fitted_patterns = self.fitter.build_fitted_diffraction_pattern(self.fitted_fit_global_parameters)
+            self.fit_data = None
+
+            self.show_data(is_init=is_init)
+
+            self.tabs.setCurrentIndex(1)
+            self.tabs_plot.setCurrentIndex(0)
+
+        self.was_incremental = self.is_incremental
+
     def set_interactive(self):
         self.cb_show_wss_gof.setEnabled(self.is_interactive==1)
 
@@ -429,14 +470,6 @@ class OWFitter(OWGenericWidget):
 
                 sys.stdout = EmittingStream(textWritten=self.write_stdout)
 
-                if self.is_incremental == 0 or (self.is_incremental == 1 and self.current_iteration == 0):
-                    self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
-                    self.fitter.init_fitter(initial_fit_global_parameters)
-
-                    self.current_wss = []
-                    self.current_gof = []
-                    self.current_iteration = 0 if self.is_incremental == 0 else self.current_iteration
-
                 self.fitted_fit_global_parameters = initial_fit_global_parameters
                 self.current_running_iteration = 0
 
@@ -479,8 +512,7 @@ class OWFitter(OWGenericWidget):
                 self.current_iteration = 0
 
                 self.fit_global_parameters = data.duplicate()
-
-                self.set_interactive()
+                self.initial_fit_global_parameters = data.duplicate()
 
                 # keep existing text!
                 existing_free_output_parameters = FreeOutputParameters()
@@ -530,22 +562,8 @@ class OWFitter(OWGenericWidget):
                     self.cb_show_warren.setEnabled(True)
                     self.tab_plot_strain.setEnabled(True)
 
-                if self.is_incremental == 0 or (self.is_incremental == 1 and self.current_iteration == 0):
-                    sys.stdout = EmittingStream(textWritten=self.write_stdout)
-
-                    self.fitted_fit_global_parameters = self.fit_global_parameters.duplicate()
-                    self.fitted_fit_global_parameters.evaluate_functions()
-
-                    self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
-                    self.fitter.init_fitter(self.fitted_fit_global_parameters)
-
-                    self.fitted_patterns = self.fitter.build_fitted_diffraction_pattern(self.fitted_fit_global_parameters)
-                    self.fit_data = None
-
-                    self.show_data(is_init=True)
-
-                    self.tabs.setCurrentIndex(1)
-                    self.tabs_plot.setCurrentIndex(0)
+                self.set_interactive()
+                self.set_incremental(is_init=True)
 
                 if self.is_automatic_run:
                     self.do_fit()
@@ -805,10 +823,8 @@ class OWFitter(OWGenericWidget):
             self.plot_fit[diffraction_pattern_index].addCurve(self.x[diffraction_pattern_index], yf, legend="fit", color="red")
             self.plot_fit[diffraction_pattern_index].addCurve(self.x[diffraction_pattern_index], res, legend="residual", color="#2D811B")
 
-        if not self.fit_data is None and self.is_interactive==1 and self.show_wss_gof==1:
+        if not self.fit_data is None and self.show_wss_gof==1:
             x = numpy.arange(1, self.current_iteration + 1)
-            self.current_wss.append(self.fit_data.wss)
-            self.current_gof.append(self.fit_data.gof())
 
             self.plot_fit_wss.addCurve(x, self.current_wss, legend="wss", symbol='o', color="blue")
             self.plot_fit_gof.addCurve(x, self.current_gof, legend="gof", symbol='o', color="red")
@@ -961,6 +977,9 @@ class FitThread(QThread):
                                                      current_iteration=iteration,
                                                      compute_pattern=self.fitter_widget.is_interactive==1 or iteration==self.fitter_widget.n_iterations,
                                                      compute_errors=self.fitter_widget.is_interactive==1 or iteration==self.fitter_widget.n_iterations)
+
+                self.fitter_widget.current_wss.append(self.fitter_widget.fit_data.wss)
+                self.fitter_widget.current_gof.append(self.fitter_widget.fit_data.gof())
 
                 self.update.emit()
 
