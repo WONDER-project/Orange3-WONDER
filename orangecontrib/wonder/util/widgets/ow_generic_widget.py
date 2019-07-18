@@ -6,7 +6,7 @@ from Orange.widgets import widget
 from Orange.widgets.settings import Setting
 from Orange.widgets import gui as orangegui
 
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QSizePolicy
 from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QDoubleValidator
 
@@ -35,37 +35,6 @@ class OWGenericWidget(widget.OWWidget):
     parameter_functions = {}
 
     IS_DEVELOP = False if not "ORANGEDEVELOP" in os.environ.keys() else str(os.environ.get('ORANGEDEVELOP')) == "1"
-    IS_FIX = False if not "ORANGEFIX" in os.environ.keys() else str(os.environ.get('ORANGEFIX')) == "1"
-
-    '''
-    def _insert_control_area(self):
-        super(OWGenericWidget, self)._insert_control_area()
-
-        container = self.left_side.parent()
-        area = QScrollArea()
-        area.setGeometry(QRect(4,
-                               4,
-                               self.CONTROL_AREA_WIDTH-135,
-                               self.MAX_HEIGHT))
-        container.insertWidget(container.indexOf(self.left_side), area)
-        area.setAlignment(Qt.AlignCenter)
-        area.setWidget(self.left_side)
-        area.setWidgetResizable(True)
-
-    def _insert_main_area(self):
-        super(OWGenericWidget, self)._insert_main_area()
-
-        container = self.mainArea.parent()
-        area = QScrollArea()
-        area.setGeometry(QRect(4,
-                               4,
-                               650,
-                               self.MAX_HEIGHT))
-        container.insertWidget(container.indexOf(self.mainArea), area)
-        area.setAlignment(Qt.AlignCenter)
-        area.setWidget(self.mainArea)
-        area.setWidgetResizable(True)
-    '''
 
     def __init__(self, show_automatic_box=True):
         super().__init__()
@@ -87,7 +56,6 @@ class OWGenericWidget(widget.OWWidget):
         self.setMaximumHeight(self.geometry().height())
         self.setMaximumWidth(self.geometry().width())
 
-        from PyQt5.QtWidgets import QSizePolicy
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         self.controlArea.setFixedWidth(self.CONTROL_AREA_WIDTH)

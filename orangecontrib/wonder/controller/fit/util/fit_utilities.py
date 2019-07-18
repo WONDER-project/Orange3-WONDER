@@ -14,7 +14,7 @@ class Symmetry:
 class Utilities:
 
     @classmethod
-    def Hinvariant(cls, h, k, l):
+    def H_invariant_square(cls, h, k, l):
         numerator = (h * h * k * k + k * k * l * l + l * l * h * h)
         denominator = (h**2 + k**2 + l**2)**2
         return numerator / denominator

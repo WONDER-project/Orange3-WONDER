@@ -568,10 +568,10 @@ def f_star(eta, use_simplified_calculation=True):
 
 
 def C_hkl_krivoglaz_wilkens(h, k, l, Ae, Be, As, Bs, mix):
-    H = Utilities.Hinvariant(h, k, l)
+    H_2 = Utilities.H_invariant_square(h, k, l)
 
-    C_hkl_edge  = Ae + Be*H**2
-    C_hkl_screw = As + Bs*H**2
+    C_hkl_edge  = Ae + Be*H_2
+    C_hkl_screw = As + Bs*H_2
 
     return mix*C_hkl_edge + (1-mix)*C_hkl_screw
 

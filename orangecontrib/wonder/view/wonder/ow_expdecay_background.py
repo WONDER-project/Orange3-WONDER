@@ -105,8 +105,6 @@ class OWExpDecayBackground(OWGenericWidget):
         self.create_box(chebyshev_box, "a2")
         self.create_box(chebyshev_box, "b2")
 
-
-
     def send_background(self):
         try:
             if not self.fit_global_parameters is None:

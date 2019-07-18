@@ -51,88 +51,8 @@ class OWCrystalStructure(OWGenericWidget):
     inputs = [("Fit Global Parameters", FitGlobalParameters, 'set_data')]
     outputs = [("Fit Global Parameters", FitGlobalParameters)]
 
-    # TO PRESERVE RETRO-COMPATIBILITY
-    def fix_input(self, emergency=False):
-        if not isinstance(self.a                                    , list): self.a                                     = [self.a                                    ]
-        if not isinstance(self.a_fixed                              , list): self.a_fixed                               = [self.a_fixed                              ]
-        if not isinstance(self.a_has_min                            , list): self.a_has_min                             = [self.a_has_min                            ]
-        if not isinstance(self.a_min                                , list): self.a_min                                 = [self.a_min                                ]
-        if not isinstance(self.a_has_max                            , list): self.a_has_max                             = [self.a_has_max                            ]
-        if not isinstance(self.a_max                                , list): self.a_max                                 = [self.a_max                                ]
-        if not isinstance(self.a_function                           , list): self.a_function                            = [self.a_function                           ]
-        if not isinstance(self.a_function_value                     , list): self.a_function_value                      = [self.a_function_value                     ]
-        if not isinstance(self.symmetry                             , list): self.symmetry                              = [self.symmetry                             ]
-        if not isinstance(self.use_structure                        , list): self.use_structure                         = [self.use_structure                        ]
-        if not isinstance(self.formula                              , list): self.formula                               = [self.formula                              ]
-        if not isinstance(self.intensity_scale_factor               , list): self.intensity_scale_factor                = [self.intensity_scale_factor               ]
-        if not isinstance(self.intensity_scale_factor_fixed         , list): self.intensity_scale_factor_fixed          = [self.intensity_scale_factor_fixed         ]
-        if not isinstance(self.intensity_scale_factor_has_min       , list): self.intensity_scale_factor_has_min        = [self.intensity_scale_factor_has_min       ]
-        if not isinstance(self.intensity_scale_factor_min           , list): self.intensity_scale_factor_min            = [self.intensity_scale_factor_min           ]
-        if not isinstance(self.intensity_scale_factor_has_max       , list): self.intensity_scale_factor_has_max        = [self.intensity_scale_factor_has_max       ]
-        if not isinstance(self.intensity_scale_factor_max           , list): self.intensity_scale_factor_max            = [self.intensity_scale_factor_max           ]
-        if not isinstance(self.intensity_scale_factor_function      , list): self.intensity_scale_factor_function       = [self.intensity_scale_factor_function      ]
-        if not isinstance(self.intensity_scale_factor_function_value, list): self.intensity_scale_factor_function_value = [self.intensity_scale_factor_function_value]
-        if not isinstance(self.reflections                          , list): self.reflections                           = [self.reflections                          ]
-        if not isinstance(self.limit                                , list): self.limit                                 = [self.limit                                ]
-        if not isinstance(self.limit_type                           , list): self.limit_type                            = [self.limit_type                           ]
-
-        if len(self.symmetry) < len(self.a):
-            self.symmetry.extend([2]*(len(self.a)-len(self.symmetry)))
-        elif len(self.symmetry) > len(self.a):
-            self.symmetry = self.symmetry[:len(self.a)]
-
-        if emergency:
-            self.a                                     = [0.0]
-            self.a_fixed                               = [0]
-            self.a_has_min                             = [0]
-            self.a_min                                 = [0.0]
-            self.a_has_max                             = [0]
-            self.a_max                                 = [0.0]
-            self.a_function                            = [0]
-            self.a_function_value                      = [""]
-            self.symmetry                              = [2]
-            self.use_structure                         = [0]
-            self.formula                               = [""]
-            self.intensity_scale_factor                = [1.0]
-            self.intensity_scale_factor_fixed          = [0]
-            self.intensity_scale_factor_has_min        = [0]
-            self.intensity_scale_factor_min            = [0.0]
-            self.intensity_scale_factor_has_max        = [0]
-            self.intensity_scale_factor_max            = [0.0]
-            self.intensity_scale_factor_function       = [0]
-            self.intensity_scale_factor_function_value = [""]
-            self.reflections                           = [""]
-            self.limit                                 = [""]
-            self.limit_type                            = [""]
-        else:
-            if len(self.a                                    ) == 0: self.a                                     = [0.0]
-            if len(self.a_fixed                              ) == 0: self.a_fixed                               = [0]
-            if len(self.a_has_min                            ) == 0: self.a_has_min                             = [0]
-            if len(self.a_min                                ) == 0: self.a_min                                 = [0.0]
-            if len(self.a_has_max                            ) == 0: self.a_has_max                             = [0]
-            if len(self.a_max                                ) == 0: self.a_max                                 = [0.0]
-            if len(self.a_function                           ) == 0: self.a_function                            = [0]
-            if len(self.a_function_value                     ) == 0: self.a_function_value                      = [""]
-            if len(self.symmetry                             ) == 0: self.symmetry                              = [2]
-            if len(self.use_structure                        ) == 0: self.use_structure                         = [0]
-            if len(self.formula                              ) == 0: self.formula                               = [""]
-            if len(self.intensity_scale_factor               ) == 0: self.intensity_scale_factor                = [1.0]
-            if len(self.intensity_scale_factor_fixed         ) == 0: self.intensity_scale_factor_fixed          = [0]
-            if len(self.intensity_scale_factor_has_min       ) == 0: self.intensity_scale_factor_has_min        = [0]
-            if len(self.intensity_scale_factor_min           ) == 0: self.intensity_scale_factor_min            = [0.0]
-            if len(self.intensity_scale_factor_has_max       ) == 0: self.intensity_scale_factor_has_max        = [0]
-            if len(self.intensity_scale_factor_max           ) == 0: self.intensity_scale_factor_max            = [0.0]
-            if len(self.intensity_scale_factor_function      ) == 0: self.intensity_scale_factor_function       = [0]
-            if len(self.intensity_scale_factor_function_value) == 0: self.intensity_scale_factor_function_value = [""]
-            if len(self.reflections                          ) == 0: self.reflections                           = [""]
-            if len(self.limit                                ) == 0: self.limit                                 = [""]
-            if len(self.limit_type                           ) == 0: self.limit_type                            = [""]
-
-
     def __init__(self):
         super().__init__(show_automatic_box=True)
-        
-        if self.IS_FIX: self.fix_input()
         
         crystal_box = gui.widgetBox(self.controlArea,
                                  "Crystal Structure", orientation="vertical",
