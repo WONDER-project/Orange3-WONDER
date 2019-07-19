@@ -342,17 +342,15 @@ class OWFitter(OWGenericWidget):
         self.table_fit_out = self.create_table_widget()
         self.tab_fit_out.layout().addWidget(self.table_fit_out, alignment=Qt.AlignHCenter)
 
-    def set_incremental(self, is_init=False):
+    def set_incremental(self):
         if self.is_incremental == 0:
             if self.was_incremental == 1:
                 answer = QMessageBox.question(self, 'Set Incremental', "Unchecking incremental mode will make the fit begin from initially received parameters, continue?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
                 if (answer == QMessageBox.No):
                     self.is_incremental = 1
-                    if not is_init: self.show_data()
 
         self.was_incremental = self.is_incremental
-
 
     def initialize_fit(self, is_init=False):
         if self.is_incremental==0 or is_init:
@@ -561,7 +559,7 @@ class OWFitter(OWGenericWidget):
                     self.tab_plot_strain.setEnabled(True)
 
                 self.set_interactive()
-                self.set_incremental(is_init=True)
+                self.was_incremental = self.is_incremental
                 self.initialize_fit(is_init=True)
                 self.show_data(is_init=True)
 
@@ -901,7 +899,6 @@ class OWFitter(OWGenericWidget):
 
         self.fit_thread.mutex.unlock()
 
-
     def fit_completed(self):
         sys.stdout = self.standard_output
 
@@ -917,7 +914,8 @@ class OWFitter(OWGenericWidget):
             parameters.extend(self.fit_global_parameters.get_parameters())
 
             self.populate_table(self.table_fit_in, parameters, is_output=False)
-        else:
+
+        if self.is_interactive == 0:
             self.show_data()
 
             parameters = self.fitted_fit_global_parameters.free_input_parameters.as_parameters()
