@@ -232,7 +232,7 @@ class OWRadiation(OWGenericWidget):
                 self.radiation_box_array = []
 
                 for index in range(self.radiation_tabs.count()):
-                    self.radiation_tabs.removeTab(-1)
+                    self.radiation_tabs.removeTab(0)
 
                 for index in range(self.fit_global_parameters.fit_initialization.get_diffraction_patterns_number()):
                     radiation_tab = gui.createTabPage(self.radiation_tabs, "Diff. Patt. " + str(index + 1))
@@ -240,7 +240,81 @@ class OWRadiation(OWGenericWidget):
                     radiation_box = RadiationBox(widget=self,
                                                  parent=radiation_tab,
                                                  index = index,
-                                                 diffraction_pattern = self.fit_global_parameters.fit_initialization.diffraction_patterns[index])
+                                                 diffraction_pattern=self.fit_global_parameters.fit_initialization.diffraction_patterns[index],
+                                                 is_multiple_wavelength      = self.is_multiple_wavelength[index],
+                                                 wavelength                  = self.wavelength[index],
+                                                 wavelength_fixed            = self.wavelength_fixed[index],
+                                                 wavelength_has_min          = self.wavelength_has_min[index],
+                                                 wavelength_min              = self.wavelength_min[index],
+                                                 wavelength_has_max          = self.wavelength_has_max[index],
+                                                 wavelength_max              = self.wavelength_max[index],
+                                                 wavelength_function         = self.wavelength_function[index],
+                                                 wavelength_function_value   = self.wavelength_function_value[index],
+                                                 wavelength_2                = self.wavelength_2[index],
+                                                 wavelength_2_fixed          = self.wavelength_2_fixed[index],
+                                                 wavelength_2_has_min        = self.wavelength_2_has_min[index],
+                                                 wavelength_2_min            = self.wavelength_2_min[index],
+                                                 wavelength_2_has_max        = self.wavelength_2_has_max[index],
+                                                 wavelength_2_max            = self.wavelength_2_max[index],
+                                                 wavelength_2_function       = self.wavelength_2_function[index],
+                                                 wavelength_2_function_value = self.wavelength_2_function_value[index],
+                                                 wavelength_3                = self.wavelength_3[index],
+                                                 wavelength_3_fixed          = self.wavelength_3_fixed[index],
+                                                 wavelength_3_has_min        = self.wavelength_3_has_min[index],
+                                                 wavelength_3_min            = self.wavelength_3_min[index],
+                                                 wavelength_3_has_max        = self.wavelength_3_has_max[index],
+                                                 wavelength_3_max            = self.wavelength_3_max[index],
+                                                 wavelength_3_function       = self.wavelength_3_function[index],
+                                                 wavelength_3_function_value = self.wavelength_3_function_value[index],
+                                                 wavelength_4                = self.wavelength_4[index],
+                                                 wavelength_4_fixed          = self.wavelength_4_fixed[index],
+                                                 wavelength_4_has_min        = self.wavelength_4_has_min[index],
+                                                 wavelength_4_min            = self.wavelength_4_min[index],
+                                                 wavelength_4_has_max        = self.wavelength_4_has_max[index],
+                                                 wavelength_4_max            = self.wavelength_4_max[index],
+                                                 wavelength_4_function       = self.wavelength_4_function[index],
+                                                 wavelength_4_function_value = self.wavelength_4_function_value[index],
+                                                 wavelength_5                = self.wavelength_5[index],
+                                                 wavelength_5_fixed          = self.wavelength_5_fixed[index],
+                                                 wavelength_5_has_min        = self.wavelength_5_has_min[index],
+                                                 wavelength_5_min            = self.wavelength_5_min[index],
+                                                 wavelength_5_has_max        = self.wavelength_5_has_max[index],
+                                                 wavelength_5_max            = self.wavelength_5_max[index],
+                                                 wavelength_5_function       = self.wavelength_5_function[index],
+                                                 wavelength_5_function_value = self.wavelength_5_function_value[index],
+                                                 weight_2                    = self.weight_2[index],
+                                                 weight_2_fixed              = self.weight_2_fixed[index],
+                                                 weight_2_has_min            = self.weight_2_has_min[index],
+                                                 weight_2_min                = self.weight_2_min[index],
+                                                 weight_2_has_max            = self.weight_2_has_max[index],
+                                                 weight_2_max                = self.weight_2_max[index],
+                                                 weight_2_function           = self.weight_2_function[index],
+                                                 weight_2_function_value     = self.weight_2_function_value[index],
+                                                 weight_3                    = self.weight_3[index],
+                                                 weight_3_fixed              = self.weight_3_fixed[index],
+                                                 weight_3_has_min            = self.weight_3_has_min[index],
+                                                 weight_3_min                = self.weight_3_min[index],
+                                                 weight_3_has_max            = self.weight_3_has_max[index],
+                                                 weight_3_max                = self.weight_3_max[index],
+                                                 weight_3_function           = self.weight_3_function[index],
+                                                 weight_3_function_value     = self.weight_3_function_value[index],
+                                                 weight_4                    = self.weight_4[index],
+                                                 weight_4_fixed              = self.weight_4_fixed[index],
+                                                 weight_4_has_min            = self.weight_4_has_min[index],
+                                                 weight_4_min                = self.weight_4_min[index],
+                                                 weight_4_has_max            = self.weight_4_has_max[index],
+                                                 weight_4_max                = self.weight_4_max[index],
+                                                 weight_4_function           = self.weight_4_function[index],
+                                                 weight_4_function_value     = self.weight_4_function_value[index],
+                                                 weight_5                    = self.weight_5[index],
+                                                 weight_5_fixed              = self.weight_5_fixed[index],
+                                                 weight_5_has_min            = self.weight_5_has_min[index],
+                                                 weight_5_min                = self.weight_5_min[index],
+                                                 weight_5_has_max            = self.weight_5_has_max[index],
+                                                 weight_5_max                = self.weight_5_max[index],
+                                                 weight_5_function           = self.weight_5_function[index],
+                                                 weight_5_function_value     = self.weight_5_function_value[index],
+                                                 )
 
                     self.radiation_box_array.append(radiation_box)
 
@@ -837,98 +911,96 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
 
         widget.create_box_in_widget(self, container,  "wavelength", label="\u03BB  [nm]", disable_function=True, add_callback=True)
 
-        if diffraction_pattern is None:
-            self.diffraction_pattern         = None
-            self.is_multiple_wavelength      = is_multiple_wavelength
-            self.wavelength                  = wavelength
-            self.wavelength_fixed            = wavelength_fixed
-            self.wavelength_has_min          = wavelength_has_min
-            self.wavelength_min              = wavelength_min
-            self.wavelength_has_max          = wavelength_has_max
-            self.wavelength_max              = wavelength_max
-            self.wavelength_function         = wavelength_function
-            self.wavelength_function_value   = wavelength_function_value
-            self.wavelength_2                = wavelength_2
-            self.wavelength_2_fixed          = wavelength_2_fixed
-            self.wavelength_2_has_min        = wavelength_2_has_min
-            self.wavelength_2_min            = wavelength_2_min
-            self.wavelength_2_has_max        = wavelength_2_has_max
-            self.wavelength_2_max            = wavelength_2_max
-            self.wavelength_2_function       = wavelength_2_function
-            self.wavelength_2_function_value = wavelength_2_function_value
-            self.wavelength_3                = wavelength_3
-            self.wavelength_3_fixed          = wavelength_3_fixed
-            self.wavelength_3_has_min        = wavelength_3_has_min
-            self.wavelength_3_min            = wavelength_3_min
-            self.wavelength_3_has_max        = wavelength_3_has_max
-            self.wavelength_3_max            = wavelength_3_max
-            self.wavelength_3_function       = wavelength_3_function
-            self.wavelength_3_function_value = wavelength_3_function_value
-            self.wavelength_4                = wavelength_4
-            self.wavelength_4_fixed          = wavelength_4_fixed
-            self.wavelength_4_has_min        = wavelength_4_has_min
-            self.wavelength_4_min            = wavelength_4_min
-            self.wavelength_4_has_max        = wavelength_4_has_max
-            self.wavelength_4_max            = wavelength_4_max
-            self.wavelength_4_function       = wavelength_4_function
-            self.wavelength_4_function_value = wavelength_4_function_value
-            self.wavelength_5                = wavelength_5
-            self.wavelength_5_fixed          = wavelength_5_fixed
-            self.wavelength_5_has_min        = wavelength_5_has_min
-            self.wavelength_5_min            = wavelength_5_min
-            self.wavelength_5_has_max        = wavelength_5_has_max
-            self.wavelength_5_max            = wavelength_5_max
-            self.wavelength_5_function       = wavelength_5_function
-            self.wavelength_5_function_value = wavelength_5_function_value
-            self.weight_2                    = weight_2
-            self.weight_2_fixed              = weight_2_fixed
-            self.weight_2_has_min            = weight_2_has_min
-            self.weight_2_min                = weight_2_min
-            self.weight_2_has_max            = weight_2_has_max
-            self.weight_2_max                = weight_2_max
-            self.weight_2_function           = weight_2_function
-            self.weight_2_function_value     = weight_2_function_value
-            self.weight_3                    = weight_3
-            self.weight_3_fixed              = weight_3_fixed
-            self.weight_3_has_min            = weight_3_has_min
-            self.weight_3_min                = weight_3_min
-            self.weight_3_has_max            = weight_3_has_max
-            self.weight_3_max                = weight_3_max
-            self.weight_3_function           = weight_3_function
-            self.weight_3_function_value     = weight_3_function_value
-            self.weight_4                    = weight_4
-            self.weight_4_fixed              = weight_4_fixed
-            self.weight_4_has_min            = weight_4_has_min
-            self.weight_4_min                = weight_4_min
-            self.weight_4_has_max            = weight_4_has_max
-            self.weight_4_max                = weight_4_max
-            self.weight_4_function           = weight_4_function
-            self.weight_4_function_value     = weight_4_function_value
-            self.weight_5                    = weight_5
-            self.weight_5_fixed              = weight_5_fixed
-            self.weight_5_has_min            = weight_5_has_min
-            self.weight_5_min                = weight_5_min
-            self.weight_5_has_max            = weight_5_has_max
-            self.weight_5_max                = weight_5_max
-            self.weight_5_function           = weight_5_function
-            self.weight_5_function_value     = weight_5_function_value
-        else:
+        self.is_multiple_wavelength      = is_multiple_wavelength
+        self.wavelength                  = wavelength
+        self.wavelength_fixed            = wavelength_fixed
+        self.wavelength_has_min          = wavelength_has_min
+        self.wavelength_min              = wavelength_min
+        self.wavelength_has_max          = wavelength_has_max
+        self.wavelength_max              = wavelength_max
+        self.wavelength_function         = wavelength_function
+        self.wavelength_function_value   = wavelength_function_value
+        self.wavelength_2                = wavelength_2
+        self.wavelength_2_fixed          = wavelength_2_fixed
+        self.wavelength_2_has_min        = wavelength_2_has_min
+        self.wavelength_2_min            = wavelength_2_min
+        self.wavelength_2_has_max        = wavelength_2_has_max
+        self.wavelength_2_max            = wavelength_2_max
+        self.wavelength_2_function       = wavelength_2_function
+        self.wavelength_2_function_value = wavelength_2_function_value
+        self.wavelength_3                = wavelength_3
+        self.wavelength_3_fixed          = wavelength_3_fixed
+        self.wavelength_3_has_min        = wavelength_3_has_min
+        self.wavelength_3_min            = wavelength_3_min
+        self.wavelength_3_has_max        = wavelength_3_has_max
+        self.wavelength_3_max            = wavelength_3_max
+        self.wavelength_3_function       = wavelength_3_function
+        self.wavelength_3_function_value = wavelength_3_function_value
+        self.wavelength_4                = wavelength_4
+        self.wavelength_4_fixed          = wavelength_4_fixed
+        self.wavelength_4_has_min        = wavelength_4_has_min
+        self.wavelength_4_min            = wavelength_4_min
+        self.wavelength_4_has_max        = wavelength_4_has_max
+        self.wavelength_4_max            = wavelength_4_max
+        self.wavelength_4_function       = wavelength_4_function
+        self.wavelength_4_function_value = wavelength_4_function_value
+        self.wavelength_5                = wavelength_5
+        self.wavelength_5_fixed          = wavelength_5_fixed
+        self.wavelength_5_has_min        = wavelength_5_has_min
+        self.wavelength_5_min            = wavelength_5_min
+        self.wavelength_5_has_max        = wavelength_5_has_max
+        self.wavelength_5_max            = wavelength_5_max
+        self.wavelength_5_function       = wavelength_5_function
+        self.wavelength_5_function_value = wavelength_5_function_value
+        self.weight_2                    = weight_2
+        self.weight_2_fixed              = weight_2_fixed
+        self.weight_2_has_min            = weight_2_has_min
+        self.weight_2_min                = weight_2_min
+        self.weight_2_has_max            = weight_2_has_max
+        self.weight_2_max                = weight_2_max
+        self.weight_2_function           = weight_2_function
+        self.weight_2_function_value     = weight_2_function_value
+        self.weight_3                    = weight_3
+        self.weight_3_fixed              = weight_3_fixed
+        self.weight_3_has_min            = weight_3_has_min
+        self.weight_3_min                = weight_3_min
+        self.weight_3_has_max            = weight_3_has_max
+        self.weight_3_max                = weight_3_max
+        self.weight_3_function           = weight_3_function
+        self.weight_3_function_value     = weight_3_function_value
+        self.weight_4                    = weight_4
+        self.weight_4_fixed              = weight_4_fixed
+        self.weight_4_has_min            = weight_4_has_min
+        self.weight_4_min                = weight_4_min
+        self.weight_4_has_max            = weight_4_has_max
+        self.weight_4_max                = weight_4_max
+        self.weight_4_function           = weight_4_function
+        self.weight_4_function_value     = weight_4_function_value
+        self.weight_5                    = weight_5
+        self.weight_5_fixed              = weight_5_fixed
+        self.weight_5_has_min            = weight_5_has_min
+        self.weight_5_min                = weight_5_min
+        self.weight_5_has_max            = weight_5_has_max
+        self.weight_5_max                = weight_5_max
+        self.weight_5_function           = weight_5_function
+        self.weight_5_function_value     = weight_5_function_value
+
+        if not diffraction_pattern is None:
             self.diffraction_pattern = diffraction_pattern
 
-            self.widget.populate_fields_in_widget(self, "wavelength", self.diffraction_pattern.wavelength)
+            OWGenericWidget.populate_fields_in_widget(self, "wavelength", self.diffraction_pattern.wavelength, value_only=True)
             self.is_multiple_wavelength = self.diffraction_pattern.is_single_wavelength == False
-
 
         self.secondary_box       = gui.widgetBox(container, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH - 35, spacing=0)
 
-        self.widget.create_box_in_widget(self, self.secondary_box,  "wavelength_2", label="\u03BB 2 [nm]", label_width=55, add_callback=True)
-        self.widget.create_box_in_widget(self, self.secondary_box,  "weight_2", label="weight 2", label_width=55, add_callback=True)
-        self.widget.create_box_in_widget(self, self.secondary_box,  "wavelength_3", label="\u03BB 3 [nm]", label_width=55, add_callback=True)
-        self.widget.create_box_in_widget(self, self.secondary_box,  "weight_3", label="weight 3", label_width=55, add_callback=True)
-        self.widget.create_box_in_widget(self, self.secondary_box,  "wavelength_4", label="\u03BB 4 [nm]", label_width=55, add_callback=True)
-        self.widget.create_box_in_widget(self, self.secondary_box,  "weight_4", label="weight 4", label_width=55, add_callback=True)
-        self.widget.create_box_in_widget(self, self.secondary_box,  "wavelength_5", label="\u03BB 5 [nm]", label_width=55, add_callback=True)
-        self.widget.create_box_in_widget(self, self.secondary_box,  "weight_5", label="weight 5", label_width=55, add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, self.secondary_box,  "wavelength_2", label="\u03BB 2 [nm]", label_width=55, add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, self.secondary_box,  "weight_2", label="weight 2", label_width=55, add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, self.secondary_box,  "wavelength_3", label="\u03BB 3 [nm]", label_width=55, add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, self.secondary_box,  "weight_3", label="weight 3", label_width=55, add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, self.secondary_box,  "wavelength_4", label="\u03BB 4 [nm]", label_width=55, add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, self.secondary_box,  "weight_4", label="weight 4", label_width=55, add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, self.secondary_box,  "wavelength_5", label="\u03BB 5 [nm]", label_width=55, add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, self.secondary_box,  "weight_5", label="weight 5", label_width=55, add_callback=True)
 
         self.secondary_box_empty = gui.widgetBox(container, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH - 35, spacing=0)
 
@@ -940,14 +1012,14 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
         if self.is_multiple_wavelength == 0:
             self.secondary_box.setVisible(False)
             self.secondary_box_empty.setVisible(True)
-            self.widget.populate_fields_in_widget(self, "wavelength_2", FitParameter(value=0.0, fixed=True), value_only=False)
-            self.widget.populate_fields_in_widget(self, "weight_2", FitParameter(value=0.0, fixed=True), value_only=False)
-            self.widget.populate_fields_in_widget(self, "wavelength_3", FitParameter(value=0.0, fixed=True), value_only=False)
-            self.widget.populate_fields_in_widget(self, "weight_3", FitParameter(value=0.0, fixed=True), value_only=False)
-            self.widget.populate_fields_in_widget(self, "wavelength_4", FitParameter(value=0.0, fixed=True), value_only=False)
-            self.widget.populate_fields_in_widget(self, "weight_4", FitParameter(value=0.0, fixed=True), value_only=False)
-            self.widget.populate_fields_in_widget(self, "wavelength_5", FitParameter(value=0.0, fixed=True), value_only=False)
-            self.widget.populate_fields_in_widget(self, "weight_5", FitParameter(value=0.0, fixed=True), value_only=False)
+            OWGenericWidget.populate_fields_in_widget(self, "wavelength_2", FitParameter(value=0.0, fixed=True), value_only=False)
+            OWGenericWidget.populate_fields_in_widget(self, "weight_2", FitParameter(value=0.0, fixed=True), value_only=False)
+            OWGenericWidget.populate_fields_in_widget(self, "wavelength_3", FitParameter(value=0.0, fixed=True), value_only=False)
+            OWGenericWidget.populate_fields_in_widget(self, "weight_3", FitParameter(value=0.0, fixed=True), value_only=False)
+            OWGenericWidget.populate_fields_in_widget(self, "wavelength_4", FitParameter(value=0.0, fixed=True), value_only=False)
+            OWGenericWidget.populate_fields_in_widget(self, "weight_4", FitParameter(value=0.0, fixed=True), value_only=False)
+            OWGenericWidget.populate_fields_in_widget(self, "wavelength_5", FitParameter(value=0.0, fixed=True), value_only=False)
+            OWGenericWidget.populate_fields_in_widget(self, "weight_5", FitParameter(value=0.0, fixed=True), value_only=False)
         else:
             self.secondary_box.setVisible(True)
             self.secondary_box_empty.setVisible(False)
@@ -956,13 +1028,13 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
                 nr_secondary_wavelengths = len(self.diffraction_pattern.secondary_wavelengths)
 
                 for index in range(nr_secondary_wavelengths):
-                    self.widget.populate_fields_in_widget(self, "wavelength_" + str(2 + index), self.diffraction_pattern.secondary_wavelengths[index])
-                    self.widget.populate_fields_in_widget(self, "weight_" + str(2 + index), self.diffraction_pattern.secondary_wavelengths_weights[index])
+                    OWGenericWidget.populate_fields_in_widget(self, "wavelength_" + str(2 + index), self.diffraction_pattern.secondary_wavelengths[index], value_only=True)
+                    OWGenericWidget.populate_fields_in_widget(self, "weight_" + str(2 + index), self.diffraction_pattern.secondary_wavelengths_weights[index], value_only=True)
 
                 if nr_secondary_wavelengths < 4:
                     for index in range(nr_secondary_wavelengths+1, 6):
-                        self.widget.populate_fields_in_widget(self, "wavelength_" + str(index), FitParameter(value=0.0, fixed=True), value_only=False)
-                        self.widget.populate_fields_in_widget(self, "weight_" + str(index), FitParameter(value=0.0, fixed=True), value_only=False)
+                        OWGenericWidget.populate_fields_in_widget(self, "wavelength_" + str(index), FitParameter(value=0.0, fixed=True), value_only=False)
+                        OWGenericWidget.populate_fields_in_widget(self, "weight_" + str(index), FitParameter(value=0.0, fixed=True), value_only=False)
 
         if not self.is_on_init or (self.is_on_init and not self.diffraction_pattern is None):
             self.widget.dump_is_multiple_wavelength()

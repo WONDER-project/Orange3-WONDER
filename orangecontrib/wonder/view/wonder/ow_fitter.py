@@ -342,43 +342,36 @@ class OWFitter(OWGenericWidget):
         self.table_fit_out = self.create_table_widget()
         self.tab_fit_out.layout().addWidget(self.table_fit_out, alignment=Qt.AlignHCenter)
 
-    def set_incremental(self, is_init=False):
+    def set_incremental(self):
         if self.is_incremental == 0:
-            initialize = True
-
             if self.was_incremental == 1:
                 answer = QMessageBox.question(self, 'Set Incremental', "Unchecking incremental mode will make the fit begin from initially received parameters, continue?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
                 if (answer == QMessageBox.No):
-                    initialize          = False
                     self.is_incremental = 1
-        else:
-            initialize = self.current_iteration == 0
-
-        if initialize:
-            self.fit_global_parameters = self.initial_fit_global_parameters.duplicate()
-
-            self.fitted_fit_global_parameters = self.fit_global_parameters.duplicate()
-            self.fitted_fit_global_parameters.evaluate_functions()
-
-            self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
-            self.fitter.init_fitter(self.fitted_fit_global_parameters)
-
-            self.current_wss = []
-            self.current_gof = []
-            self.current_iteration = 0 if self.is_incremental == 0 else self.current_iteration
-
-            if is_init: sys.stdout = EmittingStream(textWritten=self.write_stdout)
-
-            self.fitted_patterns = self.fitter.build_fitted_diffraction_pattern(self.fitted_fit_global_parameters)
-            self.fit_data = None
-
-            self.show_data(is_init=is_init)
-
-            self.tabs.setCurrentIndex(1)
-            self.tabs_plot.setCurrentIndex(0)
 
         self.was_incremental = self.is_incremental
+
+    def initialize_fit(self, is_init=False):
+        if self.is_incremental==0: self.fit_global_parameters = self.initial_fit_global_parameters.duplicate()
+
+        self.fitted_fit_global_parameters = self.fit_global_parameters.duplicate()
+        self.fitted_fit_global_parameters.evaluate_functions()
+
+        if is_init: self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
+        self.fitter.init_fitter(self.fitted_fit_global_parameters)
+
+        self.current_wss = []
+        self.current_gof = []
+        self.current_iteration = 0 if self.is_incremental == 0 else self.current_iteration
+
+        if is_init: sys.stdout = EmittingStream(textWritten=self.write_stdout)
+
+        self.fitted_patterns = self.fitter.build_fitted_diffraction_pattern(self.fitted_fit_global_parameters)
+        self.fit_data = None
+
+        self.tabs.setCurrentIndex(1)
+        self.tabs_plot.setCurrentIndex(0)
 
     def set_interactive(self):
         self.cb_show_wss_gof.setEnabled(self.is_interactive==1)
@@ -457,6 +450,8 @@ class OWFitter(OWGenericWidget):
 
                 if self.fit_global_parameters.fit_initialization.crystal_structures is None:
                     raise ValueError("Crystal Structure is missing: add the proper widget before the Fitter")
+
+                self.initialize_fit(is_init=False)
 
                 self.fit_global_parameters.set_n_max_iterations(self.n_iterations)
                 self.fit_global_parameters.set_convergence_reached(False)
@@ -563,7 +558,9 @@ class OWFitter(OWGenericWidget):
                     self.tab_plot_strain.setEnabled(True)
 
                 self.set_interactive()
-                self.set_incremental(is_init=True)
+                self.set_incremental()
+                self.initialize_fit(is_init=True)
+                self.show_data(is_init=True)
 
                 if self.is_automatic_run:
                     self.do_fit()
@@ -780,7 +777,7 @@ class OWFitter(OWGenericWidget):
 
 
     def show_data(self, is_init=False):
-        diffraction_pattern_number = len(self.fitted_fit_global_parameters.fit_initialization.diffraction_patterns)
+        diffraction_pattern_number = self.fitted_fit_global_parameters.fit_initialization.get_diffraction_patterns_number()
 
         if is_init:
             self.build_plot_fit()

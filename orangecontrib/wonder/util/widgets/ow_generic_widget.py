@@ -213,7 +213,7 @@ class OWGenericWidget(widget.OWWidget):
                         setattr(widget, var + "_has_max", 0)
                         setattr(widget, var + "_max", 0.0)
 
-            widget.parameter_functions[var]()
+        widget.parameter_functions[var]()
 
     def callResetSettings(self):
         if ConfirmDialog.confirmed(parent=self, message="Confirm Reset of the Fields?"):
