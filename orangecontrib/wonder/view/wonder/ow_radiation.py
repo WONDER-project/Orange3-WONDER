@@ -125,7 +125,7 @@ class OWRadiation(OWGenericWidget):
 
         main_box = gui.widgetBox(self.controlArea,
                                  "Radiation", orientation="vertical",
-                                 width=self.CONTROL_AREA_WIDTH - 5, height=600)
+                                 width=self.CONTROL_AREA_WIDTH - 5, height=350)
 
 
         button_box = gui.widgetBox(main_box,
@@ -907,10 +907,6 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
 
         self.CONTROL_AREA_WIDTH = widget.CONTROL_AREA_WIDTH
 
-        container = gui.widgetBox(parent, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-35)
-
-        widget.create_box_in_widget(self, container,  "wavelength", label="\u03BB  [nm]", disable_function=True, add_callback=True)
-
         self.is_multiple_wavelength      = is_multiple_wavelength
         self.wavelength                  = wavelength
         self.wavelength_fixed            = wavelength_fixed
@@ -984,6 +980,10 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
         self.weight_5_max                = weight_5_max
         self.weight_5_function           = weight_5_function
         self.weight_5_function_value     = weight_5_function_value
+
+        container = gui.widgetBox(parent, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-35)
+
+        OWGenericWidget.create_box_in_widget(self, container,  "wavelength", label="\u03BB  [nm]", disable_function=True, add_callback=True)
 
         if not diffraction_pattern is None:
             self.diffraction_pattern = diffraction_pattern

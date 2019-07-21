@@ -969,7 +969,6 @@ class OWFitter(OWGenericWidget):
 
                 y_ib_total = y_ib_size + y_ib_strain + y_ib_instr
 
-
                 self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_instr, legend="IPF", symbol='o', color="black")
                 self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_size, legend="Size", symbol='o', color="red")
                 self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_strain, legend="Strain", symbol='o', color="blue")
