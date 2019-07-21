@@ -404,9 +404,9 @@ def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern
     # INTENSITY MODULATION: STRUCTURAL MODEL YES/NO --------------------------------------------------------------------
 
     if crystal_structure.use_structure:
-        I *= crystal_structure.intensity_scale_factor.value
-        I *= multiplicity_cubic(reflection.h, reflection.k, reflection.l)
-        I *= squared_modulus_structure_factor(s_hkl,
+        I *= crystal_structure.intensity_scale_factor.value * \
+             multiplicity_cubic(reflection.h, reflection.k, reflection.l) * \
+             squared_modulus_structure_factor(s_hkl,
                                               crystal_structure.formula,
                                               reflection.h,
                                               reflection.k,
@@ -504,13 +504,11 @@ def size_function_lognormal(L, sigma, mu):
     lnModL = numpy.log(modL)
     sqrt2 = numpy.sqrt(2)
 
-    a = 0.5*erfc((lnModL - mu -3*sigma**2)/(sigma*sqrt2))
-    b = -0.75*modL*erfc((lnModL - mu -2*sigma**2)/(sigma*sqrt2))\
-                *numpy.exp(-mu - 2.5*sigma**2)
-    c = 0.25*(L**3)*erfc((lnModL - mu)/(sigma*sqrt2)) \
-                *numpy.exp(-3*mu - 4.5*sigma**2)
+    size = 0.5*erfc((lnModL - mu -3*sigma**2)/(sigma*sqrt2)) + \
+          -0.75*modL*erfc((lnModL - mu -2*sigma**2)/(sigma*sqrt2))*numpy.exp(-mu - 2.5*sigma**2) + \
+           0.25*(L**3)*erfc((lnModL - mu)/(sigma*sqrt2)) *numpy.exp(-3*mu - 4.5*sigma**2)
 
-    return  a + b + c
+    return  size
 
 def lognormal_distribution(mu, sigma, x):
         return numpy.exp(-0.5*((numpy.log(x) - mu)/(sigma))**2)/(x*sigma*numpy.sqrt(2*numpy.pi))
@@ -544,27 +542,39 @@ def clausen_integral(x=0.0):
     return -1*(_v_integrate_quad(lambda t: clausen_integral_inner_function(t), 0.0, x)[0])
 
 def f_star(eta, use_simplified_calculation=True):
-    result = numpy.zeros(len(eta))
-    eta = numpy.array(eta)
-
-    cursor_1 = numpy.where(eta >= 1)
-    cursor_2 = numpy.where(eta < 1)
-
-    eta1 = eta[cursor_1]
-    eta2 = eta[cursor_2]
-
-    result[cursor_1] = (256/(45*pi*eta1)) - ((11/24) + (log(2) - log(eta1))/4)/(eta1**2)
-
-    if use_simplified_calculation:
-        result[cursor_2] = (7/4) - log(2) - log(eta2) + ((eta2**2)/6) - (32*(eta2**3))/(225*pi)
+    if type(eta) == float:
+        if eta >= 1:
+            return (256/(45*pi*eta)) - ((11/24) + (log(2) - log(eta))/4)/(eta**2)
+        else:
+            if use_simplified_calculation:
+                return (7/4) - log(2) - log(eta) + ((eta**2)/6) - (32*(eta**3))/(225*pi)
+            else:
+                return (256/(45*pi*eta)) \
+                         + ((eta**2)/6) - log(2) - log(eta) \
+                         + -eta*sqrt(1-(eta**2))*(769 + 4*(eta**2)*(20.5 + (eta**2)))/(180*pi*(eta**2)) \
+                         + -((45 - 180*eta**2)*clausen_integral(2*arcsin(eta)) \
+                         +  (15*arcsin(eta)*(11 + 4*(eta**2)*(10.5 + (eta**2)) + (6 - 24*(eta**2))*(log(2) + log(eta)))))/(180*pi*(eta**2))
     else:
-        result[cursor_2] = (256/(45*pi*eta2))
-        result[cursor_2] += ((eta2**2)/6) - log(2) - log(eta2)
-        result[cursor_2] += -eta2*sqrt(1-(eta2**2))*(769 + 4*(eta2**2)*(20.5 + (eta2**2)))/(180*pi*(eta2**2))
-        result[cursor_2] += -((45 - 180*eta2**2)*clausen_integral(2*arcsin(eta2)) +
-                             (15*arcsin(eta2)*(11 + 4*(eta2**2)*(10.5 + (eta2**2)) + (6 - 24*(eta2**2))*(log(2) + log(eta2)))))/(180*pi*(eta2**2))
+        result = numpy.zeros(len(eta))
 
-    return result
+        cursor_1 = numpy.where(eta >= 1)
+        cursor_2 = numpy.where(eta < 1)
+
+        eta1 = eta[cursor_1]
+        eta2 = eta[cursor_2]
+
+        result[cursor_1] = (256/(45*pi*eta1)) - ((11/24) + (log(2) - log(eta1))/4)/(eta1**2)
+
+        if use_simplified_calculation:
+            result[cursor_2] = (7/4) - log(2) - log(eta2) + ((eta2**2)/6) - (32*(eta2**3))/(225*pi)
+        else:
+            result[cursor_2] = (256/(45*pi*eta2)) \
+                             + ((eta2**2)/6) - log(2) - log(eta2) \
+                             + -eta2*sqrt(1-(eta2**2))*(769 + 4*(eta2**2)*(20.5 + (eta2**2)))/(180*pi*(eta2**2)) \
+                             + -((45 - 180*eta2**2)*clausen_integral(2*arcsin(eta2)) \
+                             +  (15*arcsin(eta2)*(11 + 4*(eta2**2)*(10.5 + (eta2**2)) + (6 - 24*(eta2**2))*(log(2) + log(eta2)))))/(180*pi*(eta2**2))
+
+        return result
 
 
 def C_hkl_krivoglaz_wilkens(h, k, l, Ae, Be, As, Bs, mix):
@@ -816,7 +826,7 @@ def specimen_displacement(theta, wavelength, goniometer_radius, displacement): #
 
     return delta_twotheta*numpy.cos(theta)/wavelength
 
-def instrumental_function (L, h, k, l, lattice_parameter, wavelength, U, V, W, a, b, c):
+def instrumental_function(L, h, k, l, lattice_parameter, wavelength, U, V, W, a, b, c):
     theta = Utilities.theta_hkl(lattice_parameter, h, k, l, wavelength)
     theta_deg = numpy.degrees(theta)
 
@@ -907,3 +917,22 @@ def add_expdecay_0_background(x, I, parameters=[0, 0, 0, 0, 0, 0]):
         bkg += a_i*numpy.exp(-numpy.abs(x-x0)*b_i)
 
     I += bkg
+
+######################################################################
+# CALCULATION OF INTEGRAL BREADTH
+######################################################################
+
+def integral_breadth_size_lognormal(mu, sigma): #integral breadth for size broadening only
+    return 1 / (2 * integrate.quad(lambda L: size_function_lognormal(L, sigma, mu), 0, numpy.inf)[0])
+
+def integral_breadth_size_delta(mu): #integral breadth for size broadening only
+    return 1 / (2 * integrate.quad(lambda L: size_function_delta(L, mu), 0, numpy.inf)[0])
+
+def integral_breadth_strain_krivoglaz_wilkens(h, k, l, lattice_parameter, rho, Re, Ae, Be, As, Bs, mix, b): #integral breadth for strain broadening only
+    return 1 / (2 * integrate.quad(lambda L: strain_krivoglaz_wilkens(L, h, k, l, lattice_parameter, rho, Re, Ae, Be, As, Bs, mix, b), 0, numpy.inf)[0])
+
+def integral_breadth_strain_invariant_function_pah(h, k, l, lattice_parameter, a, b, C_hkl): #integral breadth for strain broadening only
+    return 1 / (2 * integrate.quad(lambda L: strain_invariant_function_pah(L, h, k, l, lattice_parameter, a, b, C_hkl), 0, numpy.inf)[0])
+
+def integral_breadth_instrumental_function(h, k, l, lattice_parameter, wavelength, U, V, W, a, b, c): #integral breadth for instrumental broadening only
+     return 1 / (2 * integrate.quad(lambda L: instrumental_function(L, h, k, l, lattice_parameter, wavelength, U, V, W, a, b, c), 0, numpy.inf)[0])

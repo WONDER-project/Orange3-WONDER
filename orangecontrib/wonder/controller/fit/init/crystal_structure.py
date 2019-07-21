@@ -158,6 +158,23 @@ class CrystalStructure(ParametersList):
 
         return None
 
+    def get_s_list(self):
+        return numpy.array([Utilities.s_hkl(self.a.value, reflection.h, reflection.k, reflection.l) for reflection in self.reflections])
+
+    def get_hkl_list(self):
+        return numpy.array([str(reflection.h) + str(reflection.k) + str(reflection.l) for reflection in self.reflections])
+
+    def get_s(self, h, k, l):
+        if self.is_cube(self.symmetry):
+            if self.a.value is None:
+                return 0
+            else:
+                return Utilities.s_hkl(self.a.value, h, k, l)
+        #elif self.symmetry == Symmetry.HCP:
+        #    return 1/numpy.sqrt((4/3)*((h**2 + h*k + k**2)/ self.a.value**2  + (l/self.c.value)**2))
+        else:
+            NotImplementedError("Only Cubic supported: TODO!!!!!!")
+
     def get_d_spacing(self, h, k, l):
         if self.is_cube(self.symmetry):
             if self.a.value is None:

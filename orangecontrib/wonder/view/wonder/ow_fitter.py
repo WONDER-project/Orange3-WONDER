@@ -20,10 +20,14 @@ from orangecontrib.wonder.controller.fit.fitter_factory import FitterFactory, Fi
 from orangecontrib.wonder.util import congruence
 from orangecontrib.wonder.controller.fit.fit_parameter import PARAM_HWMAX, PARAM_HWMIN
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters, FreeOutputParameters
-from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import SpecimenDisplacement
 from orangecontrib.wonder.controller.fit.init.thermal_polarization_parameters import ThermalPolarizationParameters
+from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import SpecimenDisplacement
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection
-from orangecontrib.wonder.controller.fit.wppm_functions import caglioti_fwhm, caglioti_eta, delta_two_theta_lab6
+from orangecontrib.wonder.controller.fit.microstructure.strain import InvariantPAH, KrivoglazWilkensModel
+from orangecontrib.wonder.controller.fit.microstructure.size import Distribution
+from orangecontrib.wonder.controller.fit.wppm_functions import caglioti_fwhm, caglioti_eta, delta_two_theta_lab6, \
+    integral_breadth_instrumental_function, integral_breadth_size_lognormal, integral_breadth_size_delta, \
+    integral_breadth_strain_invariant_function_pah, integral_breadth_strain_krivoglaz_wilkens
 
 
 class OWFitter(OWGenericWidget):
@@ -51,6 +55,7 @@ class OWFitter(OWGenericWidget):
     show_shift = Setting(1)
     show_size = Setting(1)
     show_warren = Setting(1)
+    show_integral_breadth = Setting(1)
 
     horizontal_headers = ["Name", "Value", "Min", "Max", "Fixed", "Function", "Expression", "e.s.d."]
 
@@ -145,15 +150,12 @@ class OWFitter(OWGenericWidget):
         self.cb_interactive = orangegui.checkBox(self.plot_box, self, "is_interactive", "Refresh Plots while fitting", callback=self.set_interactive)
         orangegui.separator(self.plot_box, height=8)
 
-        self.cb_show_wss_gof = orangegui.checkBox(self.plot_box, self, "show_wss_gof", "Refresh W.S.S. and G.o.F. plots" )
-        orangegui.separator(self.plot_box)
-        self.cb_show_ipf     = orangegui.checkBox(self.plot_box, self, "show_ipf", "Refresh Instrumental Profile plots")
-        orangegui.separator(self.plot_box)
-        self.cb_show_shift     = orangegui.checkBox(self.plot_box, self, "show_shift", "Refresh Calibration Shift plots")
-        orangegui.separator(self.plot_box)
-        self.cb_show_size    = orangegui.checkBox(self.plot_box, self, "show_size", "Refresh Size Distribution plot")
-        orangegui.separator(self.plot_box)
-        self.cb_show_warren  = orangegui.checkBox(self.plot_box, self, "show_warren", "Refresh Warren's plot")
+        self.cb_show_wss_gof           = orangegui.checkBox(self.plot_box, self, "show_wss_gof", "Refresh W.S.S. and G.o.F. plots" )
+        self.cb_show_ipf               = orangegui.checkBox(self.plot_box, self, "show_ipf", "Refresh Instrumental Profile plots")
+        self.cb_show_shift             = orangegui.checkBox(self.plot_box, self, "show_shift", "Refresh Calibration Shift plots")
+        self.cb_show_size              = orangegui.checkBox(self.plot_box, self, "show_size", "Refresh Size Distribution plot")
+        self.cb_show_warren            = orangegui.checkBox(self.plot_box, self, "show_warren", "Refresh Warren's plot")
+        self.cb_show_integral_breadth  = orangegui.checkBox(self.plot_box, self, "show_integral_breadth", "Refresh Integral Breadth plot")
 
         self.set_interactive()
 
@@ -186,9 +188,10 @@ class OWFitter(OWGenericWidget):
         self.tab_plot_fit_data = gui.createTabPage(self.tabs_plot, "Fit")
         self.tab_plot_fit_wss  = gui.createTabPage(self.tabs_plot, "W.S.S.")
         self.tab_plot_fit_gof  = gui.createTabPage(self.tabs_plot, "G.o.F.")
-        self.tab_plot_ipf   = gui.createTabPage(self.tabs_plot, "Instrumental Profile")
+        self.tab_plot_ipf   = gui.createTabPage(self.tabs_plot,  "Instrumental Profile")
         self.tab_plot_size   = gui.createTabPage(self.tabs_plot, "Size Distribution")
         self.tab_plot_strain = gui.createTabPage(self.tabs_plot, "Warren's Plot")
+        self.tab_plot_integral_breadth = gui.createTabPage(self.tabs_plot, "Integral Breadth")
 
         self.std_output = gui.textArea(height=100, width=800)
         self.std_output.setStyleSheet("font-family: Courier, monospace;")
@@ -230,10 +233,10 @@ class OWFitter(OWGenericWidget):
         self.tab_plot_size.layout().addWidget(self.plot_size)
 
         self.plot_strain = PlotWindow(control=True)
-        legendsDockWidget = LegendsDockWidget(plot=self.plot_strain)
-        self.plot_strain._legendsDockWidget = legendsDockWidget
-        self.plot_strain._dockWidgets.append(legendsDockWidget)
-        self.plot_strain.addDockWidget(qt.Qt.RightDockWidgetArea, legendsDockWidget)
+        legends_dock_widget = LegendsDockWidget(plot=self.plot_strain)
+        self.plot_strain._legendsDockWidget = legends_dock_widget
+        self.plot_strain._dockWidgets.append(legends_dock_widget)
+        self.plot_strain.addDockWidget(qt.Qt.RightDockWidgetArea, legends_dock_widget)
         self.plot_strain._legendsDockWidget.setFixedWidth(120)
         self.plot_strain.getLegendsDockWidget().show()
 
@@ -244,6 +247,10 @@ class OWFitter(OWGenericWidget):
         self.plot_strain.setGraphYLabel("$\sqrt{<{\Delta}L^{2}>}$ [nm]")
 
         self.tab_plot_strain.layout().addWidget(self.plot_strain)
+
+        self.tabs_plot_integral_breadth = gui.tabWidget(self.tab_plot_integral_breadth)
+
+        self.build_plot_integral_breadth()
 
         box = gui.widgetBox(self.tab_plot_fwhm, "", orientation="horizontal")
 
@@ -342,6 +349,13 @@ class OWFitter(OWGenericWidget):
         self.table_fit_out = self.create_table_widget()
         self.tab_fit_out.layout().addWidget(self.table_fit_out, alignment=Qt.AlignHCenter)
 
+    def write_stdout(self, text):
+        cursor = self.std_output.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(text)
+        self.std_output.setTextCursor(cursor)
+        self.std_output.ensureCursorVisible()
+
     def set_incremental(self):
         if self.is_incremental == 0:
             if self.was_incremental == 1:
@@ -352,28 +366,6 @@ class OWFitter(OWGenericWidget):
 
         self.was_incremental = self.is_incremental
 
-    def initialize_fit(self, is_init=False):
-        if self.is_incremental==0 or is_init:
-            self.fit_global_parameters = self.initial_fit_global_parameters.duplicate()
-            self.current_wss = []
-            self.current_gof = []
-            self.current_iteration = 0
-            self.fit_data = None
-
-        self.fitted_fit_global_parameters = self.fit_global_parameters.duplicate()
-        self.fitted_fit_global_parameters.evaluate_functions()
-
-        if is_init:
-            sys.stdout = EmittingStream(textWritten=self.write_stdout)
-            self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
-
-        self.fitter.init_fitter(self.fitted_fit_global_parameters)
-
-        self.fitted_patterns = self.fitter.build_fitted_diffraction_pattern(self.fitted_fit_global_parameters)
-
-        self.tabs.setCurrentIndex(1)
-        self.tabs_plot.setCurrentIndex(0)
-
     def set_interactive(self):
         self.cb_show_wss_gof.setEnabled(self.is_interactive==1)
 
@@ -383,54 +375,226 @@ class OWFitter(OWGenericWidget):
                 self.cb_show_shift.setEnabled(not self.fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__) is None)
                 self.cb_show_size.setEnabled(not self.fit_global_parameters.size_parameters is None)
                 self.cb_show_warren.setEnabled(not self.fit_global_parameters.strain_parameters is None)
+                self.cb_show_integral_breadth.setEnabled(not self.fit_global_parameters.strain_parameters is None)
             else:
                 self.cb_show_ipf.setEnabled(False)
                 self.cb_show_shift.setEnabled(False)
                 self.cb_show_size.setEnabled(False)
                 self.cb_show_warren.setEnabled(False)
+                self.cb_show_integral_breadth.setEnabled(False)
         else:
             self.cb_show_ipf.setEnabled(self.is_interactive==1)
             self.cb_show_shift.setEnabled(self.is_interactive==1)
             self.cb_show_size.setEnabled(self.is_interactive==1)
             self.cb_show_warren.setEnabled(self.is_interactive==1)
-
-    def build_plot_fit(self):
-        fit_global_parameter = self.fit_global_parameters if self.fitted_fit_global_parameters is None else self.fitted_fit_global_parameters
-
-        self.plot_fit = []
-        self.tabs_plot_fit_data.clear()
-
-        for index in range(1 if fit_global_parameter is None else len(fit_global_parameter.fit_initialization.diffraction_patterns)):
-            tab_plot_fit_data = gui.createTabPage(self.tabs_plot_fit_data, "Diff. Patt. " + str(index+1))
-
-            plot_fit = PlotWindow()
-            plot_fit.setDefaultPlotLines(True)
-            plot_fit.setActiveCurveColor(color="#00008B")
-            plot_fit.setGraphXLabel(r"2$\theta$ (deg)")
-            plot_fit.setGraphYLabel("Intensity")
-
-            self.plot_fit.append(plot_fit)
-            tab_plot_fit_data.layout().addWidget(plot_fit)
-
-    def write_stdout(self, text):
-        cursor = self.std_output.textCursor()
-        cursor.movePosition(QTextCursor.End)
-        cursor.insertText(text)
-        self.std_output.setTextCursor(cursor)
-        self.std_output.ensureCursorVisible()
+            self.cb_show_integral_breadth.setEnabled(self.is_interactive==1)
 
     def set_fitter(self):
         self.fitter_box_1.setVisible(self.fitter_name <= 1)
         self.fitter_box_2.setVisible(self.fitter_name == 2)
 
-    def stop_fit(self):
-        if ConfirmDialog.confirmed(self, "Confirm STOP?"):
-            self.stop_fit = True
-
     def set_plot_options_enabled(self, enabled):
         self.fit_button.setEnabled(enabled)
         self.plot_box.setEnabled(enabled)
         self.plot_box.repaint()
+
+    #####################################
+    # INPUT
+    #####################################
+
+    def set_data(self, data):
+        try:
+            if not data is None:
+                if self.fit_running: raise RuntimeError("Fit is Running: Input data are not accepted!")
+
+                if self.is_incremental == 1 and not self.fit_global_parameters is None:
+                    if not ConfirmDialog.confirmed(self, message="Warning: Fitter is in set in incremental mode, but received fit parameters will replace the already fitted ones. Do you accept them?"):
+                        return
+
+                self.current_iteration = 0
+
+                self.fit_global_parameters = data.duplicate()
+                self.initial_fit_global_parameters = data.duplicate()
+
+                # keep existing text!
+                existing_free_output_parameters = FreeOutputParameters()
+                existing_free_output_parameters.parse_formulas(self.free_output_parameters_text)
+
+                received_free_output_parameters = self.fit_global_parameters.free_output_parameters.duplicate()
+                received_free_output_parameters.append(existing_free_output_parameters)
+
+                self.text_area_free_out.setText(received_free_output_parameters.to_python_code())
+
+                parameters = self.fit_global_parameters.free_input_parameters.as_parameters()
+                parameters.extend(self.fit_global_parameters.get_parameters())
+
+                self.populate_table(self.table_fit_in, parameters, is_output=False)
+
+                self.tabs.setCurrentIndex(0)
+
+                if self.fit_global_parameters.instrumental_parameters is None:
+                    self.show_ipf = 0
+                    self.cb_show_ipf.setEnabled(False)
+                    self.tab_plot_ipf.setEnabled(False)
+                else:
+                    self.cb_show_ipf.setEnabled(True)
+                    self.tab_plot_ipf.setEnabled(True)
+
+                if self.fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__) is None:
+                    self.show_shift = 0
+                    self.cb_show_shift.setEnabled(False)
+                    self.tab_plot_lab6.setEnabled(False)
+                else:
+                    self.cb_show_shift.setEnabled(True)
+                    self.tab_plot_lab6.setEnabled(True)
+
+                if self.fit_global_parameters.size_parameters is None:
+                    self.show_size = 0
+                    self.cb_show_size.setEnabled(False)
+                    self.tab_plot_size.setEnabled(False)
+                else:
+                    self.cb_show_size.setEnabled(True)
+                    self.tab_plot_size.setEnabled(True)
+
+                if self.fit_global_parameters.strain_parameters is None:
+                    self.show_warren           = 0
+                    self.show_integral_breadth = 0
+
+                    self.cb_show_warren.setEnabled(False)
+                    self.tab_plot_strain.setEnabled(False)
+                    self.cb_show_integral_breadth.setEnabled(False)
+                    self.tab_plot_integral_breadth.setEnabled(False)
+                else:
+                    self.cb_show_warren.setEnabled(True)
+                    self.tab_plot_strain.setEnabled(True)
+                    self.cb_show_integral_breadth.setEnabled(True)
+                    self.tab_plot_integral_breadth.setEnabled(True)
+
+                self.set_interactive()
+                self.was_incremental = self.is_incremental
+                self.initialize_fit(is_init=True)
+                self.show_data(is_init=True)
+
+                if self.is_automatic_run:
+                    self.do_fit()
+        except Exception as e:
+            QMessageBox.critical(self, "Error during load",
+                                 str(e),
+                                 QMessageBox.Ok)
+
+            if self.IS_DEVELOP: raise e
+
+    def create_table_widget(self, is_output=True):
+        from PyQt5.QtWidgets import QAbstractItemView
+
+        table_fit = QTableWidget(1, 8 if is_output else 7)
+        table_fit.setMinimumWidth(780)
+        table_fit.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        table_fit.setAlternatingRowColors(True)
+        table_fit.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        table_fit.verticalHeader().setVisible(False)
+        table_fit.setHorizontalHeaderLabels(self.horizontal_headers if is_output else self.horizontal_headers[:-1])
+        table_fit.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+        return table_fit
+
+    def add_table_item(self,
+                       table_widget,
+                       row_index,
+                       column_index,
+                       text="",
+                       alignement=Qt.AlignLeft,
+                       change_color=False,
+                       color=QColor(255, 255, 255)):
+
+            table_item = QTableWidgetItem(text)
+            table_item.setTextAlignment(alignement)
+            if change_color: table_item.setBackground(color)
+            table_widget.setItem(row_index, column_index, table_item)
+
+    def analyze_parameter(self, parameter):
+        if parameter.parameter_name == ThermalPolarizationParameters.get_parameters_prefix() + "debye_waller_factor":
+            parameter = parameter.duplicate()
+            parameter.rescale(100) # from nm-2 to A-2
+        elif parameter.parameter_name == SpecimenDisplacement.get_parameters_prefix() + "displacement":
+            parameter = parameter.duplicate()
+            parameter.rescale(1e6) # from m to um
+
+        return parameter
+
+    def populate_table(self, table_widget, parameters, is_output=True):
+        table_widget.clear()
+
+        row_count = table_widget.rowCount()
+        for n in range(0, row_count):
+            table_widget.removeRow(0)
+
+        for index in range(0, len(parameters)):
+            table_widget.insertRow(0)
+
+        for index in range(0, len(parameters)):
+            parameter = parameters[index]
+            parameter = self.analyze_parameter(parameter)
+            change_color = not parameter.is_variable()
+
+            if change_color:
+                if parameter.input_parameter: color = QColor(213, 245, 227)
+                elif parameter.fixed: color = QColor(190, 190, 190)
+                elif parameter.output_parameter: color = QColor(242, 245, 169)
+                else: color = QColor(169, 208, 245)
+            else:
+                color = None
+
+            self.add_table_item(table_widget, index, 0,
+                                parameter.parameter_name,
+                                Qt.AlignLeft, change_color, color)
+
+            self.add_table_item(table_widget, index, 1,
+                                str(round(0.0 if parameter.value is None else parameter.value, 6)),
+                                Qt.AlignRight, change_color, color)
+
+            if (not parameter.is_variable()) or parameter.boundary is None: text_2 = text_3 = ""
+            else:
+                if parameter.boundary.min_value == PARAM_HWMIN: text_2 = ""
+                else: text_2 = str(round(0.0 if parameter.boundary.min_value is None else parameter.boundary.min_value, 6))
+
+                if parameter.boundary.max_value == PARAM_HWMAX: text_3 = ""
+                else: text_3 = str(round(0.0 if parameter.boundary.max_value is None else parameter.boundary.max_value, 6))
+
+            self.add_table_item(table_widget, index, 2,
+                                text_2,
+                                Qt.AlignRight, change_color, color)
+            self.add_table_item(table_widget, index, 3,
+                                text_3,
+                                Qt.AlignRight, change_color, color)
+
+            self.add_table_item(table_widget, index, 4,
+                                "" if not parameter.fixed else "\u2713",
+                                Qt.AlignCenter, change_color, color)
+            self.add_table_item(table_widget, index, 5,
+                                "" if not parameter.function else "\u2713",
+                                Qt.AlignCenter, change_color, color)
+
+            if parameter.function: text_6 = str(parameter.function_value)
+            else: text_6 = ""
+
+            self.add_table_item(table_widget, index, 6,
+                                text_6,
+                                Qt.AlignLeft, change_color, color)
+
+            if is_output: self.add_table_item(table_widget, index, 7,
+                                              str(round(0.0 if parameter.error is None else parameter.error, 6)),
+                                              Qt.AlignRight, change_color, color)
+
+        table_widget.setHorizontalHeaderLabels(self.horizontal_headers)
+        table_widget.resizeRowsToContents()
+        table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        table_widget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+    #####################################
+    # FIT
+    #####################################
 
     def do_fit(self):
         try:
@@ -491,194 +655,37 @@ class OWFitter(OWGenericWidget):
         self.setStatusMessage("")
         self.progressBarFinished()
 
+    def initialize_fit(self, is_init=False):
+        if self.is_incremental==0 or is_init:
+            self.fit_global_parameters = self.initial_fit_global_parameters.duplicate()
+            self.current_wss = []
+            self.current_gof = []
+            self.current_iteration = 0
+            self.fit_data = None
+
+        self.fitted_fit_global_parameters = self.fit_global_parameters.duplicate()
+        self.fitted_fit_global_parameters.evaluate_functions()
+
+        if is_init:
+            sys.stdout = EmittingStream(textWritten=self.write_stdout)
+            self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
+
+        self.fitter.initialize(self.fitted_fit_global_parameters)
+
+        self.fitted_patterns = self.fitter.build_fitted_diffraction_pattern(self.fitted_fit_global_parameters)
+
+        self.tabs.setCurrentIndex(1)
+        self.tabs_plot.setCurrentIndex(0)
+
+    def stop_fit(self):
+        if ConfirmDialog.confirmed(self, "Confirm STOP?"):
+            self.stop_fit = True
+
+
     def send_current_fit(self):
         if not self.fit_global_parameters is None:
             self.fit_global_parameters.regenerate_parameters()
             self.send("Fit Global Parameters", self.fit_global_parameters.duplicate())
-
-    def set_data(self, data):
-        try:
-            if not data is None:
-                if self.fit_running: raise RuntimeError("Fit is Running: Input data are not accepted!")
-
-                if self.is_incremental == 1 and not self.fit_global_parameters is None:
-                    if not ConfirmDialog.confirmed(self, message="Warning: Fitter is in set in incremental mode, but received fit parameters will replace the already fitted ones. Do you accept them?"):
-                        return
-
-                self.current_iteration = 0
-
-                self.fit_global_parameters = data.duplicate()
-                self.initial_fit_global_parameters = data.duplicate()
-
-                # keep existing text!
-                existing_free_output_parameters = FreeOutputParameters()
-                existing_free_output_parameters.parse_formulas(self.free_output_parameters_text)
-
-                received_free_output_parameters = self.fit_global_parameters.free_output_parameters.duplicate()
-                received_free_output_parameters.append(existing_free_output_parameters)
-
-                self.text_area_free_out.setText(received_free_output_parameters.to_python_code())
-
-                parameters = self.fit_global_parameters.free_input_parameters.as_parameters()
-                parameters.extend(self.fit_global_parameters.get_parameters())
-
-                self.populate_table(self.table_fit_in, parameters, is_output=False)
-
-                self.tabs.setCurrentIndex(0)
-
-                if self.fit_global_parameters.instrumental_parameters is None:
-                    self.show_ipf = 0
-                    self.cb_show_ipf.setEnabled(False)
-                    self.tab_plot_ipf.setEnabled(False)
-                else:
-                    self.cb_show_ipf.setEnabled(True)
-                    self.tab_plot_ipf.setEnabled(True)
-
-                if self.fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__) is None:
-                    self.show_shift = 0
-                    self.cb_show_shift.setEnabled(False)
-                    self.tab_plot_lab6.setEnabled(False)
-                else:
-                    self.cb_show_shift.setEnabled(True)
-                    self.tab_plot_lab6.setEnabled(True)
-
-                if self.fit_global_parameters.size_parameters is None:
-                    self.show_size = 0
-                    self.cb_show_size.setEnabled(False)
-                    self.tab_plot_size.setEnabled(False)
-                else:
-                    self.cb_show_size.setEnabled(True)
-                    self.tab_plot_size.setEnabled(True)
-
-                if self.fit_global_parameters.strain_parameters is None:
-                    self.show_warren = 0
-                    self.cb_show_warren.setEnabled(False)
-                    self.tab_plot_strain.setEnabled(False)
-                else:
-                    self.cb_show_warren.setEnabled(True)
-                    self.tab_plot_strain.setEnabled(True)
-
-                self.set_interactive()
-                self.was_incremental = self.is_incremental
-                self.initialize_fit(is_init=True)
-                self.show_data(is_init=True)
-
-                if self.is_automatic_run:
-                    self.do_fit()
-        except Exception as e:
-            QMessageBox.critical(self, "Error during load",
-                                 str(e),
-                                 QMessageBox.Ok)
-
-            if self.IS_DEVELOP: raise e
-
-    def create_table_widget(self, is_output=True):
-        from PyQt5.QtWidgets import QAbstractItemView
-
-        table_fit = QTableWidget(1, 8 if is_output else 7)
-        table_fit.setMinimumWidth(780)
-        table_fit.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        table_fit.setAlternatingRowColors(True)
-        table_fit.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        table_fit.verticalHeader().setVisible(False)
-        table_fit.setHorizontalHeaderLabels(self.horizontal_headers if is_output else self.horizontal_headers[:-1])
-        table_fit.setSelectionBehavior(QAbstractItemView.SelectRows)
-
-        return table_fit
-
-    def add_table_item(self, 
-                       table_widget, 
-                       row_index, 
-                       column_index,
-                       text="",
-                       alignement=Qt.AlignLeft,
-                       change_color=False,
-                       color=QColor(255, 255, 255)):
-
-            table_item = QTableWidgetItem(text)
-            table_item.setTextAlignment(alignement)
-            if change_color: table_item.setBackground(color)
-            table_widget.setItem(row_index, column_index, table_item)
-
-    def analyze_parameter(self, parameter):
-        if parameter.parameter_name == ThermalPolarizationParameters.get_parameters_prefix() + "debye_waller_factor":
-            parameter = parameter.duplicate()
-            parameter.rescale(100) # from nm-2 to A-2
-        elif parameter.parameter_name == SpecimenDisplacement.get_parameters_prefix() + "displacement":
-            parameter = parameter.duplicate()
-            parameter.rescale(1e6) # from m to um
-
-        return parameter
-
-    def populate_table(self, table_widget, parameters, is_output=True):
-        table_widget.clear()
-
-        row_count = table_widget.rowCount()
-        for n in range(0, row_count):
-            table_widget.removeRow(0)
-
-        for index in range(0, len(parameters)):
-            table_widget.insertRow(0)
-
-        for index in range(0, len(parameters)):
-            parameter = parameters[index]
-            parameter = self.analyze_parameter(parameter)
-            change_color = not parameter.is_variable()
-
-            if change_color:
-                if parameter.input_parameter: color = QColor(213, 245, 227)
-                elif parameter.fixed: color = QColor(190, 190, 190)
-                elif parameter.output_parameter: color = QColor(242, 245, 169)
-                else: color = QColor(169, 208, 245)
-            else:
-                color = None
-  
-            self.add_table_item(table_widget, index, 0,
-                                parameter.parameter_name,
-                                Qt.AlignLeft, change_color, color)
-
-            self.add_table_item(table_widget, index, 1,
-                                str(round(0.0 if parameter.value is None else parameter.value, 6)),
-                                Qt.AlignRight, change_color, color)
-
-            if (not parameter.is_variable()) or parameter.boundary is None: text_2 = text_3 = ""
-            else:
-                if parameter.boundary.min_value == PARAM_HWMIN: text_2 = ""
-                else: text_2 = str(round(0.0 if parameter.boundary.min_value is None else parameter.boundary.min_value, 6))
-
-                if parameter.boundary.max_value == PARAM_HWMAX: text_3 = ""
-                else: text_3 = str(round(0.0 if parameter.boundary.max_value is None else parameter.boundary.max_value, 6))
-
-            self.add_table_item(table_widget, index, 2,
-                                text_2,
-                                Qt.AlignRight, change_color, color)
-            self.add_table_item(table_widget, index, 3,
-                                text_3,
-                                Qt.AlignRight, change_color, color)
-
-            self.add_table_item(table_widget, index, 4,
-                                "" if not parameter.fixed else "\u2713",
-                                Qt.AlignCenter, change_color, color)
-            self.add_table_item(table_widget, index, 5,
-                                "" if not parameter.function else "\u2713",
-                                Qt.AlignCenter, change_color, color)
-
-            if parameter.function: text_6 = str(parameter.function_value)
-            else: text_6 = ""
-
-            self.add_table_item(table_widget, index, 6,
-                                text_6,
-                                Qt.AlignLeft, change_color, color)
-
-            if is_output: self.add_table_item(table_widget, index, 7,
-                                              str(round(0.0 if parameter.error is None else parameter.error, 6)),
-                                              Qt.AlignRight, change_color, color)
-
-        table_widget.setHorizontalHeaderLabels(self.horizontal_headers)
-        table_widget.resizeRowsToContents()
-        table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
-        table_widget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
     def save_data(self):
         try:
@@ -722,64 +729,24 @@ class OWFitter(OWGenericWidget):
 
             if self.IS_DEVELOP: raise e
 
-
-    def refresh_caglioti_fwhm(self):
-        if not self.fitted_fit_global_parameters.instrumental_parameters is None and self.show_ipf==1:
-            if self.fwhm_autoscale == 1:
-                twotheta_fwhm = numpy.arange(0.0, 150.0, 0.5)
-            else:
-                twotheta_fwhm = numpy.arange(self.fwhm_xmin, self.fwhm_xmax, 0.5)
-
-            theta_fwhm_radians = numpy.radians(0.5*twotheta_fwhm)
-
-            y = caglioti_fwhm(self.fitted_fit_global_parameters.instrumental_parameters[0].U.value,
-                              self.fitted_fit_global_parameters.instrumental_parameters[0].V.value,
-                              self.fitted_fit_global_parameters.instrumental_parameters[0].W.value,
-                              theta_fwhm_radians)
-            self.plot_ipf_fwhm.addCurve(twotheta_fwhm, y, legend="fwhm", color="blue")
-            if self.fwhm_autoscale == 0 and self.fwhm_ymin < self.fwhm_xmax: self.plot_ipf_fwhm.setGraphYLimits(ymin=self.fwhm_ymin, ymax=self.fwhm_ymax)
-
-    def refresh_caglioti_eta(self):
-        if not self.fitted_fit_global_parameters.instrumental_parameters is None and self.show_ipf==1:
-            if self.eta_autoscale == 1:
-                twotheta_eta = numpy.arange(0.0, 150.0, 0.5)
-            else:
-                twotheta_eta = numpy.arange(self.eta_xmin, self.eta_xmax, 0.5)
-
-            theta_eta_radians = numpy.radians(0.5*twotheta_eta)
-
-            y = caglioti_eta(self.fitted_fit_global_parameters.instrumental_parameters[0].a.value,
-                             self.fitted_fit_global_parameters.instrumental_parameters[0].b.value,
-                             self.fitted_fit_global_parameters.instrumental_parameters[0].c.value,
-                             theta_eta_radians)
-            self.plot_ipf_eta.addCurve(twotheta_eta, y, legend="eta", color="blue")
-            if self.eta_autoscale == 0 and self.eta_ymin < self.eta_xmax: self.plot_ipf_eta.setGraphYLimits(ymin=self.eta_ymin, ymax=self.eta_ymax)
-
-    def refresh_lab6(self):
-        shift_parameters = self.fitted_fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__)
-
-        if not shift_parameters is None and self.show_shift==1:
-
-            if self.lab6_autoscale == 1:
-                twotheta_lab6 = numpy.arange(0.0, 150.0, 0.5)
-            else:
-                twotheta_lab6 = numpy.arange(self.lab6_xmin, self.lab6_xmax, 0.5)
-
-            theta_lab6_radians = numpy.radians(0.5*twotheta_lab6)
-
-            y = delta_two_theta_lab6(shift_parameters[0].ax.value,
-                                     shift_parameters[0].bx.value,
-                                     shift_parameters[0].cx.value,
-                                     shift_parameters[0].dx.value,
-                                     shift_parameters[0].ex.value,
-                                     theta_lab6_radians)
-            self.plot_ipf_lab6.addCurve(twotheta_lab6, y, legend="lab6", color="blue")
-            if self.lab6_autoscale == 0 and self.lab6_ymin < self.lab6_xmax: self.plot_ipf_lab6.setGraphYLimits(ymin=self.lab6_ymin, ymax=self.lab6_ymax)
-
+    ##########################################
+    # PLOTS
+    ##########################################
 
     def show_data(self, is_init=False):
         diffraction_pattern_number = self.fitted_fit_global_parameters.fit_initialization.get_diffraction_patterns_number()
 
+        self.refresh_fit(diffraction_pattern_number, is_init)
+        self.refresh_fit_data()
+        self.refresh_instrumental_function()
+        self.refresh_size()
+        self.refresh_strain()
+        self.refresh_integral_breadth(diffraction_pattern_number, is_init)
+
+        self.set_interactive()
+
+
+    def refresh_fit(self, diffraction_pattern_number, is_init=False):
         if is_init:
             self.build_plot_fit()
 
@@ -802,13 +769,13 @@ class OWFitter(OWGenericWidget):
                 i = -1
                 for point, fit in zip(diffraction_pattern.diffraction_pattern, fitted_pattern.diffraction_pattern):
                     i += 1
-                    x[i]  = point.twotheta
-                    y[i]  = point.intensity
+                    x[i]   = point.twotheta
+                    y[i]   = point.intensity
                     yf[i]  = fit.intensity
                     res[i] = fit.error
 
-                self.x[diffraction_pattern_index] = numpy.array(x)
-                self.y[diffraction_pattern_index] = numpy.array(y)
+                self.x[diffraction_pattern_index] = x
+                self.y[diffraction_pattern_index] = y
             else:
                 i = -1
                 for fit in fitted_pattern.diffraction_pattern:
@@ -822,16 +789,82 @@ class OWFitter(OWGenericWidget):
             self.plot_fit[diffraction_pattern_index].addCurve(self.x[diffraction_pattern_index], yf, legend="fit", color="red")
             self.plot_fit[diffraction_pattern_index].addCurve(self.x[diffraction_pattern_index], res, legend="residual", color="#2D811B")
 
+    def refresh_fit_data(self):
         if not self.fit_data is None and self.show_wss_gof==1:
             x = numpy.arange(1, self.current_iteration + 1)
 
             self.plot_fit_wss.addCurve(x, self.current_wss, legend="wss", symbol='o', color="blue")
             self.plot_fit_gof.addCurve(x, self.current_gof, legend="gof", symbol='o', color="red")
 
-        self.refresh_caglioti_fwhm()
-        self.refresh_caglioti_eta()
-        self.refresh_lab6()
 
+    def refresh_instrumental_function(self, diffraction_pattern_index=0):
+        if not self.fitted_fit_global_parameters.instrumental_parameters is None:
+            instrumental_parameters = self.fitted_fit_global_parameters.instrumental_parameters[0 if len(self.fitted_fit_global_parameters.instrumental_parameters) == 1 else diffraction_pattern_index]
+
+            self.refresh_caglioti_fwhm(instrumental_parameters)
+            self.refresh_caglioti_eta(instrumental_parameters)
+
+        shift_parameters = self.fitted_fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__)
+
+        if not shift_parameters is None: self.refresh_lab6(shift_parameters)
+
+    def refresh_caglioti_fwhm(self, instrumental_parameters):
+        if self.show_ipf==1:
+            if self.fwhm_autoscale == 1:
+                twotheta_fwhm = numpy.arange(0.0, 150.0, 0.5)
+            else:
+                twotheta_fwhm = numpy.arange(self.fwhm_xmin, self.fwhm_xmax, 0.5)
+
+            theta_fwhm_radians = numpy.radians(0.5*twotheta_fwhm)
+
+            y = caglioti_fwhm(instrumental_parameters.U.value,
+                              instrumental_parameters.V.value,
+                              instrumental_parameters.W.value,
+                              theta_fwhm_radians)
+
+            self.plot_ipf_fwhm.addCurve(twotheta_fwhm, y, legend="fwhm", color="blue")
+
+            if self.fwhm_autoscale == 0 and self.fwhm_ymin < self.fwhm_xmax: self.plot_ipf_fwhm.setGraphYLimits(ymin=self.fwhm_ymin, ymax=self.fwhm_ymax)
+
+    def refresh_caglioti_eta(self, instrumental_parameters):
+        if self.show_ipf==1:
+            if self.eta_autoscale == 1:
+                twotheta_eta = numpy.arange(0.0, 150.0, 0.5)
+            else:
+                twotheta_eta = numpy.arange(self.eta_xmin, self.eta_xmax, 0.5)
+
+            theta_eta_radians = numpy.radians(0.5*twotheta_eta)
+
+            y = caglioti_eta(instrumental_parameters.a.value,
+                             instrumental_parameters.b.value,
+                             instrumental_parameters.c.value,
+                             theta_eta_radians)
+
+            self.plot_ipf_eta.addCurve(twotheta_eta, y, legend="eta", color="blue")
+
+            if self.eta_autoscale == 0 and self.eta_ymin < self.eta_xmax: self.plot_ipf_eta.setGraphYLimits(ymin=self.eta_ymin, ymax=self.eta_ymax)
+
+    def refresh_lab6(self, shift_parameters):
+        if self.show_shift==1:
+            if self.lab6_autoscale == 1:
+                twotheta_lab6 = numpy.arange(0.0, 150.0, 0.5)
+            else:
+                twotheta_lab6 = numpy.arange(self.lab6_xmin, self.lab6_xmax, 0.5)
+
+            theta_lab6_radians = numpy.radians(0.5*twotheta_lab6)
+
+            y = delta_two_theta_lab6(shift_parameters[0].ax.value,
+                                     shift_parameters[0].bx.value,
+                                     shift_parameters[0].cx.value,
+                                     shift_parameters[0].dx.value,
+                                     shift_parameters[0].ex.value,
+                                     theta_lab6_radians)
+
+            self.plot_ipf_lab6.addCurve(twotheta_lab6, y, legend="lab6", color="blue")
+
+            if self.lab6_autoscale == 0 and self.lab6_ymin < self.lab6_xmax: self.plot_ipf_lab6.setGraphYLimits(ymin=self.lab6_ymin, ymax=self.lab6_ymax)
+
+    def refresh_size(self):
         if not hasattr(self, "D_max"): self.D_max = None
         if not hasattr(self, "D_min"): self.D_min = None
 
@@ -843,19 +876,154 @@ class OWFitter(OWGenericWidget):
 
             self.plot_size.addCurve(x, y, legend="distribution", color="blue")
 
+    def refresh_strain(self):
         if not self.fitted_fit_global_parameters.strain_parameters is None and self.show_warren==1:
             x, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 0, 0, L_max=self.D_max)
             self.plot_strain.addCurve(x, y, legend="h00", color='blue')
-            x, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 1, L_max=self.D_max)
+            _, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 1, L_max=self.D_max)
             self.plot_strain.addCurve(x, y, legend="hhh", color='red')
-            x, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 0, L_max=self.D_max)
+            _, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 0, L_max=self.D_max)
             self.plot_strain.addCurve(x, y, legend="hh0", color='green')
 
-        self.set_interactive()
+    def refresh_integral_breadth(self, diffraction_pattern_number, is_init=False):
+        if not self.fitted_fit_global_parameters.strain_parameters is None and self.show_integral_breadth==1:
+            if is_init:
+                self.build_plot_integral_breadth()
 
-##########################################
-# THREADING
-##########################################
+                self.x_ib        = numpy.full(diffraction_pattern_number, None)
+                self.labels_ib   = numpy.full(diffraction_pattern_number, None)
+
+            for diffraction_pattern_index in range(diffraction_pattern_number):
+                crystal_structure = self.fitted_fit_global_parameters.fit_initialization.crystal_structures[diffraction_pattern_index]
+
+                wavelength = self.fitted_fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index].wavelength.value
+                lattice_parameter = crystal_structure.a.value
+
+                nr_points = crystal_structure.get_reflections_count()
+
+                if is_init:
+                    self.x_ib[diffraction_pattern_index]      = crystal_structure.get_s_list()
+                    self.labels_ib[diffraction_pattern_index] = crystal_structure.get_hkl_list()
+
+                size_parameters = None
+                if not self.fitted_fit_global_parameters.size_parameters is None:
+                    size_parameters = self.fitted_fit_global_parameters.size_parameters[0 if len(self.fitted_fit_global_parameters.size_parameters) == 1 else diffraction_pattern_index]
+
+                instrumental_parameters = None
+                if not self.fitted_fit_global_parameters.instrumental_parameters is None:
+                    instrumental_parameters = self.fitted_fit_global_parameters.instrumental_parameters[0 if len(self.fitted_fit_global_parameters.instrumental_parameters) == 1 else diffraction_pattern_index]
+
+                strain_parameters = self.fitted_fit_global_parameters.strain_parameters[0 if len(self.fitted_fit_global_parameters.strain_parameters) == 1 else diffraction_pattern_index]
+
+                if not size_parameters is None:
+                    if size_parameters.distribution == Distribution.LOGNORMAL:
+                        y_ib_size = numpy.full(crystal_structure.get_reflections_count(), integral_breadth_size_lognormal(size_parameters.mu.value, size_parameters.sigma.value))
+                    elif size_parameters.distribution == Distribution.DELTA:
+                        y_ib_size = numpy.full(crystal_structure.get_reflections_count(), integral_breadth_size_delta(size_parameters.mu.value))
+                else:
+                    y_ib_size = numpy.zeros(nr_points)
+
+                y_ib_strain = numpy.zeros(nr_points)
+                y_ib_instr  = numpy.zeros(nr_points)
+
+                i = -1
+                for reflection in crystal_structure.get_reflections():
+                    i += 1
+
+                    if isinstance(strain_parameters, InvariantPAH):
+                        y_ib_strain[i] = integral_breadth_strain_invariant_function_pah(reflection.h,
+                                                                                        reflection.k,
+                                                                                        reflection.l,
+                                                                                        lattice_parameter,
+                                                                                        strain_parameters.aa.value,
+                                                                                        strain_parameters.bb.value,
+                                                                                        strain_parameters.get_invariant(reflection.h,
+                                                                                                                        reflection.k,
+                                                                                                                        reflection.l))
+                    elif isinstance(strain_parameters, KrivoglazWilkensModel):
+                        y_ib_strain[i] = integral_breadth_strain_krivoglaz_wilkens(reflection.h,
+                                                                                   reflection.k,
+                                                                                   reflection.l,
+                                                                                   lattice_parameter,
+                                                                                   strain_parameters.rho.value,
+                                                                                   strain_parameters.Re.value,
+                                                                                   strain_parameters.Ae.value,
+                                                                                   strain_parameters.Be.value,
+                                                                                   strain_parameters.As.value,
+                                                                                   strain_parameters.Bs.value,
+                                                                                   strain_parameters.mix.value,
+                                                                                   strain_parameters.b.value)
+
+                    if not instrumental_parameters is None:
+                        y_ib_instr[i] = integral_breadth_instrumental_function(reflection.h,
+                                                                               reflection.k,
+                                                                               reflection.l,
+                                                                               lattice_parameter,
+                                                                               wavelength,
+                                                                               instrumental_parameters.U.value,
+                                                                               instrumental_parameters.V.value,
+                                                                               instrumental_parameters.W.value,
+                                                                               instrumental_parameters.a.value,
+                                                                               instrumental_parameters.b.value,
+                                                                               instrumental_parameters.c.value)
+
+                y_ib_total = y_ib_size + y_ib_strain + y_ib_instr
+
+
+                self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_instr, legend="IPF", symbol='o', color="black")
+                self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_size, legend="Size", symbol='o', color="red")
+                self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_strain, legend="Strain", symbol='o', color="blue")
+                self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_total, legend="Total", symbol='o', color="#2D811B")
+                self.plot_integral_breadth[diffraction_pattern_index].setGraphYLimits(-0.05, numpy.max(y_ib_total)*1.01)
+
+    def build_plot_fit(self):
+        fit_global_parameter = self.fit_global_parameters if self.fitted_fit_global_parameters is None else self.fitted_fit_global_parameters
+
+        self.plot_fit = []
+        self.tabs_plot_fit_data.clear()
+
+        for index in range(1 if fit_global_parameter is None else len(fit_global_parameter.fit_initialization.diffraction_patterns)):
+            tab_plot_fit_data = gui.createTabPage(self.tabs_plot_fit_data, "Diff. Patt. " + str(index+1))
+
+            plot_fit = PlotWindow()
+            plot_fit.setDefaultPlotLines(True)
+            plot_fit.setActiveCurveColor(color="#00008B")
+            plot_fit.setGraphXLabel(r"2$\theta$ (deg)")
+            plot_fit.setGraphYLabel("Intensity")
+
+            self.plot_fit.append(plot_fit)
+            tab_plot_fit_data.layout().addWidget(plot_fit)
+
+    def build_plot_integral_breadth(self):
+        fit_global_parameter = self.fit_global_parameters if self.fitted_fit_global_parameters is None else self.fitted_fit_global_parameters
+
+        self.plot_integral_breadth = []
+        self.tabs_plot_integral_breadth.clear()
+
+        for index in range(1 if fit_global_parameter is None else fit_global_parameter.fit_initialization.get_diffraction_patterns_number()):
+            tab_plot_integral_breadth = gui.createTabPage(self.tabs_plot_integral_breadth, "Diff. Patt. " + str(index+1))
+
+            plot_integral_breadth = PlotWindow(control=True)
+            legends_dock_widget = LegendsDockWidget(plot=plot_integral_breadth)
+            plot_integral_breadth._legendsDockWidget = legends_dock_widget
+            plot_integral_breadth._dockWidgets.append(legends_dock_widget)
+            plot_integral_breadth.addDockWidget(qt.Qt.RightDockWidgetArea, legends_dock_widget)
+            plot_integral_breadth._legendsDockWidget.setFixedWidth(130)
+            plot_integral_breadth.getLegendsDockWidget().show()
+
+            plot_integral_breadth.setDefaultPlotLines(True)
+            plot_integral_breadth.setDefaultPlotPoints(True)
+            plot_integral_breadth.setActiveCurveColor(color="#00008B")
+            plot_integral_breadth.setGraphTitle("Integral Breadth plot")
+            plot_integral_breadth.setGraphXLabel(r"s [$nm^{-1}$]")
+            plot_integral_breadth.setGraphYLabel("${\\beta}(s)$ [$nm^{-1}$]")
+
+            self.plot_integral_breadth.append(plot_integral_breadth)
+            tab_plot_integral_breadth.layout().addWidget(plot_integral_breadth)
+
+    ##########################################
+    # THREADING
+    ##########################################
     def fit_begin(self):
         self.fit_thread.mutex.tryLock()
 

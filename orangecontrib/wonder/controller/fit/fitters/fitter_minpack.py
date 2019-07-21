@@ -68,9 +68,7 @@ class FitterMinpack(FitterInterface):
     def __init__(self):
         super().__init__()
 
-    def init_fitter(self, fit_global_parameters):
-        print("Initializing Fitter...")
-
+    def initialize(self, fit_global_parameters):
         self.fit_global_parameters = fit_global_parameters.duplicate()
         self.fit_global_parameters.evaluate_functions()
 
@@ -101,28 +99,27 @@ class FitterMinpack(FitterInterface):
 
         self.nr_points_list = self.get_nr_points_list()
 
-        self.nr_parameters = len(self.parameters)
+        self.nr_parameters        = len(self.parameters)
         self.nr_parameters_to_fit = self.get_nr_parameters_to_fit()
-        self.nr_observables = numpy.sum(self.nr_points_list)
-        self.degrees_of_freedom = self.nr_observables - self.nr_parameters_to_fit
+        self.nr_observables       = numpy.sum(self.nr_points_list)
+        self.degrees_of_freedom   = self.nr_observables - self.nr_parameters_to_fit
 
-        self.variable_indexes = []
+        variable_indexes = []
         for i in range (0, self.nr_parameters):
             if self.parameters[i].is_variable():
-                self.variable_indexes.append(i)
+                variable_indexes.append(i)
+        self.variable_indexes = numpy.array(variable_indexes)
 
-        self.a = self.__get_zero_trimatrix() #CTriMatrix(_n=self.nr_parameters_to_fit)
-        self.c = self.__get_zero_trimatrix() #CTriMatrix(_n=self.nr_parameters_to_fit)
+        self.mighell              = self.__get_mighell()
 
+        self.a                    = self.__get_zero_trimatrix()
+        self.c                    = self.__get_zero_trimatrix()
         self.g                    = self.__get_zero_vector()
         self.gradient             = self.__get_zero_vector()
         self.current_pararameters = self.__get_zero_vector()
         self.initial_parameters   = self.__get_zero_vector()
-
-        self.mighell = False
-
-        self.wss      = self.__get_wssq()
-        self.old_wss  = self.wss
+        self.wss                  = self.__get_wssq()
+        self.old_wss              = self.wss
 
         self.fit_data = MinpackData(wss=self.wss,
                                     dof=self.degrees_of_freedom,
@@ -130,17 +127,17 @@ class FitterMinpack(FitterInterface):
                                     nprm=self.nr_parameters,
                                     nfit=self.nr_parameters_to_fit)
 
-        self.fit_data.print_init_data()
 
         self.converged = False
         self.exit_flag  = False
 
         self.__populate_variables()
 
-        print("Fitter Initialization done.")
-
 
     def do_fit(self, current_fit_global_parameters, current_iteration, compute_pattern, compute_errors):
+        if current_iteration == 0: self.fit_data.print_init_data()
+
+
         print("Fitter - Begin iteration nr. " + str(current_iteration))
 
         if current_iteration <= current_fit_global_parameters.get_n_max_iterations() and not self.converged:
@@ -312,7 +309,10 @@ class FitterMinpack(FitterInterface):
 
         return fitted_patterns, fit_global_parameters_out, self.fit_data
 
-    def get_fitted_values_list(self):
+    def __get_mighell(self):
+        return False
+
+    def __get_fitted_values_list(self):
         fitted_values_list = numpy.full(self.diffraction_patterns_number, None)
         
         for index in range(self.diffraction_patterns_number):
@@ -325,7 +325,7 @@ class FitterMinpack(FitterInterface):
         self.a        = self.__get_zero_trimatrix()
         self.gradient = self.__get_zero_vector()
 
-        fitted_values_list = self.get_fitted_values_list()
+        fitted_values_list = self.__get_fitted_values_list()
 
         weighted_delta = self.__get_weighted_delta(fitted_values_list)
         derivative     = self.__get_derivative(fitted_values_list)
@@ -370,7 +370,7 @@ class FitterMinpack(FitterInterface):
 
 
     def build_minpack_data(self, fitted_values_list=None):
-        if fitted_values_list is None: fitted_values_list = self.get_fitted_values_list()
+        if fitted_values_list is None: fitted_values_list = self.__get_fitted_values_list()
 
         self.wss = self.__get_wssq(fitted_values_list=fitted_values_list)
 
@@ -399,7 +399,7 @@ class FitterMinpack(FitterInterface):
         return nr_parameters_to_fit
 
     def __get_weighted_delta(self, fitted_values_list=None):
-        if fitted_values_list is None: fitted_values_list = self.get_fitted_values_list()
+        if fitted_values_list is None: fitted_values_list = self.__get_fitted_values_list()
 
         weighted_delta = numpy.full(self.diffraction_patterns_number, None)
 
@@ -412,7 +412,7 @@ class FitterMinpack(FitterInterface):
         return weighted_delta
 
     def __get_derivative(self, fitted_values_list=None):
-        if fitted_values_list is None: fitted_values_list = self.get_fitted_values_list()
+        if fitted_values_list is None: fitted_values_list = self.__get_fitted_values_list()
 
         derivative = numpy.full(self.diffraction_patterns_number, None)
 
@@ -458,7 +458,7 @@ class FitterMinpack(FitterInterface):
         return derivative
 
     def __get_wssq(self, fitted_values_list=None):
-        if fitted_values_list is None: fitted_values_list = self.get_fitted_values_list()
+        if fitted_values_list is None: fitted_values_list = self.__get_fitted_values_list()
 
         wssq = 0.0
 
@@ -472,7 +472,7 @@ class FitterMinpack(FitterInterface):
         return wssq
 
     def __get_wssq_from_data(self, fitted_values_list=None):
-        if fitted_values_list is None: fitted_values_list = self.get_fitted_values_list()
+        if fitted_values_list is None: fitted_values_list = self.__get_fitted_values_list()
 
         wssq = 0.0
 
@@ -486,7 +486,7 @@ class FitterMinpack(FitterInterface):
         return wssq
 
     def __get_ssq_from_data(self, fitted_values_list=None):
-        if fitted_values_list is None: fitted_values_list = self.get_fitted_values_list()
+        if fitted_values_list is None: fitted_values_list = self.__get_fitted_values_list()
 
         ssq = 0.0
 

@@ -63,7 +63,7 @@ class FitterMinpackPrototype(FitterInterface):
     def __init__(self):
         super().__init__()
 
-    def init_fitter(self, fit_global_parameters):
+    def initialize(self, fit_global_parameters):
         print("Initializing Fitter...")
 
         self.fit_global_parameters = fit_global_parameters

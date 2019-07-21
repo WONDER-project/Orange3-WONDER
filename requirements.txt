@@ -1,7 +1,7 @@
-h5py
-numba
-Orange3>=3.22
 numpy
 scipy
 matplotlib
+h5py
+numba
 silx
+Orange3>=3.22
