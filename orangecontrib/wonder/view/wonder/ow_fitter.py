@@ -95,6 +95,11 @@ class OWFitter(OWGenericWidget):
     lab6_ymin = Setting(-1.0)
     lab6_ymax = Setting(1.0)
 
+    # accessories
+
+    text_size = None
+    annotations_ib = None
+
     def __init__(self):
         super().__init__(show_automatic_box=True)
 
@@ -147,15 +152,15 @@ class OWFitter(OWGenericWidget):
 
         self.plot_box = gui.widgetBox(main_box, "Plotting Options", orientation="vertical", width=self.CONTROL_AREA_WIDTH-20)
 
-        self.cb_interactive = orangegui.checkBox(self.plot_box, self, "is_interactive", "Refresh Plots while fitting", callback=self.set_interactive)
+        self.cb_interactive = orangegui.checkBox(self.plot_box, self, "is_interactive", "Update plots while fitting:", callback=self.set_interactive)
         orangegui.separator(self.plot_box, height=8)
 
-        self.cb_show_wss_gof           = orangegui.checkBox(self.plot_box, self, "show_wss_gof", "Refresh W.S.S. and G.o.F. plots" )
-        self.cb_show_ipf               = orangegui.checkBox(self.plot_box, self, "show_ipf", "Refresh Instrumental Profile plots")
-        self.cb_show_shift             = orangegui.checkBox(self.plot_box, self, "show_shift", "Refresh Calibration Shift plots")
-        self.cb_show_size              = orangegui.checkBox(self.plot_box, self, "show_size", "Refresh Size Distribution plot")
-        self.cb_show_warren            = orangegui.checkBox(self.plot_box, self, "show_warren", "Refresh Warren's plot")
-        self.cb_show_integral_breadth  = orangegui.checkBox(self.plot_box, self, "show_integral_breadth", "Refresh Integral Breadth plot")
+        self.cb_show_wss_gof           = orangegui.checkBox(self.plot_box, self, "show_wss_gof", "W.S.S. and G.o.F." )
+        self.cb_show_ipf               = orangegui.checkBox(self.plot_box, self, "show_ipf", "Instrumental Profile")
+        self.cb_show_shift             = orangegui.checkBox(self.plot_box, self, "show_shift", "Calibration Shift")
+        self.cb_show_size              = orangegui.checkBox(self.plot_box, self, "show_size", "Size Distribution")
+        self.cb_show_warren            = orangegui.checkBox(self.plot_box, self, "show_warren", "Warren's Plot")
+        self.cb_show_integral_breadth  = orangegui.checkBox(self.plot_box, self, "show_integral_breadth", "Integral Breadth")
 
         self.set_interactive()
 
@@ -205,7 +210,7 @@ class OWFitter(OWGenericWidget):
         self.tab_plot_eta  = gui.createTabPage(self.tabs_plot_ipf, "Caglioti's \u03b7")
         self.tab_plot_lab6 = gui.createTabPage(self.tabs_plot_ipf, "LaB6 Tan Correction")
 
-        self.build_plot_fit()
+        self.__build_plot_fit()
 
         self.plot_fit_wss = PlotWindow()
         self.plot_fit_wss.setDefaultPlotLines(True)
@@ -250,7 +255,7 @@ class OWFitter(OWGenericWidget):
 
         self.tabs_plot_integral_breadth = gui.tabWidget(self.tab_plot_integral_breadth)
 
-        self.build_plot_integral_breadth()
+        self.__build_plot_integral_breadth()
 
         box = gui.widgetBox(self.tab_plot_fwhm, "", orientation="horizontal")
 
@@ -265,11 +270,17 @@ class OWFitter(OWGenericWidget):
 
         orangegui.checkBox(boxr, self, "fwhm_autoscale", "Autoscale", callback=set_fwhm_autoscale)
 
+        def refresh_caglioti_fwhm():
+            if not self.fitted_fit_global_parameters.instrumental_parameters is None:
+                index = 0
+                instrumental_parameters = self.fitted_fit_global_parameters.instrumental_parameters[index]
+                self.__refresh_caglioti_fwhm(instrumental_parameters)
+
         self.le_fwhm_xmin = gui.lineEdit(boxr, self, "fwhm_xmin", "2\u03b8 min", labelWidth=70, valueType=float)
         self.le_fwhm_xmax = gui.lineEdit(boxr, self, "fwhm_xmax", "2\u03b8 max", labelWidth=70, valueType=float)
         self.le_fwhm_ymin = gui.lineEdit(boxr, self, "fwhm_ymin", "FWHM min", labelWidth=70, valueType=float)
         self.le_fwhm_ymax = gui.lineEdit(boxr, self, "fwhm_ymax", "FWHM max", labelWidth=70, valueType=float)
-        gui.button(boxr, self, "Refresh", height=40, callback=self.refresh_caglioti_fwhm)
+        gui.button(boxr, self, "Refresh", height=40, callback=refresh_caglioti_fwhm)
 
         set_fwhm_autoscale()
 
@@ -294,11 +305,17 @@ class OWFitter(OWGenericWidget):
 
         orangegui.checkBox(boxr, self, "eta_autoscale", "Autoscale", callback=set_eta_autoscale)
 
+        def refresh_caglioti_eta():
+            if not self.fitted_fit_global_parameters.instrumental_parameters is None:
+                index = 0
+                instrumental_parameters = self.fitted_fit_global_parameters.instrumental_parameters[index]
+                self.__refresh_caglioti_eta(instrumental_parameters)
+
         self.le_eta_xmin = gui.lineEdit(boxr, self, "eta_xmin", "2\u03b8 min", labelWidth=70, valueType=float)
         self.le_eta_xmax = gui.lineEdit(boxr, self, "eta_xmax", "2\u03b8 max", labelWidth=70, valueType=float)
         self.le_eta_ymin = gui.lineEdit(boxr, self, "eta_ymin", "\u03b7 min", labelWidth=70, valueType=float)
         self.le_eta_ymax = gui.lineEdit(boxr, self, "eta_ymax", "\u03b7 max", labelWidth=70, valueType=float)
-        gui.button(boxr, self, "Refresh", height=40, callback=self.refresh_caglioti_eta)
+        gui.button(boxr, self, "Refresh", height=40, callback=refresh_caglioti_eta)
 
         set_eta_autoscale()
 
@@ -323,11 +340,16 @@ class OWFitter(OWGenericWidget):
 
         orangegui.checkBox(boxr, self, "lab6_autoscale", "Autoscale", callback=set_lab6_autoscale)
 
+        def refresh_lab6():
+            shift_parameters = self.fitted_fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__)
+
+            if not shift_parameters is None: self.__refresh_lab6(shift_parameters)
+
         self.le_lab6_xmin = gui.lineEdit(boxr, self, "lab6_xmin", "2\u03b8 min", labelWidth=70, valueType=float)
         self.le_lab6_xmax = gui.lineEdit(boxr, self, "lab6_xmax", "2\u03b8 max", labelWidth=70, valueType=float)
         self.le_lab6_ymin = gui.lineEdit(boxr, self, "lab6_ymin", "\u0394(2\u03b8) min", labelWidth=70, valueType=float)
         self.le_lab6_ymax = gui.lineEdit(boxr, self, "lab6_ymax", "\u0394(2\u03b8) max", labelWidth=70, valueType=float)
-        gui.button(boxr, self, "Refresh", height=40, callback=self.refresh_lab6)
+        gui.button(boxr, self, "Refresh", height=40, callback=refresh_lab6)
 
         set_lab6_autoscale()
 
@@ -341,12 +363,12 @@ class OWFitter(OWGenericWidget):
 
         # -------------------
 
-        self.table_fit_in = self.create_table_widget(is_output=False)
+        self.table_fit_in = self.__create_table_widget(is_output=False)
         self.tab_fit_in.layout().addWidget(self.table_fit_in, alignment=Qt.AlignHCenter)
 
         # -------------------
 
-        self.table_fit_out = self.create_table_widget()
+        self.table_fit_out = self.__create_table_widget()
         self.tab_fit_out.layout().addWidget(self.table_fit_out, alignment=Qt.AlignHCenter)
 
     def write_stdout(self, text):
@@ -428,7 +450,7 @@ class OWFitter(OWGenericWidget):
                 parameters = self.fit_global_parameters.free_input_parameters.as_parameters()
                 parameters.extend(self.fit_global_parameters.get_parameters())
 
-                self.populate_table(self.table_fit_in, parameters, is_output=False)
+                self.__populate_table(self.table_fit_in, parameters, is_output=False)
 
                 self.tabs.setCurrentIndex(0)
 
@@ -473,7 +495,7 @@ class OWFitter(OWGenericWidget):
                 self.set_interactive()
                 self.was_incremental = self.is_incremental
                 self.initialize_fit(is_init=True)
-                self.show_data(is_init=True)
+                self.__show_data(is_init=True)
 
                 if self.is_automatic_run:
                     self.do_fit()
@@ -484,7 +506,7 @@ class OWFitter(OWGenericWidget):
 
             if self.IS_DEVELOP: raise e
 
-    def create_table_widget(self, is_output=True):
+    def __create_table_widget(self, is_output=True):
         from PyQt5.QtWidgets import QAbstractItemView
 
         table_fit = QTableWidget(1, 8 if is_output else 7)
@@ -512,7 +534,7 @@ class OWFitter(OWGenericWidget):
             if change_color: table_item.setBackground(color)
             table_widget.setItem(row_index, column_index, table_item)
 
-    def analyze_parameter(self, parameter):
+    def __analyze_parameter(self, parameter):
         if parameter.parameter_name == ThermalPolarizationParameters.get_parameters_prefix() + "debye_waller_factor":
             parameter = parameter.duplicate()
             parameter.rescale(100) # from nm-2 to A-2
@@ -522,7 +544,7 @@ class OWFitter(OWGenericWidget):
 
         return parameter
 
-    def populate_table(self, table_widget, parameters, is_output=True):
+    def __populate_table(self, table_widget, parameters, is_output=True):
         table_widget.clear()
 
         row_count = table_widget.rowCount()
@@ -534,7 +556,7 @@ class OWFitter(OWGenericWidget):
 
         for index in range(0, len(parameters)):
             parameter = parameters[index]
-            parameter = self.analyze_parameter(parameter)
+            parameter = self.__analyze_parameter(parameter)
             change_color = not parameter.is_variable()
 
             if change_color:
@@ -733,22 +755,23 @@ class OWFitter(OWGenericWidget):
     # PLOTS
     ##########################################
 
-    def show_data(self, is_init=False):
+    def __show_data(self, is_init=False):
         diffraction_pattern_number = self.fitted_fit_global_parameters.fit_initialization.get_diffraction_patterns_number()
 
-        self.refresh_fit(diffraction_pattern_number, is_init)
-        self.refresh_fit_data()
-        self.refresh_instrumental_function()
-        self.refresh_size(is_init)
-        self.refresh_strain()
-        self.refresh_integral_breadth(diffraction_pattern_number, is_init)
+        self.__refresh_fit(diffraction_pattern_number, is_init)
+        self.__refresh_fit_data()
+        self.__refresh_instrumental_function()
+        self.__refresh_size(is_init)
+        self.__refresh_strain()
+        self.__refresh_integral_breadth(diffraction_pattern_number, is_init)
 
         self.set_interactive()
 
+    # ------------------------------------------------------------------------
 
-    def refresh_fit(self, diffraction_pattern_number, is_init=False):
+    def __refresh_fit(self, diffraction_pattern_number, is_init=False):
         if is_init:
-            self.build_plot_fit()
+            self.__build_plot_fit()
 
             self.x = numpy.full(diffraction_pattern_number, None)
             self.y = numpy.full(diffraction_pattern_number, None)
@@ -789,7 +812,9 @@ class OWFitter(OWGenericWidget):
             self.plot_fit[diffraction_pattern_index].addCurve(self.x[diffraction_pattern_index], yf, legend="fit", color="red")
             self.plot_fit[diffraction_pattern_index].addCurve(self.x[diffraction_pattern_index], res, legend="residual", color="#2D811B")
 
-    def refresh_fit_data(self):
+    # ------------------------------------------------------------------------
+
+    def __refresh_fit_data(self):
         if not self.fit_data is None and self.show_wss_gof==1:
             x = numpy.arange(1, self.current_iteration + 1)
 
@@ -797,18 +822,22 @@ class OWFitter(OWGenericWidget):
             self.plot_fit_gof.addCurve(x, self.current_gof, legend="gof", symbol='o', color="red")
 
 
-    def refresh_instrumental_function(self, diffraction_pattern_index=0):
+    # ------------------------------------------------------------------------
+
+    def __refresh_instrumental_function(self, diffraction_pattern_index=0):
         if not self.fitted_fit_global_parameters.instrumental_parameters is None:
             instrumental_parameters = self.fitted_fit_global_parameters.instrumental_parameters[0 if len(self.fitted_fit_global_parameters.instrumental_parameters) == 1 else diffraction_pattern_index]
 
-            self.refresh_caglioti_fwhm(instrumental_parameters)
-            self.refresh_caglioti_eta(instrumental_parameters)
+            self.__refresh_caglioti_fwhm(instrumental_parameters)
+            self.__refresh_caglioti_eta(instrumental_parameters)
 
         shift_parameters = self.fitted_fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__)
 
-        if not shift_parameters is None: self.refresh_lab6(shift_parameters)
+        if not shift_parameters is None: self.__refresh_lab6(shift_parameters)
 
-    def refresh_caglioti_fwhm(self, instrumental_parameters):
+    # ------------------------------------------------------------------------
+
+    def __refresh_caglioti_fwhm(self, instrumental_parameters):
         if self.show_ipf==1:
             if self.fwhm_autoscale == 1:
                 twotheta_fwhm = numpy.arange(0.0, 150.0, 0.5)
@@ -826,7 +855,9 @@ class OWFitter(OWGenericWidget):
 
             if self.fwhm_autoscale == 0 and self.fwhm_ymin < self.fwhm_xmax: self.plot_ipf_fwhm.setGraphYLimits(ymin=self.fwhm_ymin, ymax=self.fwhm_ymax)
 
-    def refresh_caglioti_eta(self, instrumental_parameters):
+    # ------------------------------------------------------------------------
+
+    def __refresh_caglioti_eta(self, instrumental_parameters):
         if self.show_ipf==1:
             if self.eta_autoscale == 1:
                 twotheta_eta = numpy.arange(0.0, 150.0, 0.5)
@@ -844,7 +875,9 @@ class OWFitter(OWGenericWidget):
 
             if self.eta_autoscale == 0 and self.eta_ymin < self.eta_xmax: self.plot_ipf_eta.setGraphYLimits(ymin=self.eta_ymin, ymax=self.eta_ymax)
 
-    def refresh_lab6(self, shift_parameters):
+    # ------------------------------------------------------------------------
+
+    def __refresh_lab6(self, shift_parameters):
         if self.show_shift==1:
             if self.lab6_autoscale == 1:
                 twotheta_lab6 = numpy.arange(0.0, 150.0, 0.5)
@@ -864,12 +897,15 @@ class OWFitter(OWGenericWidget):
 
             if self.lab6_autoscale == 0 and self.lab6_ymin < self.lab6_xmax: self.plot_ipf_lab6.setGraphYLimits(ymin=self.lab6_ymin, ymax=self.lab6_ymax)
 
-    def refresh_size(self, is_init=False):
+    # ------------------------------------------------------------------------
+
+    def __refresh_size(self, is_init=False):
+        if not self.text_size is None: self.text_size.remove()
+
         if is_init:
             self.D_max = None
             self.D_min = None
             self.D_avg = None
-            self.text_size = None
 
         if not self.fitted_fit_global_parameters.size_parameters is None and self.show_size==1:
             if self.current_iteration <= 1: #TO BE SURE...
@@ -879,11 +915,11 @@ class OWFitter(OWGenericWidget):
 
             self.plot_size.addCurve(x, y, legend="distribution", color="blue")
 
-            if not self.text_size is None: self.text_size.remove()
-
             self.text_size = self.plot_size._backend.ax.text(numpy.max(x) * 0.65, numpy.max(y) * 0.9, "<D> = " + str(round(self.D_avg, 2)) + " nm", fontsize=16)
 
-    def refresh_strain(self):
+    # ------------------------------------------------------------------------
+
+    def __refresh_strain(self):
         if not self.fitted_fit_global_parameters.strain_parameters is None and self.show_warren==1:
             if self.D_avg is None: L_max = 20
             else: L_max = 2*self.D_avg
@@ -895,10 +931,17 @@ class OWFitter(OWGenericWidget):
             _, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 0, L_max=L_max)
             self.plot_strain.addCurve(x, y, legend="hh0", color='green')
 
-    def refresh_integral_breadth(self, diffraction_pattern_number, is_init=False):
+    # ------------------------------------------------------------------------
+
+    def __refresh_integral_breadth(self, diffraction_pattern_number, is_init=False):
+        if not self.annotations_ib is None:
+            for annotations in self.annotations_ib:
+                if not annotations is None:
+                    for annotation in annotations: annotation.remove()
+
         if not self.fitted_fit_global_parameters.strain_parameters is None and self.show_integral_breadth==1:
             if is_init:
-                self.build_plot_integral_breadth()
+                self.__build_plot_integral_breadth()
 
                 self.x_ib           = numpy.full(diffraction_pattern_number, None)
                 self.labels_ib      = numpy.full(diffraction_pattern_number, None)
@@ -989,21 +1032,18 @@ class OWFitter(OWGenericWidget):
                 self.plot_integral_breadth[diffraction_pattern_index].setGraphYLimits(-0.05, numpy.max(y_ib_total)*1.2)
 
                 ax          = self.plot_integral_breadth[diffraction_pattern_index]._backend.ax
-                annotations = self.annotations_ib[diffraction_pattern_index]
+                annotations = numpy.full(nr_points, None)
                 labels      = self.labels_ib[diffraction_pattern_index]
                 dy = (numpy.max(y_ib_total)-numpy.min(y_ib_instr))*0.125
 
-                if annotations is None:
-                    annotations = numpy.full(nr_points, None)
-                    self.annotations_ib[diffraction_pattern_index] = annotations
-                else:
-                    for annotation in annotations: annotation.remove()
+                self.annotations_ib[diffraction_pattern_index] = annotations
 
                 for i, hkl in enumerate(labels):
                     annotations[i] = ax.annotate(hkl, (x_ib[i], y_ib_total[i] + dy), rotation=90)
 
+    # ------------------------------------------------------------------------
 
-    def build_plot_fit(self):
+    def __build_plot_fit(self):
         fit_global_parameter = self.fit_global_parameters if self.fitted_fit_global_parameters is None else self.fitted_fit_global_parameters
 
         self.plot_fit = []
@@ -1021,7 +1061,9 @@ class OWFitter(OWGenericWidget):
             self.plot_fit.append(plot_fit)
             tab_plot_fit_data.layout().addWidget(plot_fit)
 
-    def build_plot_integral_breadth(self):
+    # ------------------------------------------------------------------------
+
+    def __build_plot_integral_breadth(self):
         fit_global_parameter = self.fit_global_parameters if self.fitted_fit_global_parameters is None else self.fitted_fit_global_parameters
 
         self.plot_integral_breadth = []
@@ -1051,6 +1093,7 @@ class OWFitter(OWGenericWidget):
     ##########################################
     # THREADING
     ##########################################
+
     def fit_begin(self):
         self.fit_thread.mutex.tryLock()
 
@@ -1073,13 +1116,13 @@ class OWFitter(OWGenericWidget):
             print("Fit iteration nr. " + str(self.current_iteration) + "/" + str(self.n_iterations) + " completed")
 
             if self.is_interactive == 1:
-                self.show_data()
+                self.__show_data()
 
                 parameters = self.fitted_fit_global_parameters.free_input_parameters.as_parameters()
                 parameters.extend(self.fitted_fit_global_parameters.get_parameters())
                 parameters.extend(self.fitted_fit_global_parameters.free_output_parameters.as_parameters())
 
-                self.populate_table(self.table_fit_out, parameters)
+                self.__populate_table(self.table_fit_out, parameters)
 
                 if self.current_iteration == 1:
                     self.tabs.setCurrentIndex(1)
@@ -1108,16 +1151,16 @@ class OWFitter(OWGenericWidget):
             parameters = self.fit_global_parameters.free_input_parameters.as_parameters()
             parameters.extend(self.fit_global_parameters.get_parameters())
 
-            self.populate_table(self.table_fit_in, parameters, is_output=False)
+            self.__populate_table(self.table_fit_in, parameters, is_output=False)
 
         if self.is_interactive == 0:
-            self.show_data()
+            self.__show_data()
 
             parameters = self.fitted_fit_global_parameters.free_input_parameters.as_parameters()
             parameters.extend(self.fitted_fit_global_parameters.get_parameters())
             parameters.extend(self.fitted_fit_global_parameters.free_output_parameters.as_parameters())
 
-            self.populate_table(self.table_fit_out, parameters)
+            self.__populate_table(self.table_fit_out, parameters)
 
             if self.current_iteration == 1:
                 self.tabs.setCurrentIndex(1)
@@ -1139,6 +1182,9 @@ class OWFitter(OWGenericWidget):
         self.fit_completed()
 
         if self.IS_DEVELOP: raise self.thread_exception
+
+
+# ------------------------------------------------------------------------
 
 from PyQt5.QtCore import QThread, pyqtSignal
 import time
