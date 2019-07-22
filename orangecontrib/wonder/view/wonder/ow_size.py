@@ -102,15 +102,18 @@ class OWSize(OWGenericWidget):
         self.normalize_box.setVisible(self.add_saxs==1)
 
     def set_distribution(self, is_init=False):
-        if not (self.cb_distribution.currentText() == Distribution.LOGNORMAL or self.cb_distribution.currentText() == Distribution.DELTA):
+        if not (self.cb_distribution.currentText() == Distribution.LOGNORMAL or \
+                #self.cb_distribution.currentText() == Distribution.GAMMA or \
+                self.cb_distribution.currentText() == Distribution.DELTA):
             if not is_init:
                 QMessageBox.critical(self, "Error",
+                                     #"Only Lognormal, Gamma and Delta distributions are supported",
                                      "Only Lognormal and Delta distributions are supported",
                                      QMessageBox.Ok)
 
                 self.distribution = 1
         else:
-            self.sigma_box.setVisible(self.cb_distribution.currentText() == Distribution.LOGNORMAL)
+            self.sigma_box.setVisible(self.cb_distribution.currentText() != Distribution.DELTA)
             self.saxs_box.setVisible(self.cb_distribution.currentText() == Distribution.DELTA)
             if self.cb_distribution.currentText() == Distribution.DELTA: self.set_add_saxs()
 
@@ -118,7 +121,8 @@ class OWSize(OWGenericWidget):
         try:
             if not self.fit_global_parameters is None:
                 if not self.mu_function==1: congruence.checkStrictlyPositiveNumber(self.mu, "\u03bc or D")
-                if self.cb_distribution.currentText() == Distribution.LOGNORMAL and not self.sigma_function==1: congruence.checkStrictlyPositiveNumber(self.sigma, "\u03c3")
+                if self.cb_distribution.currentText() != Distribution.DELTA and not self.sigma_function==1:
+                    congruence.checkStrictlyPositiveNumber(self.sigma, "\u03c3")
                 if self.cb_distribution.currentText() == Distribution.DELTA and not self.fit_global_parameters.fit_initialization.crystal_structures[0].use_structure:
                         raise Exception("Delta Distribution cannot be used when the structural model is not activated")
 

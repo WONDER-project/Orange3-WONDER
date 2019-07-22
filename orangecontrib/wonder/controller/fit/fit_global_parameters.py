@@ -233,12 +233,11 @@ class FitGlobalParameters(ParametersList):
         if not self.size_parameters is None:
             for size_parameters in self.size_parameters:
                 parameters[last_index + 1] = size_parameters.mu
-
-                if size_parameters.distribution == Distribution.LOGNORMAL:
+                if size_parameters.distribution == Distribution.DELTA:
+                    last_index += 1
+                else:
                     parameters[last_index + 2] = size_parameters.sigma
                     last_index += 2
-                else:
-                    last_index += 1
 
         if not self.strain_parameters is None:
             for strain_parameters in self.strain_parameters:
@@ -373,11 +372,11 @@ class FitGlobalParameters(ParametersList):
         if not self.size_parameters is None:
             for size_parameters in self.size_parameters:
                 size_parameters.mu.set_value(fitted_parameters[last_index + 1].value)
-                if size_parameters.distribution == Distribution.LOGNORMAL:
+                if size_parameters.distribution == Distribution.DELTA:
+                    last_index += 1
+                else:
                     size_parameters.sigma.set_value(fitted_parameters[last_index + 2].value)
                     last_index += 2
-                else:
-                    last_index += 1
 
         if not self.strain_parameters is None:
             for strain_parameters in self.strain_parameters:
@@ -516,11 +515,11 @@ class FitGlobalParameters(ParametersList):
         if not self.size_parameters is None:
             for size_parameters in self.size_parameters:
                 size_parameters.mu.error    = errors[last_index + 1]
-                if size_parameters.distribution == Distribution.LOGNORMAL:
+                if size_parameters.distribution == Distribution.DELTA:
+                    last_index += 1
+                else:
                     size_parameters.sigma.error = errors[last_index + 2]
                     last_index += 2
-                else:
-                    last_index += 1
 
         if not self.strain_parameters is None:
             for strain_parameters in self.strain_parameters:
@@ -696,12 +695,12 @@ class FitGlobalParameters(ParametersList):
             for size_parameters in self.size_parameters:
                 size_parameters.mu.set_value(fitted_parameters[last_index + 1].value)
                 size_parameters.mu.error    = errors[last_index + 1]
-                if size_parameters.distribution == Distribution.LOGNORMAL:
+                if size_parameters.distribution == Distribution.DELTA:
+                    last_index += 1
+                else:
                     size_parameters.sigma.set_value(fitted_parameters[last_index + 2].value)
                     size_parameters.sigma.error = errors[last_index + 2]
                     last_index += 2
-                else:
-                    last_index += 1
 
         if not self.strain_parameters is None:
             for strain_parameters in self.strain_parameters:

@@ -119,7 +119,7 @@ class InvariantPAH(ParametersList):
 
         return invariant
 
-    def get_warren_plot(self, h, k, l, L_max=50):
+    def get_warren_plot(self, h, k, l, L_max=20):
         step = L_max/100
         L = numpy.arange(start=step, stop=L_max + step, step=step)
 

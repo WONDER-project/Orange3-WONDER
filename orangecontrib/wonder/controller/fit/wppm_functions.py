@@ -302,6 +302,15 @@ def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern
                 fourier_amplitudes *= size_function_lognormal(fit_space_parameters.L,
                                                               size_parameters.sigma.value,
                                                               size_parameters.mu.value)
+        elif size_parameters.distribution == Distribution.GAMMA:
+            if fourier_amplitudes is None:
+                fourier_amplitudes = size_function_gamma(fit_space_parameters.L,
+                                                         size_parameters.sigma.value,
+                                                         size_parameters.mu.value)
+            else:
+                fourier_amplitudes *= size_function_gamma(fit_space_parameters.L,
+                                                          size_parameters.sigma.value,
+                                                          size_parameters.mu.value)
         elif size_parameters.distribution == Distribution.DELTA:
             if fourier_amplitudes is None:
                 fourier_amplitudes = size_function_delta(fit_space_parameters.L,
@@ -494,6 +503,8 @@ def polarization_factor(twotheta, twotheta_mono, degree_of_polarization, beampat
 # SIZE
 ######################################################################
 
+from scipy.special import gamma as G, gammaincc as GU
+
 def size_function_delta(L, D):
     LfracD = L/D
 
@@ -510,8 +521,34 @@ def size_function_lognormal(L, sigma, mu):
 
     return  size
 
+def size_function_gamma(L, g, mu):
+    Lgm = L*g/mu
+
+    size = ((0.5*(Lgm**3)*GU(g, Lgm)) - \
+           (1.5*Lgm*GU(g+2, Lgm)) + \
+           GU(g+3, Lgm)) / G(g+3)
+
+    return size
+
 def lognormal_distribution(mu, sigma, x):
-        return numpy.exp(-0.5*((numpy.log(x) - mu)/(sigma))**2)/(x*sigma*numpy.sqrt(2*numpy.pi))
+    return numpy.exp(-0.5*((numpy.log(x)-mu)/(sigma))**2)/(x*sigma*numpy.sqrt(2*numpy.pi))
+
+def delta_distribution(mu, x):
+    distribution = numpy.zeros(len(x))
+    distribution[numpy.where(x==mu)] = 1.0
+    return distribution
+
+def gamma_distribution(mu, g, x):
+    gxm = g*x/mu
+    return (g/(mu*G(g)))*(gxm**(g-1))*numpy.exp(-gxm)
+
+def york_distribution(mu, g, x):
+    gxm = g*x/mu
+    return (g/(mu*G(g)))*(gxm**g)*numpy.exp(-gxm)
+
+def lognormal_average(mu, sigma):
+    return numpy.exp(mu+0.5*sigma**2)
+
 
 ######################################################################
 # STRAIN
@@ -927,6 +964,9 @@ def integral_breadth_size_lognormal(mu, sigma): #integral breadth for size broad
 
 def integral_breadth_size_delta(mu): #integral breadth for size broadening only
     return 1 / (2 * integrate.quad(lambda L: size_function_delta(L, mu), 0, numpy.inf)[0])
+
+def integral_breadth_size_gamma(mu, g): #integral breadth for size broadening only
+    return 1 / (2 * integrate.quad(lambda L: size_function_gamma(L, g, mu), 0, numpy.inf)[0])
 
 def integral_breadth_strain_krivoglaz_wilkens(h, k, l, lattice_parameter, rho, Re, Ae, Be, As, Bs, mix, b): #integral breadth for strain broadening only
     return 1 / (2 * integrate.quad(lambda L: strain_krivoglaz_wilkens(L, h, k, l, lattice_parameter, rho, Re, Ae, Be, As, Bs, mix, b), 0, numpy.inf)[0])

@@ -739,7 +739,7 @@ class OWFitter(OWGenericWidget):
         self.refresh_fit(diffraction_pattern_number, is_init)
         self.refresh_fit_data()
         self.refresh_instrumental_function()
-        self.refresh_size()
+        self.refresh_size(is_init)
         self.refresh_strain()
         self.refresh_integral_breadth(diffraction_pattern_number, is_init)
 
@@ -864,25 +864,35 @@ class OWFitter(OWGenericWidget):
 
             if self.lab6_autoscale == 0 and self.lab6_ymin < self.lab6_xmax: self.plot_ipf_lab6.setGraphYLimits(ymin=self.lab6_ymin, ymax=self.lab6_ymax)
 
-    def refresh_size(self):
-        if not hasattr(self, "D_max"): self.D_max = None
-        if not hasattr(self, "D_min"): self.D_min = None
+    def refresh_size(self, is_init=False):
+        if is_init:
+            self.D_max = None
+            self.D_min = None
+            self.D_avg = None
+            self.text_size = None
 
         if not self.fitted_fit_global_parameters.size_parameters is None and self.show_size==1:
             if self.current_iteration <= 1: #TO BE SURE...
-                x, y, self.D_min, self.D_max = self.fitted_fit_global_parameters.size_parameters[0].get_distribution()
+                x, y, self.D_min, self.D_max, self.D_avg = self.fitted_fit_global_parameters.size_parameters[0].get_distribution()
             else:
-                x, y, self.D_min, self.D_max = self.fitted_fit_global_parameters.size_parameters[0].get_distribution(D_min=self.D_min, D_max=self.D_max)
+                x, y, self.D_min, self.D_max, self.D_avg = self.fitted_fit_global_parameters.size_parameters[0].get_distribution(D_min=self.D_min, D_max=self.D_max)
 
             self.plot_size.addCurve(x, y, legend="distribution", color="blue")
 
+            if not self.text_size is None: self.text_size.remove()
+
+            self.text_size = self.plot_size._backend.ax.text(numpy.max(x) * 0.65, numpy.max(y) * 0.9, "<D> = " + str(round(self.D_avg, 2)) + " nm", fontsize=16)
+
     def refresh_strain(self):
         if not self.fitted_fit_global_parameters.strain_parameters is None and self.show_warren==1:
-            x, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 0, 0, L_max=self.D_max)
+            if self.D_avg is None: L_max = 20
+            else: L_max = 2*self.D_avg
+
+            x, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 0, 0, L_max=L_max)
             self.plot_strain.addCurve(x, y, legend="h00", color='blue')
-            _, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 1, L_max=self.D_max)
+            _, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 1, L_max=L_max)
             self.plot_strain.addCurve(x, y, legend="hhh", color='red')
-            _, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 0, L_max=self.D_max)
+            _, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 1, 0, L_max=L_max)
             self.plot_strain.addCurve(x, y, legend="hh0", color='green')
 
     def refresh_integral_breadth(self, diffraction_pattern_number, is_init=False):
@@ -890,8 +900,9 @@ class OWFitter(OWGenericWidget):
             if is_init:
                 self.build_plot_integral_breadth()
 
-                self.x_ib        = numpy.full(diffraction_pattern_number, None)
-                self.labels_ib   = numpy.full(diffraction_pattern_number, None)
+                self.x_ib           = numpy.full(diffraction_pattern_number, None)
+                self.labels_ib      = numpy.full(diffraction_pattern_number, None)
+                self.annotations_ib = numpy.full(diffraction_pattern_number, None)
 
             for diffraction_pattern_index in range(diffraction_pattern_number):
                 crystal_structure = self.fitted_fit_global_parameters.fit_initialization.crystal_structures[diffraction_pattern_index]
@@ -969,11 +980,28 @@ class OWFitter(OWGenericWidget):
 
                 y_ib_total = y_ib_size + y_ib_strain + y_ib_instr
 
-                self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_instr, legend="IPF", symbol='o', color="black")
-                self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_size, legend="Size", symbol='o', color="red")
-                self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_strain, legend="Strain", symbol='o', color="blue")
-                self.plot_integral_breadth[diffraction_pattern_index].addCurve(self.x_ib[diffraction_pattern_index], y_ib_total, legend="Total", symbol='o', color="#2D811B")
-                self.plot_integral_breadth[diffraction_pattern_index].setGraphYLimits(-0.05, numpy.max(y_ib_total)*1.01)
+                x_ib = self.x_ib[diffraction_pattern_index]
+
+                self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_instr, legend="IPF", symbol='o', color="black")
+                self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_size, legend="Size", symbol='o', color="red")
+                self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_strain, legend="Strain", symbol='o', color="blue")
+                self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_total, legend="Total", symbol='o', color="#2D811B")
+                self.plot_integral_breadth[diffraction_pattern_index].setGraphYLimits(-0.05, numpy.max(y_ib_total)*1.2)
+
+                ax          = self.plot_integral_breadth[diffraction_pattern_index]._backend.ax
+                annotations = self.annotations_ib[diffraction_pattern_index]
+                labels      = self.labels_ib[diffraction_pattern_index]
+                dy = (numpy.max(y_ib_total)-numpy.min(y_ib_instr))*0.125
+
+                if annotations is None:
+                    annotations = numpy.full(nr_points, None)
+                    self.annotations_ib[diffraction_pattern_index] = annotations
+                else:
+                    for annotation in annotations: annotation.remove()
+
+                for i, hkl in enumerate(labels):
+                    annotations[i] = ax.annotate(hkl, (x_ib[i], y_ib_total[i] + dy), rotation=90)
+
 
     def build_plot_fit(self):
         fit_global_parameter = self.fit_global_parameters if self.fitted_fit_global_parameters is None else self.fitted_fit_global_parameters

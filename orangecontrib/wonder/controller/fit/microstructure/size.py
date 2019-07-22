@@ -1,7 +1,8 @@
 import numpy
 
 from orangecontrib.wonder.controller.fit.fit_parameter import ParametersList
-from orangecontrib.wonder.controller.fit.wppm_functions import Normalization, Distribution, lognormal_distribution
+from orangecontrib.wonder.controller.fit.wppm_functions import Normalization, Distribution, \
+    lognormal_distribution, delta_distribution, gamma_distribution, york_distribution, lognormal_average
 
 class Shape:
     NONE = "none"
@@ -48,20 +49,42 @@ class SizeParameters(ParametersList):
 
         x = numpy.arange(start=D_min, stop=D_max, step=step)
 
+        D_avg = self.get_D_average()
+
         try:
             if self.distribution == Distribution.LOGNORMAL:
                 y = lognormal_distribution(self.mu.value, self.sigma.value, x)
+            elif self.distribution == Distribution.GAMMA:
+                y = gamma_distribution(self.mu.value, self.sigma.value, x)
+            elif self.distribution == Distribution.YORK:
+                y = york_distribution(self.mu.value, self.sigma.value, x)
+            elif self.distribution == Distribution.DELTA:
+                y = delta_distribution(self.mu.value, x)
             else:
                 y = numpy.zeros(len(x))
 
-            if auto:
-                D_min = 0.0
-                D_max = x[numpy.where(y > 1e-5)][-1]
-                if D_min == D_max: D_min==x[0]
+            y[numpy.where(numpy.logical_or(numpy.isnan(y), numpy.isinf(y)))]    = 0.0
 
-                x, y, D_min, D_max = self.get_distribution(auto=False, D_min=D_min, D_max=D_max)
+            if auto:
+                good = x[numpy.where(y > 1e-5)]
+
+                D_min = good[0]
+                D_max = good[-1]
+
+                if D_min == D_max: D_min = x[0]
+                if D_min < 5: D_min = 0.0
+
+                x, y, D_min, D_max, D_avg = self.get_distribution(auto=False, D_min=D_min, D_max=D_max)
         except:
             pass
 
-        return x, y, D_min, D_max
+        return x, y, D_min, D_max, D_avg
+
+    def get_D_average(self):
+        if self.distribution == Distribution.LOGNORMAL:
+            return lognormal_average(self.mu.value, self.sigma.value)
+        elif self.distribution == Distribution.GAMMA or self.distribution == Distribution.YORK:
+            return self.mu.value
+        else:
+            return 0.0
 
