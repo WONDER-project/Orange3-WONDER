@@ -1491,7 +1491,7 @@ class DiffractionPatternBox(QtWidgets.QWidget, OWComponent):
                                                                                                   DiffractionPattern.get_parameters_prefix() + str(self.index+1) + "_"))
                     secondary_index += 1
 
-            self.diffraction_pattern.set_multiple_wavelengths(secondary_wavelengths, secondary_wavelengths_weights, recalculate=False)
+            self.diffraction_pattern.set_multiple_wavelengths(secondary_wavelengths, secondary_wavelengths_weights, recalculate=True)
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
