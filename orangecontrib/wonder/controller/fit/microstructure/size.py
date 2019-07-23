@@ -45,40 +45,22 @@ class SizeParameters(ParametersList):
             D_min = 0
             D_max = 1000
 
-        step = (D_max-D_min)/1000
-
-        x = numpy.arange(start=D_min, stop=D_max, step=step)
-
+        step  = (D_max-D_min)/1000
+        x     = numpy.arange(start=D_min, stop=D_max, step=step)
         D_avg = self.get_D_average()
+        sigma = self.sigma.value
 
         try:
-            if self.distribution == Distribution.LOGNORMAL:
-                y = lognormal_distribution(self.mu.value, self.sigma.value, x)
-            elif self.distribution == Distribution.GAMMA:
-                y = gamma_distribution(self.mu.value, self.sigma.value, x)
-            elif self.distribution == Distribution.YORK:
-                y = york_distribution(self.mu.value, self.sigma.value, x)
-            elif self.distribution == Distribution.DELTA:
-                y = delta_distribution(self.mu.value, x)
-            else:
-                y = numpy.zeros(len(x))
-
-            y[numpy.where(numpy.logical_or(numpy.isnan(y), numpy.isinf(y)))]    = 0.0
+            y = self.__get_distribution_values(x)
 
             if auto:
-                good = x[numpy.where(y > 1e-5)]
+                D_min, D_max = self.__get_auto_limits(x, y)
 
-                D_min = good[0]
-                D_max = good[-1]
-
-                if D_min == D_max: D_min = x[0]
-                if D_min < 5: D_min = 0.0
-
-                x, y, D_min, D_max, D_avg = self.get_distribution(auto=False, D_min=D_min, D_max=D_max)
+                x, y, D_min, D_max, D_avg, sigma = self.get_distribution(auto=False, D_min=D_min, D_max=D_max)
         except:
             pass
 
-        return x, y, D_min, D_max, D_avg
+        return x, y, D_min, D_max, D_avg, sigma
 
     def get_D_average(self):
         if self.distribution == Distribution.LOGNORMAL:
@@ -88,3 +70,29 @@ class SizeParameters(ParametersList):
         else:
             return 0.0
 
+    def __get_distribution_values(self, x):
+        if self.distribution == Distribution.LOGNORMAL:
+            y = lognormal_distribution(self.mu.value, self.sigma.value, x)
+        elif self.distribution == Distribution.GAMMA:
+            y = gamma_distribution(self.mu.value, self.sigma.value, x)
+        elif self.distribution == Distribution.YORK:
+            y = york_distribution(self.mu.value, self.sigma.value, x)
+        elif self.distribution == Distribution.DELTA:
+            y = delta_distribution(self.mu.value, x)
+        else:
+            y = numpy.zeros(len(x))
+
+        y[numpy.where(numpy.logical_or(numpy.isnan(y), numpy.isinf(y)))] = 0.0
+
+        return y
+
+    def __get_auto_limits(self, x, y):
+        good = x[numpy.where(y > 1e-5)]
+
+        D_min = good[0]
+        D_max = good[-1]
+
+        if D_min == D_max: D_min = x[0]
+        if D_min < 5: D_min = 0.0
+
+        return D_min, D_max
