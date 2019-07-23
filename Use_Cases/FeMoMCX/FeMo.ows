@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="Esempio di Fit senza modello Strutturale" title="FeMo Giara 4 Batch B - No Structural Model" version="2.0">
+<scheme description="FeMo from MCX Beamline" title="FeMo Giara 4 Batch B" version="2.0">
 	<nodes>
 		<node id="0" name="Load Diffraction Pattern" position="(69.0, 57.0)" project_name="Orange3-WONDER-1" qualified_name="orangecontrib.wonder.view.wonder.ow_diffraction_pattern.OWDiffractionPattern" title="Load Diffraction Pattern (1)" version="" />
 		<node id="1" name="FFT Parameters" position="(202.0, 56.0)" project_name="Orange3-WONDER-1" qualified_name="orangecontrib.wonder.view.wonder.ow_fft_parameters.OWFFTParameters" title="FFT Parameters" version="" />
