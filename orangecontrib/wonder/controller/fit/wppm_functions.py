@@ -582,7 +582,9 @@ def clausen_integral(x=0.0):
     return -1*(_v_integrate_quad(lambda t: clausen_integral_inner_function(t), 0.0, x)[0])
 
 def f_star(eta, use_simplified_calculation=True):
-    if type(eta) == numpy.float64 or type(eta) == float:
+    is_array = isinstance(eta, list) or isinstance(eta, numpy.ndarray)
+
+    if not is_array:
         if eta >= 1:
             return (256/(45*pi*eta)) - ((11/24) + (log(2) - log(eta))/4)/(eta**2)
         else:
