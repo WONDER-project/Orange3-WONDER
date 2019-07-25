@@ -132,15 +132,15 @@ class FitGlobalParameters(ParametersList):
 
         last_index = -1
 
-        if not self.fit_initialization.diffraction_patterns is None:
-            for index in range(len(self.fit_initialization.diffraction_patterns)):
-                diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
-                parameters[last_index + 1] = diffraction_pattern.wavelength
+        if not self.fit_initialization.incident_radiations is None:
+            for index in range(len(self.fit_initialization.incident_radiations)):
+                incident_radiation = self.fit_initialization.incident_radiations[index]
+                parameters[last_index + 1] = incident_radiation.wavelength
                 last_index += 1
 
-                if not diffraction_pattern.is_single_wavelength:
-                    for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
-                                                                                 diffraction_pattern.secondary_wavelengths_weights):
+                if not incident_radiation.is_single_wavelength:
+                    for secondary_wavelength, secondary_wavelength_weigth in zip(incident_radiation.secondary_wavelengths,
+                                                                                 incident_radiation.secondary_wavelengths_weights):
                         parameters[last_index + 1] = secondary_wavelength
                         parameters[last_index + 2] = secondary_wavelength_weigth
                         last_index += 2
@@ -270,16 +270,16 @@ class FitGlobalParameters(ParametersList):
     def from_fitted_parameters(self, fitted_parameters):
         last_index = -1
 
-        if not self.fit_initialization.diffraction_patterns is None:
-            for index in range(len(self.fit_initialization.diffraction_patterns)):
-                diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
-                diffraction_pattern.wavelength.set_value(fitted_parameters[last_index + 1].value)
+        if not self.fit_initialization.incident_radiations is None:
+            for index in range(len(self.fit_initialization.incident_radiations)):
+                incident_radiation = self.fit_initialization.incident_radiations[index]
+                incident_radiation.wavelength.set_value(fitted_parameters[last_index + 1].value)
 
                 last_index += 1
 
-                if not diffraction_pattern.is_single_wavelength:
-                    for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
-                                                                                 diffraction_pattern.secondary_wavelengths_weights):
+                if not incident_radiation.is_single_wavelength:
+                    for secondary_wavelength, secondary_wavelength_weigth in zip(incident_radiation.secondary_wavelengths,
+                                                                                 incident_radiation.secondary_wavelengths_weights):
                         secondary_wavelength.set_value(fitted_parameters[last_index + 1].value)
                         secondary_wavelength_weigth.set_value(fitted_parameters[last_index + 2].value)
                         last_index += 2
@@ -412,17 +412,17 @@ class FitGlobalParameters(ParametersList):
     def from_fitted_errors(self, errors):
         last_index = -1
 
-        if not self.fit_initialization.diffraction_patterns is None:
-            for index in range(len(self.fit_initialization.diffraction_patterns)):
-                diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
-                diffraction_pattern.wavelength.error = errors[last_index + 1]
+        if not self.fit_initialization.incident_radiations is None:
+            for index in range(len(self.fit_initialization.incident_radiations)):
+                incident_radiation = self.fit_initialization.incident_radiations[index]
+                incident_radiation.wavelength.error = errors[last_index + 1]
 
                 last_index += 1
 
-                if not diffraction_pattern.is_single_wavelength:
+                if not incident_radiation.is_single_wavelength:
 
-                    for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
-                                                                                 diffraction_pattern.secondary_wavelengths_weights):
+                    for secondary_wavelength, secondary_wavelength_weigth in zip(incident_radiation.secondary_wavelengths,
+                                                                                 incident_radiation.secondary_wavelengths_weights):
                         secondary_wavelength.error = errors[last_index + 1]
                         secondary_wavelength_weigth.error = errors[last_index + 2]
                         last_index += 2
@@ -550,17 +550,17 @@ class FitGlobalParameters(ParametersList):
     def from_fitted_parameters_and_errors(self, fitted_parameters, errors):
         last_index = -1
 
-        if not self.fit_initialization.diffraction_patterns is None:
-            for index in range(len(self.fit_initialization.diffraction_patterns)):
-                diffraction_pattern = self.fit_initialization.diffraction_patterns[index]
-                diffraction_pattern.wavelength.set_value(fitted_parameters[last_index + 1].value)
-                diffraction_pattern.wavelength.error = errors[last_index + 1]
+        if not self.fit_initialization.incident_radiations is None:
+            for index in range(len(self.fit_initialization.incident_radiations)):
+                incident_radiation = self.fit_initialization.incident_radiations[index]
+                incident_radiation.wavelength.set_value(fitted_parameters[last_index + 1].value)
+                incident_radiation.wavelength.error = errors[last_index + 1]
 
                 last_index += 1
 
-                if not diffraction_pattern.is_single_wavelength:
-                    for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
-                                                                                 diffraction_pattern.secondary_wavelengths_weights):
+                if not incident_radiation.is_single_wavelength:
+                    for secondary_wavelength, secondary_wavelength_weigth in zip(incident_radiation.secondary_wavelengths,
+                                                                                 incident_radiation.secondary_wavelengths_weights):
                         secondary_wavelength.set_value(fitted_parameters[last_index + 1].value)
                         secondary_wavelength_weigth.set_value(fitted_parameters[last_index + 2].value)
                         secondary_wavelength.error = errors[last_index + 1]

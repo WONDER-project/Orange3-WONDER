@@ -579,13 +579,16 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
         elif self.limit_type == 2:
             if not self.widget.fit_global_parameters is None \
                and not self.widget.fit_global_parameters.fit_initialization is None \
-               and not self.widget.fit_global_parameters.fit_initialization.diffraction_patterns is None \
-               and not self.widget.fit_global_parameters.fit_initialization.diffraction_patterns[self.index].wavelength.function:
-                wavelength = self.widget.fit_global_parameters.fit_initialization.diffraction_patterns[self.index].wavelength.value
+               and not self.widget.fit_global_parameters.fit_initialization.incident_radiations is None:
+                incident_radiation = self.widget.fit_global_parameters.fit_initialization.incident_radiations[
+                    0 if len(self.widget.fit_global_parameters.fit_initialization.incident_radiations) == 1 else self.index]
 
-                list = list_of_s_bragg(self.a,
-                                       symmetry=self.cb_symmetry.currentText(),
-                                       s_max=Utilities.s(numpy.radians(self.limit/2), wavelength))
+                if not incident_radiation.wavelength.function:
+                    wavelength = incident_radiation.wavelength.value
+
+                    list = list_of_s_bragg(self.a,
+                                           symmetry=self.cb_symmetry.currentText(),
+                                           s_max=Utilities.s(numpy.radians(self.limit/2), wavelength))
             else:
                 QMessageBox.critical(self,
                                      "Error",
@@ -690,14 +693,16 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
                 reflection.intensity.fixed = True
 
         if not self.widget.fit_global_parameters.fit_initialization is None \
+           and not self.widget.fit_global_parameters.fit_initialization.incident_radiations is None \
            and not self.widget.fit_global_parameters.fit_initialization.diffraction_patterns is None:
-
+            incident_radiation = self.widget.fit_global_parameters.fit_initialization.incident_radiations[
+                0 if len(self.widget.fit_global_parameters.fit_initialization.incident_radiations) == 1 else self.index]
             diffraction_pattern = self.widget.fit_global_parameters.fit_initialization.diffraction_patterns[self.index]
 
-            if not diffraction_pattern.wavelength.function:
-                wavelength = diffraction_pattern.wavelength.value
-                s_min = diffraction_pattern.get_diffraction_point(0).s
-                s_max = diffraction_pattern.get_diffraction_point(-1).s
+            if not incident_radiation.wavelength.function:
+                wavelength = incident_radiation.wavelength.value
+                s_min      = diffraction_pattern.get_diffraction_point(0).s
+                s_max      = diffraction_pattern.get_diffraction_point(-1).s
 
                 excluded_reflections = crystal_structure.get_congruence_check(wavelength=wavelength,
                                                                               min_value=s_min,

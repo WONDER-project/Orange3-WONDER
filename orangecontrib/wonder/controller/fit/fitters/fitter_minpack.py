@@ -351,9 +351,10 @@ class FitterMinpack(FitterInterface):
         fitted_patterns = numpy.full(self.diffraction_patterns_number, None)
 
         for index in range(self.diffraction_patterns_number):
-            wavelength = fit_global_parameters.fit_initialization.diffraction_patterns[index].wavelength
+            wavelength = fit_global_parameters.fit_initialization.incident_radiations[
+                0 if len(fit_global_parameters.fit_initialization.incident_radiations) == 1 else index].wavelength
 
-            fitted_pattern = DiffractionPattern(wavelength=wavelength)
+            fitted_pattern = DiffractionPattern()
 
             fitted_intensity = fit_function_direct(self.twotheta_experimental_list[index],
                                                    fit_global_parameters,
@@ -361,9 +362,13 @@ class FitterMinpack(FitterInterface):
             fitted_residual = self.intensity_experimental_list[index] - fitted_intensity
 
             for i in range(0, len(fitted_intensity)):
-                fitted_pattern.add_diffraction_point(diffraction_point=DiffractionPoint(twotheta=self.twotheta_experimental_list[index][i],
-                                                                                        intensity=fitted_intensity[i],
-                                                                                        error=fitted_residual[i]))
+                diffraction_point = DiffractionPoint(twotheta=self.twotheta_experimental_list[index][i],
+                                                     intensity=fitted_intensity[i],
+                                                     error=fitted_residual[i])
+                diffraction_point.apply_wavelength(wavelength)
+
+                fitted_pattern.add_diffraction_point(diffraction_point=diffraction_point)
+
             fitted_patterns[index] = fitted_pattern
 
         return fitted_patterns

@@ -1,6 +1,5 @@
 import numpy
 import inspect
-import copy
 
 from orangecontrib.wonder.util import congruence
 from orangecontrib.wonder.controller.fit.util.fit_utilities import Utilities
@@ -20,23 +19,19 @@ class DiffractionPoint:
                   twotheta = None,
                   intensity = None,
                   error = None,
-                  s = None,
-                  wavelength = None):
+                  s = None):
+        self.twotheta = twotheta
         self.intensity = intensity
         self.error = error
-
-        if not wavelength is None:
-            if twotheta is None:
-                self.s = s
-                self.twotheta = self._get_twotheta_from_s(s, wavelength)
-            elif s is None:
-                self.twotheta = twotheta
-                self.s = self._get_s_from_twotheta(twotheta, wavelength)
-        else:
-            self.twotheta = twotheta
-            self.s = s
+        self.s = s
 
         self._check_attributes_congruence()
+
+    def apply_wavelength(self, wavelength):
+        if self.twotheta is None:
+            self.twotheta = self._get_twotheta_from_s(self.s, wavelength)
+        elif self.s is None:
+            self.s = self._get_s_from_twotheta(self.twotheta, wavelength)
 
     def get_array (self):
         return numpy.array([self.twotheta, self.intensity, self.error, self.s])
@@ -52,78 +47,40 @@ class DiffractionPoint:
     def _get_twotheta_from_s(cls, s, wavelength):
         if s is None: return None
 
-        return numpy.degrees(2*Utilities.theta(s=s,
-                                               wavelength=wavelength.value))
+        return numpy.degrees(2*Utilities.theta(s, wavelength.value))
 
     def _check_attributes_congruence(self):
-        if self.s is None:
-            congruence.checkPositiveNumber(self.twotheta, "twotheta")
-        if self.twotheta is None:
+        if not self.s is None:
             congruence.checkPositiveNumber(self.s, "s")
+        if not self.twotheta is None:
+            congruence.checkPositiveNumber(self.twotheta, "twotheta")
 
 class DiffractionPattern(ParametersList):
 
     diffraction_pattern = None
-    wavelength = None
-    is_single_wavelength = True
-    secondary_wavelengths = []
-    secondary_wavelengths_weights = []
-    principal_wavelength_weight = None
 
     @classmethod
     def get_parameters_prefix(cls):
         return "diffraction_pattern_"
 
-    def __init__(self, n_points = 0, wavelength = None):
+    def __init__(self, n_points = 0):
         if n_points > 0:
             self.diffraction_pattern = numpy.full(n_points, None)
         else:
             self.diffraction_pattern = None
-
-        self.wavelength = wavelength
-        self.is_single_wavelength = True
-
-    def set_multiple_wavelengths(self, secondary_wavelengths = [], secondary_wavelengths_weights = [], recalculate=True):
-        self.is_single_wavelength = False
-        self.secondary_wavelengths = secondary_wavelengths
-        self.secondary_wavelengths_weights = secondary_wavelengths_weights
-        self.principal_wavelength_weight = self.get_principal_wavelenght_weight(recalculate=recalculate)
-
-    def set_single_wavelength(self, wavelength=None, recalculate=True):
-        self.is_single_wavelength = True
-        self.wavelength = wavelength
-        self.secondary_wavelengths = []
-        self.secondary_wavelengths_weights = []
-        self.principal_wavelength_weight = self.get_principal_wavelenght_weight(recalculate=recalculate)
-
-    def get_principal_wavelenght_weight(self, recalculate=False): # recalculate is to improve efficiency
-        if not recalculate:
-            return self.principal_wavelength_weight
-        else:
-            if not self.is_single_wavelength:
-                total_weight = 0.0
-
-                for weight in self.secondary_wavelengths_weights:
-                    total_weight += weight.value
-
-                if total_weight >= 1.0: raise ValueError("Weight of principal wavelength is <= 0")
-
-                return 1.0 - total_weight
-
-            else: return 1.0
 
     def add_diffraction_point (self, diffraction_point):
         if diffraction_point is None: raise ValueError ("Diffraction Point is None")
         if not isinstance(diffraction_point, DiffractionPoint): raise ValueError ("diffraction point should be of type Diffraction Point")
 
         if self.diffraction_pattern is None:
-            self.diffraction_pattern = numpy.array([self.__check_diffraction_point(diffraction_point)])
+            self.diffraction_pattern = numpy.array([diffraction_point])
         else:
-            self.diffraction_pattern = numpy.append(self.diffraction_pattern, self.__check_diffraction_point(diffraction_point))
+            self.diffraction_pattern = numpy.append(self.diffraction_pattern, diffraction_point)
 
     def set_diffraction_point(self, index, diffraction_point):
         self.__check_diffraction_pattern()
-        self.diffraction_pattern[index] = self.__check_diffraction_point(diffraction_point)
+        self.diffraction_pattern[index] = diffraction_point
 
     def diffraction_points_count(self):
         return 0 if self.diffraction_pattern is None else len(self.diffraction_pattern)
@@ -132,6 +89,13 @@ class DiffractionPattern(ParametersList):
         self.__check_diffraction_pattern()
 
         return self.diffraction_pattern[index]
+
+    def apply_wavelength(self, wavelength):
+        if not wavelength is None:
+            for diffraction_point in self.diffraction_pattern:
+                diffraction_point.apply_wavelength(wavelength)
+        else:
+            raise ValueError("wavelength is None")
 
     def duplicate(self):
         self.__check_diffraction_pattern()
@@ -150,17 +114,6 @@ class DiffractionPattern(ParametersList):
             raise AttributeError("diffraction pattern is "
                                  "not initialized")
 
-    def __check_diffraction_point(self, diffraction_point):
-        if not self.wavelength is None:
-            if diffraction_point.s is None or diffraction_point.twotheta is None:
-                diffraction_point = DiffractionPoint(twotheta=diffraction_point.twotheta,
-                                                     intensity=diffraction_point.intensity,
-                                                     error=diffraction_point.error,
-                                                     s=diffraction_point.s,
-                                                     wavelength=self.wavelength)
-        return diffraction_point
-
-
 # ----------------------------------------------------
 #  FACTORY METHOD
 # ----------------------------------------------------
@@ -173,8 +126,8 @@ class DiffractionPatternLimits:
 
 class DiffractionPatternFactory:
     @classmethod
-    def create_diffraction_pattern_from_file(clscls, file_name, wavelength=None, limits=None):
-        return DiffractionPatternFactoryChain.Instance().create_diffraction_pattern_from_file(file_name, wavelength, limits)
+    def create_diffraction_pattern_from_file(clscls, file_name, limits=None):
+        return DiffractionPatternFactoryChain.Instance().create_diffraction_pattern_from_file(file_name, limits)
 
 import os
 
@@ -183,7 +136,7 @@ import os
 # ----------------------------------------------------
 
 class DiffractionPatternFactoryInterface():
-    def create_diffraction_pattern_from_file(self, file_name, wavelength=None, limits=None):
+    def create_diffraction_pattern_from_file(self, file_name, limits=None):
         raise NotImplementedError ("Method is Abstract")
 
     def _get_extension(self, file_name):
@@ -220,12 +173,12 @@ class DiffractionPatternFactoryChain(DiffractionPatternFactoryInterface):
 
         self._chain_of_handlers.append(handler)
 
-    def create_diffraction_pattern_from_file(self, file_name, wavelength=None, limits=None):
+    def create_diffraction_pattern_from_file(self, file_name, limits=None):
         file_extension = self._get_extension(file_name)
 
         for handler in self._chain_of_handlers:
             if handler.is_handler(file_extension):
-                return handler.create_diffraction_pattern_from_file(file_name, wavelength, limits)
+                return handler.create_diffraction_pattern_from_file(file_name, limits)
 
         raise ValueError ("File Extension not recognized")
 
@@ -255,8 +208,8 @@ class DiffractionPatternXyeFactoryHandler(DiffractionPatternFactoryHandler):
     def _get_handled_extension(self):
         return ".xye"
 
-    def create_diffraction_pattern_from_file(self, file_name, wavelength=None, limits=None):
-        return DiffractionPatternXye(file_name = file_name, wavelength=wavelength, limits=limits)
+    def create_diffraction_pattern_from_file(self, file_name, limits=None):
+        return DiffractionPatternXye(file_name = file_name, limits=limits)
 
 class DiffractionPatterXyFactoryHandler(DiffractionPatternXyeFactoryHandler):
 
@@ -268,8 +221,8 @@ class DiffractionPatternRawFactoryHandler(DiffractionPatternFactoryHandler):
     def _get_handled_extension(self):
         return ".raw"
 
-    def create_diffraction_pattern_from_file(self, file_name, wavelength=None, limits=None):
-        return DiffractionPatternRaw(file_name= file_name, wavelength=wavelength, limits=limits)
+    def create_diffraction_pattern_from_file(self, file_name, limits=None):
+        return DiffractionPatternRaw(file_name= file_name, limits=limits)
 
 
 # ----------------------------------------------------
@@ -277,8 +230,8 @@ class DiffractionPatternRawFactoryHandler(DiffractionPatternFactoryHandler):
 # ----------------------------------------------------
 
 class DiffractionPatternXye(DiffractionPattern):
-    def __init__(self, file_name= "", wavelength=None, limits=None):
-        super(DiffractionPatternXye, self).__init__(n_points=0, wavelength=wavelength)
+    def __init__(self, file_name= "", limits=None):
+        super(DiffractionPatternXye, self).__init__(n_points=0)
 
         self.__initialize_from_file(file_name, limits)
 
@@ -308,17 +261,15 @@ class DiffractionPatternXye(DiffractionPattern):
                     self.set_diffraction_point(index=i-2,
                                                diffraction_point=DiffractionPoint(twotheta=twotheta,
                                                                                   intensity=intensity,
-                                                                                  error=error,
-                                                                                  wavelength=self.wavelength))
+                                                                                  error=error))
                 elif  limits.twotheta_min <= twotheta <= limits.twotheta_max:
                     self.add_diffraction_point(diffraction_point=DiffractionPoint(twotheta=twotheta,
                                                                                   intensity=intensity,
-                                                                                  error=error,
-                                                                                  wavelength=self.wavelength))
+                                                                                  error=error))
 
 class DiffractionPatternRaw(DiffractionPattern):
     def __init__(self, file_name= "", wavelength=None, limits=None):
-        super(DiffractionPatternRaw, self).__init__(n_points = 0, wavelength=wavelength)
+        super(DiffractionPatternRaw, self).__init__(n_points = 0)
 
         self.__initialize_from_file(file_name, limits)
 
@@ -337,8 +288,6 @@ class DiffractionPatternRaw(DiffractionPattern):
         step = float(splitted_row[1])
         starting_theta = float(splitted_row[2])
 
-        self.wavelength.set_value(float(splitted_row[3])/10)
-
         if limits is None: self.diffraction_pattern = numpy.array([None] *n_points)
 
         for i in numpy.arange(2, n_points+2):
@@ -352,13 +301,11 @@ class DiffractionPatternRaw(DiffractionPattern):
                 self.set_diffraction_point(index,
                                            diffraction_point= DiffractionPoint(twotheta=starting_theta + step*index,
                                                                                intensity=intensity,
-                                                                               error=error,
-                                                                               wavelength=self.wavelength))
+                                                                               error=error))
             else:
                 twotheta = starting_theta + step*index
 
                 if  limits.twotheta_min <= twotheta <= limits.twotheta_max:
                     self.add_diffraction_point(diffraction_point=DiffractionPoint(twotheta=twotheta,
                                                                                   intensity=intensity,
-                                                                                  error=error,
-                                                                                  wavelength=self.wavelength))
+                                                                                  error=error))

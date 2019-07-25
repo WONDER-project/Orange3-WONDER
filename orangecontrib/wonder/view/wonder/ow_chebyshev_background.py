@@ -9,7 +9,6 @@ from Orange.widgets import gui as orangegui
 from orangecontrib.wonder.util.widgets.ow_generic_widget import OWGenericWidget
 from orangecontrib.wonder.util.gui.gui_utility import gui, ConfirmDialog
 
-from orangecontrib.wonder.util import congruence
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters
 from orangecontrib.wonder.controller.fit.instrument.background_parameters import ChebyshevBackground
 
@@ -133,108 +132,102 @@ class OWChebyshevBackground(OWGenericWidget):
 
 
     def set_use_single_parameter_set(self, on_init=False):
-        if on_init:
-            confirmed = True
-        else:
-            confirmed = True
+        self.chebyshev_tabs.clear()
+        self.chebyshev_box_array = []
 
-        if confirmed:
-            self.chebyshev_tabs.clear()
-            self.chebyshev_box_array = []
+        dimension = len(self.c0) if self.fit_global_parameters is None else len(self.fit_global_parameters.fit_initialization.diffraction_patterns)
 
-            dimension = len(self.c0) if self.fit_global_parameters is None else len(self.fit_global_parameters.fit_initialization.diffraction_patterns)
+        for index in range(1 if self.use_single_parameter_set == 1 else dimension):
+            chebyshev_tab = gui.createTabPage(self.chebyshev_tabs, "Diff. Patt. " + str(index + 1))
 
-            for index in range(1 if self.use_single_parameter_set == 1 else dimension):
-                chebyshev_tab = gui.createTabPage(self.chebyshev_tabs, "Diff. Patt. " + str(index + 1))
+            if index < len(self.c0): #keep the existing
+                chebyshev_box = ChebyshevBackgroundBox(widget=self,
+                                                            parent=chebyshev_tab,
+                                                            index = index,
+                                                            c0                = self.c0[index],
+                                                            c1                = self.c1[index],
+                                                            c2                = self.c2[index],
+                                                            c3                = self.c3[index],
+                                                            c4                = self.c4[index],
+                                                            c5                = self.c5[index],
+                                                            c6                = self.c6[index],
+                                                            c7                = self.c7[index],
+                                                            c8                = self.c8[index],
+                                                            c9                = self.c9[index],
+                                                            c0_fixed          = self.c0_fixed[index],
+                                                            c1_fixed          = self.c1_fixed[index],
+                                                            c2_fixed          = self.c2_fixed[index],
+                                                            c3_fixed          = self.c3_fixed[index],
+                                                            c4_fixed          = self.c4_fixed[index],
+                                                            c5_fixed          = self.c5_fixed[index],
+                                                            c6_fixed          = self.c6_fixed[index],
+                                                            c7_fixed          = self.c7_fixed[index],
+                                                            c8_fixed          = self.c8_fixed[index],
+                                                            c9_fixed          = self.c9_fixed[index],
+                                                            c0_has_min        = self.c0_has_min[index],
+                                                            c1_has_min        = self.c1_has_min[index],
+                                                            c2_has_min        = self.c2_has_min[index],
+                                                            c3_has_min        = self.c3_has_min[index],
+                                                            c4_has_min        = self.c4_has_min[index],
+                                                            c5_has_min        = self.c5_has_min[index],
+                                                            c6_has_min        = self.c6_has_min[index],
+                                                            c7_has_min        = self.c7_has_min[index],
+                                                            c8_has_min        = self.c8_has_min[index],
+                                                            c9_has_min        = self.c9_has_min[index],
+                                                            c0_min            = self.c0_min[index],
+                                                            c1_min            = self.c1_min[index],
+                                                            c2_min            = self.c2_min[index],
+                                                            c3_min            = self.c3_min[index],
+                                                            c4_min            = self.c4_min[index],
+                                                            c5_min            = self.c5_min[index],
+                                                            c6_min            = self.c6_min[index],
+                                                            c7_min            = self.c7_min[index],
+                                                            c8_min            = self.c8_min[index],
+                                                            c9_min            = self.c9_min[index],
+                                                            c0_has_max        = self.c0_has_max[index],
+                                                            c1_has_max        = self.c1_has_max[index],
+                                                            c2_has_max        = self.c2_has_max[index],
+                                                            c3_has_max        = self.c3_has_max[index],
+                                                            c4_has_max        = self.c4_has_max[index],
+                                                            c5_has_max        = self.c5_has_max[index],
+                                                            c6_has_max        = self.c6_has_max[index],
+                                                            c7_has_max        = self.c7_has_max[index],
+                                                            c8_has_max        = self.c8_has_max[index],
+                                                            c9_has_max        = self.c9_has_max[index],
+                                                            c0_max            = self.c0_max[index],
+                                                            c1_max            = self.c1_max[index],
+                                                            c2_max            = self.c2_max[index],
+                                                            c3_max            = self.c3_max[index],
+                                                            c4_max            = self.c4_max[index],
+                                                            c5_max            = self.c5_max[index],
+                                                            c6_max            = self.c6_max[index],
+                                                            c7_max            = self.c7_max[index],
+                                                            c8_max            = self.c8_max[index],
+                                                            c9_max            = self.c9_max[index],
+                                                            c0_function       = self.c0_function[index],
+                                                            c1_function       = self.c1_function[index],
+                                                            c2_function       = self.c2_function[index],
+                                                            c3_function       = self.c3_function[index],
+                                                            c4_function       = self.c4_function[index],
+                                                            c5_function       = self.c5_function[index],
+                                                            c6_function       = self.c6_function[index],
+                                                            c7_function       = self.c7_function[index],
+                                                            c8_function       = self.c8_function[index],
+                                                            c9_function       = self.c9_function[index],
+                                                            c0_function_value = self.c0_function_value[index],
+                                                            c1_function_value = self.c1_function_value[index],
+                                                            c2_function_value = self.c2_function_value[index],
+                                                            c3_function_value = self.c3_function_value[index],
+                                                            c4_function_value = self.c4_function_value[index],
+                                                            c5_function_value = self.c5_function_value[index],
+                                                            c6_function_value = self.c6_function_value[index],
+                                                            c7_function_value = self.c7_function_value[index],
+                                                            c8_function_value = self.c8_function_value[index],
+                                                            c9_function_value = self.c9_function_value[index])
+            else:
+                chebyshev_box = ChebyshevBackgroundBox(widget=self, parent=chebyshev_tab, index = index)
 
-                if index < len(self.c0): #keep the existing
-                    chebyshev_box = ChebyshevBackgroundBox(widget=self,
-                                                                parent=chebyshev_tab,
-                                                                index = index,
-                                                                c0                = self.c0[index],
-                                                                c1                = self.c1[index],
-                                                                c2                = self.c2[index],
-                                                                c3                = self.c3[index],
-                                                                c4                = self.c4[index],
-                                                                c5                = self.c5[index],
-                                                                c6                = self.c6[index],
-                                                                c7                = self.c7[index],
-                                                                c8                = self.c8[index],
-                                                                c9                = self.c9[index],
-                                                                c0_fixed          = self.c0_fixed[index],
-                                                                c1_fixed          = self.c1_fixed[index],
-                                                                c2_fixed          = self.c2_fixed[index],
-                                                                c3_fixed          = self.c3_fixed[index],
-                                                                c4_fixed          = self.c4_fixed[index],
-                                                                c5_fixed          = self.c5_fixed[index],
-                                                                c6_fixed          = self.c6_fixed[index],
-                                                                c7_fixed          = self.c7_fixed[index],
-                                                                c8_fixed          = self.c8_fixed[index],
-                                                                c9_fixed          = self.c9_fixed[index],
-                                                                c0_has_min        = self.c0_has_min[index],
-                                                                c1_has_min        = self.c1_has_min[index],
-                                                                c2_has_min        = self.c2_has_min[index],
-                                                                c3_has_min        = self.c3_has_min[index],
-                                                                c4_has_min        = self.c4_has_min[index],
-                                                                c5_has_min        = self.c5_has_min[index],
-                                                                c6_has_min        = self.c6_has_min[index],
-                                                                c7_has_min        = self.c7_has_min[index],
-                                                                c8_has_min        = self.c8_has_min[index],
-                                                                c9_has_min        = self.c9_has_min[index],
-                                                                c0_min            = self.c0_min[index],
-                                                                c1_min            = self.c1_min[index],
-                                                                c2_min            = self.c2_min[index],
-                                                                c3_min            = self.c3_min[index],
-                                                                c4_min            = self.c4_min[index],
-                                                                c5_min            = self.c5_min[index],
-                                                                c6_min            = self.c6_min[index],
-                                                                c7_min            = self.c7_min[index],
-                                                                c8_min            = self.c8_min[index],
-                                                                c9_min            = self.c9_min[index],
-                                                                c0_has_max        = self.c0_has_max[index],
-                                                                c1_has_max        = self.c1_has_max[index],
-                                                                c2_has_max        = self.c2_has_max[index],
-                                                                c3_has_max        = self.c3_has_max[index],
-                                                                c4_has_max        = self.c4_has_max[index],
-                                                                c5_has_max        = self.c5_has_max[index],
-                                                                c6_has_max        = self.c6_has_max[index],
-                                                                c7_has_max        = self.c7_has_max[index],
-                                                                c8_has_max        = self.c8_has_max[index],
-                                                                c9_has_max        = self.c9_has_max[index],
-                                                                c0_max            = self.c0_max[index],
-                                                                c1_max            = self.c1_max[index],
-                                                                c2_max            = self.c2_max[index],
-                                                                c3_max            = self.c3_max[index],
-                                                                c4_max            = self.c4_max[index],
-                                                                c5_max            = self.c5_max[index],
-                                                                c6_max            = self.c6_max[index],
-                                                                c7_max            = self.c7_max[index],
-                                                                c8_max            = self.c8_max[index],
-                                                                c9_max            = self.c9_max[index],
-                                                                c0_function       = self.c0_function[index],
-                                                                c1_function       = self.c1_function[index],
-                                                                c2_function       = self.c2_function[index],
-                                                                c3_function       = self.c3_function[index],
-                                                                c4_function       = self.c4_function[index],
-                                                                c5_function       = self.c5_function[index],
-                                                                c6_function       = self.c6_function[index],
-                                                                c7_function       = self.c7_function[index],
-                                                                c8_function       = self.c8_function[index],
-                                                                c9_function       = self.c9_function[index],
-                                                                c0_function_value = self.c0_function_value[index],
-                                                                c1_function_value = self.c1_function_value[index],
-                                                                c2_function_value = self.c2_function_value[index],
-                                                                c3_function_value = self.c3_function_value[index],
-                                                                c4_function_value = self.c4_function_value[index],
-                                                                c5_function_value = self.c5_function_value[index],
-                                                                c6_function_value = self.c6_function_value[index],
-                                                                c7_function_value = self.c7_function_value[index],
-                                                                c8_function_value = self.c8_function_value[index],
-                                                                c9_function_value = self.c9_function_value[index])
-                else:
-                    chebyshev_box = ChebyshevBackgroundBox(widget=self, parent=chebyshev_tab, index = index)
-
-                self.chebyshev_box_array.append(chebyshev_box)
+            self.chebyshev_box_array.append(chebyshev_box)
 
             if not on_init: self.dumpSettings()
             
@@ -786,8 +779,6 @@ class ChebyshevBackgroundBox(QtWidgets.QWidget, OWComponent):
 
     parameter_functions = {}
 
-    crystal_structure = None
-
     index = 0
 
     def __init__(self,
@@ -970,16 +961,16 @@ class ChebyshevBackgroundBox(QtWidgets.QWidget, OWComponent):
 
         container = gui.widgetBox(parent, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-35)
 
-        widget.create_box_in_widget(self, container, "c0", add_callback=True)
-        widget.create_box_in_widget(self, container, "c1", add_callback=True)
-        widget.create_box_in_widget(self, container, "c2", add_callback=True)
-        widget.create_box_in_widget(self, container, "c3", add_callback=True)
-        widget.create_box_in_widget(self, container, "c4", add_callback=True)
-        widget.create_box_in_widget(self, container, "c5", add_callback=True)
-        widget.create_box_in_widget(self, container, "c6", add_callback=True)
-        widget.create_box_in_widget(self, container, "c7", add_callback=True)
-        widget.create_box_in_widget(self, container, "c8", add_callback=True)
-        widget.create_box_in_widget(self, container, "c9", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c0", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c1", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c2", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c3", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c4", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c5", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c6", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c7", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c8", add_callback=True)
+        OWGenericWidget.create_box_in_widget(self, container, "c9", add_callback=True)
 
         self.is_on_init = False
 
@@ -1029,31 +1020,31 @@ class ChebyshevBackgroundBox(QtWidgets.QWidget, OWComponent):
         return ChebyshevBackground.get_parameters_prefix() + self.get_parameter_progressive()
 
     def get_parameter_progressive(self):
-        return str(self.index+1) + "_"
+        return str(self.index + 1) + "_"
 
     def set_data(self, background_parameters):
-        self.widget.populate_fields_in_widget(self, "c0", background_parameters.c0)
-        self.widget.populate_fields_in_widget(self, "c1", background_parameters.c1)
-        self.widget.populate_fields_in_widget(self, "c2", background_parameters.c2)
-        self.widget.populate_fields_in_widget(self, "c3", background_parameters.c3)
-        self.widget.populate_fields_in_widget(self, "c4", background_parameters.c4)
-        self.widget.populate_fields_in_widget(self, "c5", background_parameters.c5)
-        self.widget.populate_fields_in_widget(self, "c6", background_parameters.c6)
-        self.widget.populate_fields_in_widget(self, "c7", background_parameters.c7)
-        self.widget.populate_fields_in_widget(self, "c8", background_parameters.c8)
-        self.widget.populate_fields_in_widget(self, "c9", background_parameters.c9)
+        OWGenericWidget.populate_fields_in_widget(self, "c0", background_parameters.c0, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c1", background_parameters.c1, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c2", background_parameters.c2, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c3", background_parameters.c3, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c4", background_parameters.c4, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c5", background_parameters.c5, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c6", background_parameters.c6, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c7", background_parameters.c7, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c8", background_parameters.c8, value_only=True)
+        OWGenericWidget.populate_fields_in_widget(self, "c9", background_parameters.c9, value_only=True)
 
     def send_background(self):
-        return ChebyshevBackground(c0=self.widget.populate_parameter_in_widget(self, "c0", self.get_parameters_prefix()),
-                                   c1=self.widget.populate_parameter_in_widget(self, "c1", self.get_parameters_prefix()),
-                                   c2=self.widget.populate_parameter_in_widget(self, "c2", self.get_parameters_prefix()),
-                                   c3=self.widget.populate_parameter_in_widget(self, "c3", self.get_parameters_prefix()),
-                                   c4=self.widget.populate_parameter_in_widget(self, "c4", self.get_parameters_prefix()),
-                                   c5=self.widget.populate_parameter_in_widget(self, "c5", self.get_parameters_prefix()),
-                                   c6=self.widget.populate_parameter_in_widget(self, "c6", self.get_parameters_prefix()),
-                                   c7=self.widget.populate_parameter_in_widget(self, "c7", self.get_parameters_prefix()),
-                                   c8=self.widget.populate_parameter_in_widget(self, "c8", self.get_parameters_prefix()),
-                                   c9=self.widget.populate_parameter_in_widget(self, "c9", self.get_parameters_prefix()))
+        return ChebyshevBackground(c0=OWGenericWidget.populate_parameter_in_widget(self, "c0", self.get_parameters_prefix()),
+                                   c1=OWGenericWidget.populate_parameter_in_widget(self, "c1", self.get_parameters_prefix()),
+                                   c2=OWGenericWidget.populate_parameter_in_widget(self, "c2", self.get_parameters_prefix()),
+                                   c3=OWGenericWidget.populate_parameter_in_widget(self, "c3", self.get_parameters_prefix()),
+                                   c4=OWGenericWidget.populate_parameter_in_widget(self, "c4", self.get_parameters_prefix()),
+                                   c5=OWGenericWidget.populate_parameter_in_widget(self, "c5", self.get_parameters_prefix()),
+                                   c6=OWGenericWidget.populate_parameter_in_widget(self, "c6", self.get_parameters_prefix()),
+                                   c7=OWGenericWidget.populate_parameter_in_widget(self, "c7", self.get_parameters_prefix()),
+                                   c8=OWGenericWidget.populate_parameter_in_widget(self, "c8", self.get_parameters_prefix()),
+                                   c9=OWGenericWidget.populate_parameter_in_widget(self, "c9", self.get_parameters_prefix()))
 
 
 if __name__ == "__main__":

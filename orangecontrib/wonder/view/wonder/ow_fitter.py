@@ -949,8 +949,9 @@ class OWFitter(OWGenericWidget):
 
             for diffraction_pattern_index in range(diffraction_pattern_number):
                 crystal_structure = self.fitted_fit_global_parameters.fit_initialization.crystal_structures[diffraction_pattern_index]
+                incident_radiation = self.fitted_fit_global_parameters.fit_initialization.incident_radiations[0 if len(self.fitted_fit_global_parameters.fit_initialization.incident_radiations) == 1 else diffraction_pattern_index]
 
-                wavelength = self.fitted_fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index].wavelength.value
+                wavelength = incident_radiation.wavelength.value
                 lattice_parameter = crystal_structure.a.value
 
                 nr_points = crystal_structure.get_reflections_count()

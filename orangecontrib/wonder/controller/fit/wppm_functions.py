@@ -42,7 +42,9 @@ def _wrapper_fit_function_direct(parameters):
 	return fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index)
 
 def fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index = 0):
-    wavelength = fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index].wavelength.value
+    incident_radiation = fit_global_parameters.fit_initialization.incident_radiations[0 if len(fit_global_parameters.fit_initialization.incident_radiations) == 1 else diffraction_pattern_index]
+
+    wavelength = incident_radiation.wavelength.value
 
     I = fit_function_reciprocal(Utilities.s(0.5*numpy.radians(twotheta), wavelength),
                                 fit_global_parameters,
@@ -138,14 +140,14 @@ def fit_function_reciprocal(s, fit_global_parameters, diffraction_pattern_index 
             if not thermal_polarization_parameters.debye_waller_factor is None:
                 I *= debye_waller(s, thermal_polarization_parameters.debye_waller_factor.value)
 
-        diffraction_pattern = fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index]
+        incident_radiation = fit_global_parameters.fit_initialization.incident_radiations[0 if len(fit_global_parameters.fit_initialization.incident_radiations) == 1 else diffraction_pattern_index]
 
-        if not diffraction_pattern.is_single_wavelength:
-            principal_wavelength = diffraction_pattern.wavelength
-            I_scaled = I*diffraction_pattern.get_principal_wavelenght_weight()
+        if not incident_radiation.is_single_wavelength:
+            principal_wavelength = incident_radiation.wavelength
+            I_scaled = I*incident_radiation.get_principal_wavelenght_weight()
 
-            for secondary_wavelength, secondary_wavelength_weigth in zip(diffraction_pattern.secondary_wavelengths,
-                                                                         diffraction_pattern.secondary_wavelengths_weights):
+            for secondary_wavelength, secondary_wavelength_weigth in zip(incident_radiation.secondary_wavelengths,
+                                                                         incident_radiation.secondary_wavelengths_weights):
                 s_secondary = s * secondary_wavelength.value/principal_wavelength.value
                 I_scaled += Utilities.merge_functions([[s_secondary, I*secondary_wavelength_weigth.value]], s)
 
@@ -250,8 +252,9 @@ def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern
     fit_space_parameters = fit_global_parameters.space_parameters()
     crystal_structure = fit_global_parameters.fit_initialization.crystal_structures[diffraction_pattern_index]
     reflection = crystal_structure.get_reflection(reflection_index)
+    incident_radiation = fit_global_parameters.fit_initialization.incident_radiations[0 if len(fit_global_parameters.fit_initialization.incident_radiations) == 1 else diffraction_pattern_index]
 
-    wavelength = fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index].wavelength.value
+    wavelength = incident_radiation.wavelength.value
     lattice_parameter = crystal_structure.a.value
 
     fourier_amplitudes = None
@@ -579,7 +582,7 @@ def clausen_integral(x=0.0):
     return -1*(_v_integrate_quad(lambda t: clausen_integral_inner_function(t), 0.0, x)[0])
 
 def f_star(eta, use_simplified_calculation=True):
-    if type(eta) == float:
+    if type(eta) == numpy.float64 or type(eta) == float:
         if eta >= 1:
             return (256/(45*pi*eta)) - ((11/24) + (log(2) - log(eta))/4)/(eta**2)
         else:
