@@ -1048,7 +1048,7 @@ class ChebyshevBackgroundBox(QtWidgets.QWidget, OWComponent):
 
 
 if __name__ == "__main__":
-    a4 =  QApplication(sys.argv)
+    a =  QApplication(sys.argv)
     ow = OWChebyshevBackground()
     ow.show()
     a.exec_()

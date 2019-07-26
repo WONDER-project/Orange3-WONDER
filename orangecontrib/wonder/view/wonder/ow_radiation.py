@@ -1028,11 +1028,11 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
         if not incident_radiation.is_single_wavelength:
             self.xray_tube_key=incident_radiation.xray_tube_key
 
-            for index in range(2, len(incident_radiation.secondary_wavelengths) + 1):
-                OWGenericWidget.populate_fields_in_widget(self, "wavelength_" + str(index), incident_radiation.secondary_wavelengths[index]        , value_only=True)
-                OWGenericWidget.populate_fields_in_widget(self, "weight_" + str(index)    , incident_radiation.secondary_wavelengths_weights[index], value_only=True)
+            for index in range(0, len(incident_radiation.secondary_wavelengths)):
+                OWGenericWidget.populate_fields_in_widget(self, "wavelength_" + str(2 + index), incident_radiation.secondary_wavelengths[index]        , value_only=True)
+                OWGenericWidget.populate_fields_in_widget(self, "weight_" + str(2 + index)    , incident_radiation.secondary_wavelengths_weights[index], value_only=True)
 
-        self.set_is_multiple_wavelength()
+        self.set_is_multiple_wavelength(switch_tube=False)
 
     def create_wavelength_boxes(self):
         self.secondary_wavelengths_boxes = {}
@@ -1089,7 +1089,7 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
             self.widget.dump_weight_4()
             self.widget.dump_weight_5()
 
-    def set_is_multiple_wavelength(self):
+    def set_is_multiple_wavelength(self, switch_tube=True):
         if self.is_multiple_wavelength == 0:
             self.secondary_box.setVisible(False)
             self.secondary_box_2.setVisible(False)
@@ -1109,7 +1109,7 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
             self.secondary_box_2.setVisible(True)
             self.secondary_box_2_empty.setVisible(False)
 
-            self.set_xray_tube_key()
+            if switch_tube: self.set_xray_tube_key()
 
         if not self.is_on_init:
             self.widget.dump_is_multiple_wavelength()

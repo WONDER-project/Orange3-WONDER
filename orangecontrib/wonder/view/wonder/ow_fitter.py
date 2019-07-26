@@ -1223,7 +1223,12 @@ class FitThread(QThread):
 
                 self.update.emit()
 
-                if self.fitter_widget.stop_fit: break
+                if self.fitter_widget.stop_fit:
+                    if self.fitter_widget.is_interactive==0 and iteration<self.fitter_widget.n_iterations:
+                        self.fitter_widget.fitted_patterns = \
+                            self.fitter_widget.fitter.build_fitted_diffraction_pattern(fit_global_parameters=self.fitter_widget.fitted_fit_global_parameters)
+
+                    break
                 if self.fitter_widget.fitted_fit_global_parameters.is_convergence_reached(): break
 
             print("Fit duration: ", round(time.clock()-t0, 3), " seconds")
