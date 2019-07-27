@@ -397,7 +397,9 @@ class OWFitter(OWGenericWidget):
                 self.cb_show_shift.setEnabled(not self.fit_global_parameters.get_shift_parameters(Lab6TanCorrection.__name__) is None)
                 self.cb_show_size.setEnabled(not self.fit_global_parameters.size_parameters is None)
                 self.cb_show_warren.setEnabled(not self.fit_global_parameters.strain_parameters is None)
-                self.cb_show_integral_breadth.setEnabled(not self.fit_global_parameters.strain_parameters is None)
+                self.cb_show_integral_breadth.setEnabled(not (self.fit_global_parameters.strain_parameters is None and
+                                                              self.fit_global_parameters.size_parameters is None and
+                                                              self.fit_global_parameters.instrumental_parameters is None))
             else:
                 self.cb_show_ipf.setEnabled(False)
                 self.cb_show_shift.setEnabled(False)
@@ -480,15 +482,19 @@ class OWFitter(OWGenericWidget):
 
                 if self.fit_global_parameters.strain_parameters is None:
                     self.show_warren           = 0
-                    self.show_integral_breadth = 0
-
                     self.cb_show_warren.setEnabled(False)
                     self.tab_plot_strain.setEnabled(False)
-                    self.cb_show_integral_breadth.setEnabled(False)
-                    self.tab_plot_integral_breadth.setEnabled(False)
                 else:
                     self.cb_show_warren.setEnabled(True)
                     self.tab_plot_strain.setEnabled(True)
+
+                if self.fit_global_parameters.strain_parameters is None and \
+                   self.fit_global_parameters.size_parameters is None and \
+                   self.fit_global_parameters.instrumental_parameters is None:
+                    self.show_integral_breadth = 0
+                    self.cb_show_integral_breadth.setEnabled(False)
+                    self.tab_plot_integral_breadth.setEnabled(False)
+                else:
                     self.cb_show_integral_breadth.setEnabled(True)
                     self.tab_plot_integral_breadth.setEnabled(True)
 
@@ -939,13 +945,16 @@ class OWFitter(OWGenericWidget):
                 if not annotations is None:
                     for annotation in annotations: annotation.remove()
 
-        if not self.fitted_fit_global_parameters.strain_parameters is None and self.show_integral_breadth==1:
+        if not (self.fitted_fit_global_parameters.strain_parameters is None and \
+                self.fitted_fit_global_parameters.size_parameters is None and \
+                self.fitted_fit_global_parameters.instrumental_parameters is None) and \
+                self.show_integral_breadth==1:
             if is_init:
                 self.__build_plot_integral_breadth()
 
-                self.x_ib           = numpy.full(diffraction_pattern_number, None)
-                self.labels_ib      = numpy.full(diffraction_pattern_number, None)
-                self.annotations_ib = numpy.full(diffraction_pattern_number, None)
+            self.x_ib           = numpy.full(diffraction_pattern_number, None)
+            self.labels_ib      = numpy.full(diffraction_pattern_number, None)
+            self.annotations_ib = numpy.full(diffraction_pattern_number, None)
 
             for diffraction_pattern_index in range(diffraction_pattern_number):
                 crystal_structure = self.fitted_fit_global_parameters.fit_initialization.crystal_structures[diffraction_pattern_index]
@@ -956,9 +965,8 @@ class OWFitter(OWGenericWidget):
 
                 nr_points = crystal_structure.get_reflections_count()
 
-                if is_init:
-                    self.x_ib[diffraction_pattern_index]      = crystal_structure.get_s_list()
-                    self.labels_ib[diffraction_pattern_index] = crystal_structure.get_hkl_list()
+                self.x_ib[diffraction_pattern_index]      = crystal_structure.get_s_list()
+                self.labels_ib[diffraction_pattern_index] = crystal_structure.get_hkl_list()
 
                 size_parameters = None
                 if not self.fitted_fit_global_parameters.size_parameters is None:
@@ -968,7 +976,13 @@ class OWFitter(OWGenericWidget):
                 if not self.fitted_fit_global_parameters.instrumental_parameters is None:
                     instrumental_parameters = self.fitted_fit_global_parameters.instrumental_parameters[0 if len(self.fitted_fit_global_parameters.instrumental_parameters) == 1 else diffraction_pattern_index]
 
-                strain_parameters = self.fitted_fit_global_parameters.strain_parameters[0 if len(self.fitted_fit_global_parameters.strain_parameters) == 1 else diffraction_pattern_index]
+                strain_parameters = None
+                if not self.fitted_fit_global_parameters.strain_parameters is None:
+                    strain_parameters = self.fitted_fit_global_parameters.strain_parameters[0 if len(self.fitted_fit_global_parameters.strain_parameters) == 1 else diffraction_pattern_index]
+
+                plot_instr = not instrumental_parameters is None
+                plot_size = not size_parameters is None
+                plot_strain = not strain_parameters is None
 
                 if not size_parameters is None:
                     if size_parameters.distribution == Distribution.LOGNORMAL:
@@ -985,29 +999,30 @@ class OWFitter(OWGenericWidget):
                 for reflection in crystal_structure.get_reflections():
                     i += 1
 
-                    if isinstance(strain_parameters, InvariantPAH):
-                        y_ib_strain[i] = integral_breadth_strain_invariant_function_pah(reflection.h,
-                                                                                        reflection.k,
-                                                                                        reflection.l,
-                                                                                        lattice_parameter,
-                                                                                        strain_parameters.aa.value,
-                                                                                        strain_parameters.bb.value,
-                                                                                        strain_parameters.get_invariant(reflection.h,
-                                                                                                                        reflection.k,
-                                                                                                                        reflection.l))
-                    elif isinstance(strain_parameters, KrivoglazWilkensModel):
-                        y_ib_strain[i] = integral_breadth_strain_krivoglaz_wilkens(reflection.h,
-                                                                                   reflection.k,
-                                                                                   reflection.l,
-                                                                                   lattice_parameter,
-                                                                                   strain_parameters.rho.value,
-                                                                                   strain_parameters.Re.value,
-                                                                                   strain_parameters.Ae.value,
-                                                                                   strain_parameters.Be.value,
-                                                                                   strain_parameters.As.value,
-                                                                                   strain_parameters.Bs.value,
-                                                                                   strain_parameters.mix.value,
-                                                                                   strain_parameters.b.value)
+                    if not strain_parameters is None:
+                        if isinstance(strain_parameters, InvariantPAH):
+                            y_ib_strain[i] = integral_breadth_strain_invariant_function_pah(reflection.h,
+                                                                                            reflection.k,
+                                                                                            reflection.l,
+                                                                                            lattice_parameter,
+                                                                                            strain_parameters.aa.value,
+                                                                                            strain_parameters.bb.value,
+                                                                                            strain_parameters.get_invariant(reflection.h,
+                                                                                                                            reflection.k,
+                                                                                                                            reflection.l))
+                        elif isinstance(strain_parameters, KrivoglazWilkensModel):
+                            y_ib_strain[i] = integral_breadth_strain_krivoglaz_wilkens(reflection.h,
+                                                                                       reflection.k,
+                                                                                       reflection.l,
+                                                                                       lattice_parameter,
+                                                                                       strain_parameters.rho.value,
+                                                                                       strain_parameters.Re.value,
+                                                                                       strain_parameters.Ae.value,
+                                                                                       strain_parameters.Be.value,
+                                                                                       strain_parameters.As.value,
+                                                                                       strain_parameters.Bs.value,
+                                                                                       strain_parameters.mix.value,
+                                                                                       strain_parameters.b.value)
 
                     if not instrumental_parameters is None:
                         y_ib_instr[i] = integral_breadth_instrumental_function(reflection.h,
@@ -1026,11 +1041,14 @@ class OWFitter(OWGenericWidget):
 
                 x_ib = self.x_ib[diffraction_pattern_index]
 
-                self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_instr, legend="IPF", symbol='o', color="black")
-                self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_size, legend="Size", symbol='o', color="red")
-                self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_strain, legend="Strain", symbol='o', color="blue")
+                if plot_instr:  self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_instr, legend="IPF", symbol='o', color="black")
+                if plot_size:   self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_size, legend="Size", symbol='o', color="red")
+                if plot_strain: self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_strain, legend="Strain", symbol='o', color="blue")
                 self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_total, legend="Total", symbol='o', color="#2D811B")
-                self.plot_integral_breadth[diffraction_pattern_index].setGraphYLimits(-0.05, numpy.max(y_ib_total)*1.2)
+                self.plot_integral_breadth[diffraction_pattern_index].setGraphYLimits(-0.05,
+                                                                                      numpy.max(y_ib_total)*1.2)
+                self.plot_integral_breadth[diffraction_pattern_index].setGraphXLimits(x_ib[0] - abs(x_ib[0])*0.1,
+                                                                                      x_ib[-1] + abs(x_ib[0])*0.1)
 
                 ax          = self.plot_integral_breadth[diffraction_pattern_index]._backend.ax
                 annotations = numpy.full(nr_points, None)
