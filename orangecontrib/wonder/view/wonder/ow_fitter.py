@@ -11,7 +11,7 @@ from silx.gui import qt
 from Orange.widgets.settings import Setting
 from Orange.widgets import gui as orangegui
 
-from orangecontrib.wonder.util.widgets.ow_generic_widget import OWGenericWidget
+from orangecontrib.wonder.util.widgets.ow_generic_widget import OWGenericWidget, OW_IS_DEVELOP
 from orangecontrib.wonder.util.gui.gui_utility import gui, ConfirmDialog, EmittingStream
 
 
@@ -39,8 +39,10 @@ class OWFitter(OWGenericWidget):
     want_main_area = True
     standard_output = sys.stdout
 
-    fitter_name = Setting(0)
-    fitting_method = Setting(1)
+    if OW_IS_DEVELOP:
+        fitter_name = Setting(1)
+    else:
+        fitter_name = Setting(0)
 
     n_iterations = Setting(5)
     is_incremental = Setting(1)
@@ -412,10 +414,6 @@ class OWFitter(OWGenericWidget):
             self.cb_show_size.setEnabled(self.is_interactive==1)
             self.cb_show_warren.setEnabled(self.is_interactive==1)
             self.cb_show_integral_breadth.setEnabled(self.is_interactive==1)
-
-    def set_fitter(self):
-        self.fitter_box_1.setVisible(self.fitter_name <= 1)
-        self.fitter_box_2.setVisible(self.fitter_name == 2)
 
     def set_plot_options_enabled(self, enabled):
         self.fit_button.setEnabled(enabled)

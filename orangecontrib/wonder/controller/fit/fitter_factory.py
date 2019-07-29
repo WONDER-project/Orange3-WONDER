@@ -1,19 +1,27 @@
+import os
 import orangecontrib.wonder.util.congruence as congruence
 from orangecontrib.wonder.controller.fit.fitters.fitter_minpack import FitterMinpack
 from orangecontrib.wonder.controller.fit.fitters.fitter_minpack_prototype import FitterMinpackPrototype
+from orangecontrib.wonder.util.gui.gui_utility import OW_IS_DEVELOP
 
 class FitterName:
     MINPACK_PROTOTYPE = "minpack (prototype)"
-    MINPACK           = "minpack (optimized)"
+    if OW_IS_DEVELOP:
+       MINPACK           = "minpack (optimized)"
+    else:
+       MINPACK           = "minpack"
 
     @classmethod
     def tuple(cls):
-        return [cls.MINPACK_PROTOTYPE, cls.MINPACK]
+        if OW_IS_DEVELOP:
+            return [cls.MINPACK_PROTOTYPE, cls.MINPACK]
+        else:
+            return [cls.MINPACK]
 
 class FitterFactory():
 
     @classmethod
-    def create_fitter(cls, fitter_name=FitterName.MINPACK_PROTOTYPE, additional_data=None):
+    def create_fitter(cls, fitter_name=FitterName.MINPACK, additional_data=None):
         congruence.checkEmptyString(fitter_name, "Fitter Name")
 
         if fitter_name == FitterName.MINPACK_PROTOTYPE:

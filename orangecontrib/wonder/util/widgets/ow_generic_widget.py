@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QApplication, QSizePolicy
 from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QDoubleValidator
 
-from orangecontrib.wonder.util.gui.gui_utility import ConfirmDialog, gui, ShowTextDialog
+from orangecontrib.wonder.util.gui.gui_utility import ConfirmDialog, gui, ShowTextDialog, OW_IS_DEVELOP
 from orangecontrib.wonder.controller.fit.fit_parameter import FitParameter, Boundary
 from orangecontrib.wonder.controller.fit.fit_parameter import PARAM_HWMAX, PARAM_HWMIN
 
@@ -34,7 +34,7 @@ class OWGenericWidget(widget.OWWidget):
     fit_global_parameters = None
     parameter_functions = {}
 
-    IS_DEVELOP = False if not "ORANGEDEVELOP" in os.environ.keys() else str(os.environ.get('ORANGEDEVELOP')) == "1"
+    IS_DEVELOP = OW_IS_DEVELOP
 
     def __init__(self, show_automatic_box=True):
         super().__init__()
