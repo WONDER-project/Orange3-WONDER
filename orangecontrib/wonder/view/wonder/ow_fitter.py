@@ -102,8 +102,23 @@ class OWFitter(OWGenericWidget):
     text_size = None
     annotations_ib = None
 
+    def __fix_flags(self):
+        self.is_incremental = OWGenericWidget.fix_flag(self.is_incremental)
+        self.is_interactive = OWGenericWidget.fix_flag(self.is_interactive)
+        self.show_wss_gof = OWGenericWidget.fix_flag(self.show_wss_gof)
+        self.show_ipf = OWGenericWidget.fix_flag(self.show_ipf)
+        self.show_shift = OWGenericWidget.fix_flag(self.show_shift)
+        self.show_size = OWGenericWidget.fix_flag(self.show_size)
+        self.show_warren = OWGenericWidget.fix_flag(self.show_warren)
+        self.show_integral_breadth = OWGenericWidget.fix_flag(self.show_integral_breadth)
+        self.fwhm_autoscale = OWGenericWidget.fix_flag(self.fwhm_autoscale)
+        self.eta_autoscale = OWGenericWidget.fix_flag(self.eta_autoscale)
+        self.lab6_autoscale = OWGenericWidget.fix_flag(self.lab6_autoscale)
+
     def __init__(self):
         super().__init__(show_automatic_box=True)
+
+        self.__fix_flags()
 
         main_box = gui.widgetBox(self.controlArea, "Fitter Setting", orientation="vertical", width=self.CONTROL_AREA_WIDTH)
 
@@ -111,14 +126,14 @@ class OWFitter(OWGenericWidget):
 
         button_box_1 = gui.widgetBox(button_box, "", orientation="horizontal")
 
-        self.fit_button = gui.button(button_box_1,  self, "Fit", height=40, callback=self.do_fit)
+        self.fit_button = gui.button(button_box_1,  self, "Fit", height=35, callback=self.do_fit)
         self.fit_button.setStyleSheet("color: #252468")
         font = QFont(self.fit_button.font())
         font.setBold(True)
         font.setPixelSize(18)
         self.fit_button.setFont(font)
 
-        self.stop_fit_button = gui.button(button_box_1,  self, "STOP", height=40, callback=self.stop_fit)
+        self.stop_fit_button = gui.button(button_box_1,  self, "STOP", height=35, callback=self.stop_fit)
         self.stop_fit_button.setStyleSheet("color: red")
         font = QFont(self.stop_fit_button.font())
         font.setBold(True)
@@ -127,8 +142,8 @@ class OWFitter(OWGenericWidget):
 
         button_box_2 = gui.widgetBox(button_box, "", orientation="horizontal")
 
-        gui.button(button_box_2,  self, "Send Current Fit", height=40, callback=self.send_current_fit)
-        gui.button(button_box_2,  self, "Save Data", height=40, callback=self.save_data)
+        gui.button(button_box_2,  self, "Send Current Fit", height=35, callback=self.send_current_fit)
+        gui.button(button_box_2,  self, "Save Data", height=35, callback=self.save_data)
 
         orangegui.separator(main_box)
 
@@ -439,13 +454,13 @@ class OWFitter(OWGenericWidget):
                 self.initial_fit_global_parameters = data.duplicate()
 
                 # keep existing text!
+                received_free_output_parameters = self.fit_global_parameters.free_output_parameters.duplicate()
+
                 existing_free_output_parameters = FreeOutputParameters()
                 existing_free_output_parameters.parse_formulas(self.free_output_parameters_text)
+                existing_free_output_parameters.append(received_free_output_parameters) # received overwrite parameters with same name
 
-                received_free_output_parameters = self.fit_global_parameters.free_output_parameters.duplicate()
-                received_free_output_parameters.append(existing_free_output_parameters)
-
-                self.text_area_free_out.setText(received_free_output_parameters.to_python_code())
+                self.text_area_free_out.setText(existing_free_output_parameters.to_python_code())
 
                 parameters = self.fit_global_parameters.free_input_parameters.as_parameters()
                 parameters.extend(self.fit_global_parameters.get_parameters())
@@ -498,7 +513,7 @@ class OWFitter(OWGenericWidget):
 
                 self.set_interactive()
                 self.was_incremental = self.is_incremental
-                self.initialize_fit(is_init=True)
+                self.__initialize_fit(is_init=True)
                 self.__show_data(is_init=True)
 
                 if self.is_automatic_run:
@@ -524,14 +539,14 @@ class OWFitter(OWGenericWidget):
 
         return table_fit
 
-    def add_table_item(self,
-                       table_widget,
-                       row_index,
-                       column_index,
-                       text="",
-                       alignement=Qt.AlignLeft,
-                       change_color=False,
-                       color=QColor(255, 255, 255)):
+    def __add_table_item(self,
+                         table_widget,
+                         row_index,
+                         column_index,
+                         text="",
+                         alignement=Qt.AlignLeft,
+                         change_color=False,
+                         color=QColor(255, 255, 255)):
 
             table_item = QTableWidgetItem(text)
             table_item.setTextAlignment(alignement)
@@ -571,13 +586,13 @@ class OWFitter(OWGenericWidget):
             else:
                 color = None
 
-            self.add_table_item(table_widget, index, 0,
-                                parameter.parameter_name,
-                                Qt.AlignLeft, change_color, color)
+            self.__add_table_item(table_widget, index, 0,
+                                  parameter.parameter_name,
+                                  Qt.AlignLeft, change_color, color)
 
-            self.add_table_item(table_widget, index, 1,
-                                str(round(0.0 if parameter.value is None else parameter.value, 6)),
-                                Qt.AlignRight, change_color, color)
+            self.__add_table_item(table_widget, index, 1,
+                                  str(round(0.0 if parameter.value is None else parameter.value, 6)),
+                                  Qt.AlignRight, change_color, color)
 
             if (not parameter.is_variable()) or parameter.boundary is None: text_2 = text_3 = ""
             else:
@@ -587,30 +602,30 @@ class OWFitter(OWGenericWidget):
                 if parameter.boundary.max_value == PARAM_HWMAX: text_3 = ""
                 else: text_3 = str(round(0.0 if parameter.boundary.max_value is None else parameter.boundary.max_value, 6))
 
-            self.add_table_item(table_widget, index, 2,
-                                text_2,
-                                Qt.AlignRight, change_color, color)
-            self.add_table_item(table_widget, index, 3,
-                                text_3,
-                                Qt.AlignRight, change_color, color)
+            self.__add_table_item(table_widget, index, 2,
+                                  text_2,
+                                  Qt.AlignRight, change_color, color)
+            self.__add_table_item(table_widget, index, 3,
+                                  text_3,
+                                  Qt.AlignRight, change_color, color)
 
-            self.add_table_item(table_widget, index, 4,
+            self.__add_table_item(table_widget, index, 4,
                                 "" if not parameter.fixed else "\u2713",
-                                Qt.AlignCenter, change_color, color)
-            self.add_table_item(table_widget, index, 5,
+                                  Qt.AlignCenter, change_color, color)
+            self.__add_table_item(table_widget, index, 5,
                                 "" if not parameter.function else "\u2713",
-                                Qt.AlignCenter, change_color, color)
+                                  Qt.AlignCenter, change_color, color)
 
             if parameter.function: text_6 = str(parameter.function_value)
             else: text_6 = ""
 
-            self.add_table_item(table_widget, index, 6,
-                                text_6,
-                                Qt.AlignLeft, change_color, color)
+            self.__add_table_item(table_widget, index, 6,
+                                  text_6,
+                                  Qt.AlignLeft, change_color, color)
 
-            if is_output: self.add_table_item(table_widget, index, 7,
-                                              str(round(0.0 if parameter.error is None else parameter.error, 6)),
-                                              Qt.AlignRight, change_color, color)
+            if is_output: self.__add_table_item(table_widget, index, 7,
+                                                str(round(0.0 if parameter.error is None else parameter.error, 6)),
+                                                Qt.AlignRight, change_color, color)
 
         table_widget.setHorizontalHeaderLabels(self.horizontal_headers)
         table_widget.resizeRowsToContents()
@@ -642,11 +657,7 @@ class OWFitter(OWGenericWidget):
                 if self.fit_global_parameters.fit_initialization.crystal_structures is None:
                     raise ValueError("Crystal Structure is missing: add the proper widget before the Fitter")
 
-                self.initialize_fit(is_init=False)
-
-                self.fit_global_parameters.set_n_max_iterations(self.n_iterations)
-                self.fit_global_parameters.set_convergence_reached(False)
-                self.fit_global_parameters.free_output_parameters.parse_formulas(self.free_output_parameters_text)
+                self.__initialize_fit(is_init=False)
 
                 initial_fit_global_parameters = self.fit_global_parameters.duplicate()
 
@@ -681,7 +692,7 @@ class OWFitter(OWGenericWidget):
         self.setStatusMessage("")
         self.progressBarFinished()
 
-    def initialize_fit(self, is_init=False):
+    def __initialize_fit(self, is_init=False):
         if self.is_incremental==0 or is_init:
             self.fit_global_parameters = self.initial_fit_global_parameters.duplicate()
             self.current_wss = []
@@ -689,12 +700,18 @@ class OWFitter(OWGenericWidget):
             self.current_iteration = 0
             self.fit_data = None
 
+        if not is_init:
+            self.fit_global_parameters.set_n_max_iterations(self.n_iterations)
+            self.fit_global_parameters.set_convergence_reached(False)
+        else:
+            sys.stdout = EmittingStream(textWritten=self.write_stdout)
+
+            self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
+
+        self.fit_global_parameters.free_output_parameters.parse_formulas(self.free_output_parameters_text)
+
         self.fitted_fit_global_parameters = self.fit_global_parameters.duplicate()
         self.fitted_fit_global_parameters.evaluate_functions()
-
-        if is_init:
-            sys.stdout = EmittingStream(textWritten=self.write_stdout)
-            self.fitter = FitterFactory.create_fitter(fitter_name=self.cb_fitter.currentText())
 
         self.fitter.initialize(self.fitted_fit_global_parameters)
 
@@ -907,26 +924,28 @@ class OWFitter(OWGenericWidget):
         if not self.text_size is None: self.text_size.remove()
 
         if is_init:
-            self.D_max = None
-            self.D_min = None
-            self.D_avg = None
+            self.distribution = None
 
         if not self.fitted_fit_global_parameters.size_parameters is None and self.show_size==1:
             if self.current_iteration <= 1: #TO BE SURE...
-                x, y, self.D_min, self.D_max, self.D_avg, sigma = self.fitted_fit_global_parameters.size_parameters[0].get_distribution()
+                self.distribution = self.fitted_fit_global_parameters.size_parameters[0].get_distribution(auto=True)
             else:
-                x, y, self.D_min, self.D_max, self.D_avg, sigma = self.fitted_fit_global_parameters.size_parameters[0].get_distribution(D_min=self.D_min, D_max=self.D_max)
+                self.distribution = self.fitted_fit_global_parameters.size_parameters[0].get_distribution(auto=False, D_min=self.distribution.D_min, D_max=self.distribution.D_max)
 
-            self.plot_size.addCurve(x, y, legend="distribution", color="blue")
+            self.plot_size.addCurve(self.distribution.x, self.distribution.y, legend="distribution", color="blue")
 
-            self.text_size = self.plot_size._backend.ax.text(numpy.max(x) * 0.65, numpy.max(y) * 0.8, "<D> = " + str(round(self.D_avg, 3)) + " nm\n   \u03c3    = " + str(round(sigma, 3)) + " nm", fontsize=16)
+            self.text_size = self.plot_size._backend.ax.text(numpy.max(self.distribution.x) * 0.65, numpy.max(self.distribution.y) * 0.7,
+                                                             "<D>        = " + str(round(self.distribution.D_avg, 3)) + " nm\n" + \
+                                                             "<D> s.w. = " + str(round(self.distribution.D_avg_surface_weighted, 3)) + " nm\n" + \
+                                                             "<D> v.w. = " + str(round(self.distribution.D_avg_volume_weighted, 3)) + " nm\n" + \
+                                                             "s.d.           = " + str(round(self.distribution.standard_deviation, 3)) + " nm", fontsize=12)
 
     # ------------------------------------------------------------------------
 
     def __refresh_strain(self):
         if not self.fitted_fit_global_parameters.strain_parameters is None and self.show_warren==1:
-            if self.D_avg is None: L_max = 20
-            else: L_max = 2*self.D_avg
+            if self.distribution is None: L_max = 20
+            else: L_max = 2*self.distribution.D_avg
 
             x, y = self.fitted_fit_global_parameters.strain_parameters[0].get_warren_plot(1, 0, 0, L_max=L_max)
             self.plot_strain.addCurve(x, y, legend="h00", color='blue')

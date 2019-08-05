@@ -2,7 +2,8 @@ import numpy
 
 from orangecontrib.wonder.controller.fit.fit_parameter import ParametersList
 from orangecontrib.wonder.controller.fit.wppm_functions import Normalization, Distribution, \
-    lognormal_distribution, delta_distribution, gamma_distribution, york_distribution, lognormal_average
+    lognormal_distribution, delta_distribution, gamma_distribution, york_distribution, \
+    lognormal_average, lognormal_average_surface_weigthed, lognormal_average_volume_weigthed, lognormal_standard_deviation
 
 class Shape:
     NONE = "none"
@@ -16,6 +17,15 @@ class Shape:
     def tuple(cls):
         return [cls.NONE, cls.SPHERE, cls.CUBE, cls.TETRAHEDRON, cls.OCTAHEDRON, cls.CYLINDER]
 
+class SizeDistribution:
+    D                      = None
+    frequency              = None
+    D_min                  = None
+    D_max                  = None
+    D_avg                  = None
+    D_avg_surface_weighted = None
+    D_avg_volume_weighted  = None
+    standard_deviation     = None
 
 class SizeParameters(ParametersList):
 
@@ -40,37 +50,49 @@ class SizeParameters(ParametersList):
         self.add_saxs = add_saxs
         self.normalize_to = normalize_to
 
-    def get_distribution(self, auto=True, D_min=None, D_max=None):
+    def get_distribution(self, auto=True, D_min=0, D_max=1000):
         if auto:
             D_min = 0
             D_max = 1000
 
-        step  = (D_max-D_min)/1000
-        x     = numpy.arange(start=D_min, stop=D_max, step=step)
-        D_avg = self.get_D_average()
-        sigma = self.sigma.value
+        distribution       = SizeDistribution()
+        distribution.D_min = D_min
+        distribution.D_max = D_max
+        distribution.x     = numpy.arange(start=D_min, stop=D_max, step=(D_max-D_min)/1000)
+
+        self.__populate_stats_on_ditribution(distribution)
 
         try:
-            y = self.__get_distribution_values(x)
+            distribution.y = self.__get_distribution_frequency_values(distribution.x)
 
             if auto:
-                D_min, D_max = self.__get_auto_limits(x, y)
+                D_min, D_max = self.__get_auto_limits(distribution.x, distribution.y)
 
-                x, y, D_min, D_max, D_avg, sigma = self.get_distribution(auto=False, D_min=D_min, D_max=D_max)
+                distribution = self.get_distribution(auto=False, D_min=D_min, D_max=D_max)
         except:
             pass
 
-        return x, y, D_min, D_max, D_avg, sigma
+        return distribution
 
-    def get_D_average(self):
+    def __populate_stats_on_ditribution(self, distribution):
         if self.distribution == Distribution.LOGNORMAL:
-            return lognormal_average(self.mu.value, self.sigma.value)
+            distribution.D_avg = lognormal_average(self.mu.value, self.sigma.value)
+            distribution.D_avg_surface_weighted = lognormal_average_surface_weigthed(self.mu.value, self.sigma.value)
+            distribution.D_avg_volume_weighted = lognormal_average_volume_weigthed(self.mu.value, self.sigma.value)
+            distribution.standard_deviation = lognormal_standard_deviation(self.mu.value, self.sigma.value)
         elif self.distribution == Distribution.GAMMA or self.distribution == Distribution.YORK:
-            return self.mu.value
+            distribution.D_avg = self.mu.value
+            distribution.D_avg_surface_weighted = None
+            distribution.D_avg_volume_weighted = None
+            distribution.standard_deviation = None
         else:
-            return 0.0
+            distribution.D_avg = None
+            distribution.D_avg_surface_weighted = None
+            distribution.D_avg_volume_weighted = None
+            distribution.standard_deviation = None
 
-    def __get_distribution_values(self, x):
+
+    def __get_distribution_frequency_values(self, x):
         if self.distribution == Distribution.LOGNORMAL:
             y = lognormal_distribution(self.mu.value, self.sigma.value, x)
         elif self.distribution == Distribution.GAMMA:

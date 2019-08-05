@@ -68,9 +68,15 @@ class OWGenericWidget(widget.OWWidget):
         gui.button(self.general_options_box, self, "Reset Fields", callback=self.callResetSettings)
         gui.button(self.general_options_box, self, "Show Available Parameters", callback=self.show_available_parameters)
 
+    @classmethod
+    def fix_flag(cls, flag):
+        if type(flag) == bool: flag=1 if flag==True else 0
+
+        return flag
+
     def create_box(self, parent_box, var, label=None, disable_function=False, add_callback=False, label_width=40):
         self.create_box_in_widget(self, parent_box, var, label, disable_function, add_callback, label_width)
-    
+
     @classmethod
     def create_box_in_widget(cls, widget, parent_box, var, label=None, disable_function=False, add_callback=False, label_width=40):
         box = gui.widgetBox(parent_box, "", orientation="horizontal", width=widget.CONTROL_AREA_WIDTH - 50, height=25)

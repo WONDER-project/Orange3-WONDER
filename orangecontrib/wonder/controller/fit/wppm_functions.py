@@ -552,6 +552,14 @@ def york_distribution(mu, g, x):
 def lognormal_average(mu, sigma):
     return numpy.exp(mu+0.5*sigma**2)
 
+def lognormal_average_surface_weigthed(mu, sigma):
+    return numpy.exp(mu+1.25*sigma**2)
+
+def lognormal_average_volume_weigthed(mu, sigma):
+    return numpy.exp(mu+1.75*sigma**2)
+
+def lognormal_standard_deviation(mu, sigma):
+    return numpy.sqrt(numpy.exp(2*mu + sigma**2)*(numpy.exp(sigma**2)-1))
 
 ######################################################################
 # STRAIN
