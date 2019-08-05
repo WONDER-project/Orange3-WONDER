@@ -23,11 +23,8 @@ from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalP
 from orangecontrib.wonder.controller.fit.init.thermal_polarization_parameters import ThermalPolarizationParameters
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import SpecimenDisplacement
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection
-from orangecontrib.wonder.controller.fit.microstructure.strain import InvariantPAH, KrivoglazWilkensModel
-from orangecontrib.wonder.controller.fit.microstructure.size import Distribution
 from orangecontrib.wonder.controller.fit.wppm_functions import caglioti_fwhm, caglioti_eta, delta_two_theta_lab6, \
-    integral_breadth_instrumental_function, integral_breadth_size_lognormal, integral_breadth_size_delta, \
-    integral_breadth_strain_invariant_function_pah, integral_breadth_strain_krivoglaz_wilkens
+    integral_breadth_instrumental_function, integral_breadth_size, integral_breadth_strain, integral_breadth_total
 
 
 class OWFitter(OWGenericWidget):
@@ -1002,59 +999,30 @@ class OWFitter(OWGenericWidget):
                 plot_strain = not strain_parameters is None
 
                 if not size_parameters is None:
-                    if size_parameters.distribution == Distribution.LOGNORMAL:
-                        y_ib_size = numpy.full(crystal_structure.get_reflections_count(), integral_breadth_size_lognormal(size_parameters.mu.value, size_parameters.sigma.value))
-                    elif size_parameters.distribution == Distribution.DELTA:
-                        y_ib_size = numpy.full(crystal_structure.get_reflections_count(), integral_breadth_size_delta(size_parameters.mu.value))
+                        y_ib_size = numpy.full(crystal_structure.get_reflections_count(), integral_breadth_size(size_parameters))
                 else:
                     y_ib_size = numpy.zeros(nr_points)
 
                 y_ib_strain = numpy.zeros(nr_points)
                 y_ib_instr  = numpy.zeros(nr_points)
+                y_ib_total  = numpy.zeros(nr_points)
 
                 i = -1
                 for reflection in crystal_structure.get_reflections():
                     i += 1
 
                     if not strain_parameters is None:
-                        if isinstance(strain_parameters, InvariantPAH):
-                            y_ib_strain[i] = integral_breadth_strain_invariant_function_pah(reflection.h,
-                                                                                            reflection.k,
-                                                                                            reflection.l,
-                                                                                            lattice_parameter,
-                                                                                            strain_parameters.aa.value,
-                                                                                            strain_parameters.bb.value,
-                                                                                            strain_parameters.get_invariant(reflection.h,
-                                                                                                                            reflection.k,
-                                                                                                                            reflection.l))
-                        elif isinstance(strain_parameters, KrivoglazWilkensModel):
-                            y_ib_strain[i] = integral_breadth_strain_krivoglaz_wilkens(reflection.h,
-                                                                                       reflection.k,
-                                                                                       reflection.l,
-                                                                                       lattice_parameter,
-                                                                                       strain_parameters.rho.value,
-                                                                                       strain_parameters.Re.value,
-                                                                                       strain_parameters.Ae.value,
-                                                                                       strain_parameters.Be.value,
-                                                                                       strain_parameters.As.value,
-                                                                                       strain_parameters.Bs.value,
-                                                                                       strain_parameters.mix.value,
-                                                                                       strain_parameters.b.value)
+                        y_ib_strain[i] = integral_breadth_strain(reflection, lattice_parameter,
+                                                                 strain_parameters)
 
                     if not instrumental_parameters is None:
-                        y_ib_instr[i] = integral_breadth_instrumental_function(reflection.h,
-                                                                               reflection.k,
-                                                                               reflection.l,
-                                                                               lattice_parameter,
-                                                                               wavelength,
-                                                                               instrumental_parameters.U.value,
-                                                                               instrumental_parameters.V.value,
-                                                                               instrumental_parameters.W.value,
-                                                                               instrumental_parameters.a.value,
-                                                                               instrumental_parameters.b.value,
-                                                                               instrumental_parameters.c.value)
+                        y_ib_instr[i] = integral_breadth_instrumental_function(reflection, lattice_parameter, wavelength,
+                                                                               instrumental_parameters)
 
-                y_ib_total = y_ib_size + y_ib_strain + y_ib_instr
+                    y_ib_total[i] = integral_breadth_total(reflection, lattice_parameter, wavelength,
+                                                           instrumental_parameters,
+                                                           size_parameters,
+                                                           strain_parameters)
 
                 x_ib = self.x_ib[diffraction_pattern_index]
 

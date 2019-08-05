@@ -972,20 +972,80 @@ def add_expdecay_0_background(x, I, parameters=[0, 0, 0, 0, 0, 0]):
 # CALCULATION OF INTEGRAL BREADTH
 ######################################################################
 
-def integral_breadth_size_lognormal(mu, sigma): #integral breadth for size broadening only
-    return 1 / (2 * integrate.quad(lambda L: size_function_lognormal(L, sigma, mu), 0, numpy.inf)[0])
+def __instrumental_function(L, reflection, lattice_parameter, wavelength, instrumental_parameters, ib_total=False):
+    if instrumental_parameters is None:
+        return 1.0 if ib_total else 0.0
+    else:
+        return instrumental_function(L,
+                                     reflection.h,
+                                     reflection.k,
+                                     reflection.l,
+                                     lattice_parameter,
+                                     wavelength,
+                                     instrumental_parameters.U.value,
+                                     instrumental_parameters.V.value,
+                                     instrumental_parameters.W.value,
+                                     instrumental_parameters.a.value,
+                                     instrumental_parameters.b.value,
+                                     instrumental_parameters.c.value)
 
-def integral_breadth_size_delta(mu): #integral breadth for size broadening only
-    return 1 / (2 * integrate.quad(lambda L: size_function_delta(L, mu), 0, numpy.inf)[0])
 
-def integral_breadth_size_gamma(mu, g): #integral breadth for size broadening only
-    return 1 / (2 * integrate.quad(lambda L: size_function_gamma(L, g, mu), 0, numpy.inf)[0])
+def __size_function(L, size_parameters, ib_total=False):
+    if size_parameters is None:
+        return 1.0 if ib_total else 0.0
+    else:
+        if size_parameters.distribution == Distribution.LOGNORMAL:
+            return size_function_lognormal(L, size_parameters.sigma.value, size_parameters.mu.value)
+        elif size_parameters.distribution == Distribution.DELTA:
+            return size_function_delta(L, size_parameters.mu.value)
+        elif size_parameters.distribution == Distribution.GAMMA:
+            return size_function_gamma(L, size_parameters.sigma.value, size_parameters.mu.value)
+        else:
+            return 1.0 if ib_total else 0.0
 
-def integral_breadth_strain_krivoglaz_wilkens(h, k, l, lattice_parameter, rho, Re, Ae, Be, As, Bs, mix, b): #integral breadth for strain broadening only
-    return 1 / (2 * integrate.quad(lambda L: strain_krivoglaz_wilkens(L, h, k, l, lattice_parameter, rho, Re, Ae, Be, As, Bs, mix, b), 0, numpy.inf)[0])
+def __strain_function(L, reflection, lattice_parameter, strain_parameters, ib_total=False):
+    if strain_parameters is None:
+        return 1.0 if ib_total else 0.0
+    else:
+        if isinstance(strain_parameters, InvariantPAH):
+            return strain_invariant_function_pah(L,
+                                                 reflection.h,
+                                                 reflection.k,
+                                                 reflection.l,
+                                                 lattice_parameter,
+                                                 strain_parameters.aa.value,
+                                                 strain_parameters.bb.value,
+                                                 strain_parameters.get_invariant(reflection.h,
+                                                                                 reflection.k,
+                                                                                 reflection.l))
+        elif isinstance(strain_parameters, KrivoglazWilkensModel):
+            return strain_krivoglaz_wilkens(L,
+                                            reflection.h,
+                                            reflection.k,
+                                            reflection.l,
+                                            lattice_parameter,
+                                            strain_parameters.rho.value,
+                                            strain_parameters.Re.value,
+                                            strain_parameters.Ae.value,
+                                            strain_parameters.Be.value,
+                                            strain_parameters.As.value,
+                                            strain_parameters.Bs.value,
+                                            strain_parameters.mix.value,
+                                            strain_parameters.b.value)
 
-def integral_breadth_strain_invariant_function_pah(h, k, l, lattice_parameter, a, b, C_hkl): #integral breadth for strain broadening only
-    return 1 / (2 * integrate.quad(lambda L: strain_invariant_function_pah(L, h, k, l, lattice_parameter, a, b, C_hkl), 0, numpy.inf)[0])
 
-def integral_breadth_instrumental_function(h, k, l, lattice_parameter, wavelength, U, V, W, a, b, c): #integral breadth for instrumental broadening only
-     return 1 / (2 * integrate.quad(lambda L: instrumental_function(L, h, k, l, lattice_parameter, wavelength, U, V, W, a, b, c), 0, numpy.inf)[0])
+def integral_breadth_instrumental_function(reflection, lattice_parameter, wavelength, instrumental_parameters):
+     return 1 / (2 * integrate.quad(lambda L: __instrumental_function(L, reflection, lattice_parameter, wavelength, instrumental_parameters), 0, numpy.inf)[0])
+
+def integral_breadth_size(size_parameters):
+    return 1 / (2 * integrate.quad(lambda L: __size_function(L, size_parameters), 0, numpy.inf)[0])
+
+def integral_breadth_strain(reflection, lattice_parameter, strain_parameters):
+    return 1 / (2 * integrate.quad(lambda L: __strain_function(L, reflection, lattice_parameter, strain_parameters), 0, numpy.inf)[0])
+
+def integral_breadth_total(reflection, lattice_parameter, wavelength, instrumental_parameters, size_parameters, strain_parameters):
+    total_function = lambda L: __instrumental_function(L, reflection, lattice_parameter, wavelength, instrumental_parameters, True) * \
+                               __size_function(L, size_parameters, True) * \
+                               __strain_function(L, reflection, lattice_parameter, strain_parameters, True)
+
+    return 1 / (2 * integrate.quad(total_function, 0, numpy.inf)[0])
