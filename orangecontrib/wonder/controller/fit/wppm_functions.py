@@ -878,17 +878,16 @@ def specimen_displacement(theta, wavelength, goniometer_radius, displacement): #
 
 def instrumental_function(L, h, k, l, lattice_parameter, wavelength, U, V, W, a, b, c):
     theta = Utilities.theta_hkl(lattice_parameter, h, k, l, wavelength)
-    theta_deg = numpy.degrees(theta)
 
-    eta = caglioti_eta(a, b, c, theta_deg)
+    eta = caglioti_eta(a, b, c, numpy.degrees(theta))
+    sigma = numpy.radians(caglioti_fwhm(U, V, W, theta))*0.5*(numpy.cos(theta)/wavelength)
 
     k = eta * numpy.sqrt(numpy.pi*numpy.log(2))
     k /= k + (1-eta)
 
-    sigma = numpy.radians(caglioti_fwhm(U, V, W, theta))*0.5*(numpy.cos(theta)/wavelength)
-    exp1 = numpy.pi * sigma * L
+    exponent = numpy.pi * sigma * L
 
-    return k*numpy.exp(-2.0*exp1) + (1-k)*numpy.exp(-(exp1**2)/numpy.log(2))
+    return k*numpy.exp(-2.0*exponent) + (1-k)*numpy.exp(-(exponent**2)/numpy.log(2))
 
 ######################################################################
 # BACKGROUND
