@@ -1,21 +1,11 @@
 import numpy
 
 from orangecontrib.wonder.controller.fit.fit_parameter import ParametersList
-from orangecontrib.wonder.controller.fit.wppm_functions import Normalization, Distribution, \
+from orangecontrib.wonder.controller.fit.wppm_functions import \
+    Normalization, Distribution, Shape, \
     lognormal_distribution, delta_distribution, gamma_distribution, york_distribution, \
     lognormal_average, lognormal_average_surface_weigthed, lognormal_average_volume_weigthed, lognormal_standard_deviation
 
-class Shape:
-    NONE = "none"
-    SPHERE = "sphere"
-    CUBE = "cube"
-    TETRAHEDRON = "tetrahedron"
-    OCTAHEDRON = "octahedron"
-    CYLINDER = "cylinder"
-
-    @classmethod
-    def tuple(cls):
-        return [cls.NONE, cls.SPHERE, cls.CUBE, cls.TETRAHEDRON, cls.OCTAHEDRON, cls.CYLINDER]
 
 class SizeDistribution:
     D                      = None
@@ -33,6 +23,7 @@ class SizeParameters(ParametersList):
     distribution = Distribution.LOGNORMAL
     mu = None
     sigma = None
+    truncation = None
     add_saxs = False
     normalize_to = Normalization.NORMALIZE_TO_N
 
@@ -40,13 +31,14 @@ class SizeParameters(ParametersList):
     def get_parameters_prefix(cls):
         return "size_"
 
-    def __init__(self, shape, distribution, mu, sigma, add_saxs=False, normalize_to=Normalization.NORMALIZE_TO_N):
+    def __init__(self, shape, distribution, mu, sigma, truncation=0.0, add_saxs=False, normalize_to=Normalization.NORMALIZE_TO_N):
         super(SizeParameters, self).__init__()
 
         self.shape = shape
         self.distribution = distribution
         self.mu = mu
         self.sigma = sigma
+        self.truncation = truncation
         self.add_saxs = add_saxs
         self.normalize_to = normalize_to
 
@@ -93,11 +85,11 @@ class SizeParameters(ParametersList):
 
 
     def __get_distribution_frequency_values(self, x):
-        if self.distribution == Distribution.LOGNORMAL:
+        if self.distribution == Distribution.LOGNORMAL and self.shape == Shape.SPHERE:
             y = lognormal_distribution(self.mu.value, self.sigma.value, x)
-        elif self.distribution == Distribution.GAMMA:
+        elif self.distribution == Distribution.GAMMA and self.shape == Shape.SPHERE:
             y = gamma_distribution(self.mu.value, self.sigma.value, x)
-        elif self.distribution == Distribution.YORK:
+        elif self.distribution == Distribution.YORK and self.shape == Shape.SPHERE:
             y = york_distribution(self.mu.value, self.sigma.value, x)
         elif self.distribution == Distribution.DELTA:
             y = delta_distribution(self.mu.value, x)

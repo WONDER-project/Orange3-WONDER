@@ -28,6 +28,19 @@ class Distribution:
     def tuple(cls):
         return [cls.DELTA, cls.LOGNORMAL, cls.GAMMA, cls.YORK]
 
+class Shape:
+    NONE = "none"
+    SPHERE = "sphere"
+    CUBE = "cube"
+    TETRAHEDRON = "tetrahedron"
+    OCTAHEDRON = "octahedron"
+    CYLINDER = "cylinder"
+    WULFF = "wulff solid"
+
+    @classmethod
+    def tuple(cls):
+        return [cls.NONE, cls.SPHERE, cls.CUBE, cls.TETRAHEDRON, cls.OCTAHEDRON, cls.CYLINDER, cls.WULFF]
+
 class Normalization:
     NORMALIZE_TO_N = 0
     NORMALIZE_TO_N2 = 1
@@ -37,9 +50,9 @@ class Normalization:
         return ["to N", "to N\u00b2"]
 
 def _wrapper_fit_function_direct(parameters):
-	twotheta, fit_global_parameters, diffraction_pattern_index = parameters
+    twotheta, fit_global_parameters, diffraction_pattern_index = parameters
 
-	return fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index)
+    return fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index)
 
 def fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index = 0):
     incident_radiation = fit_global_parameters.fit_initialization.incident_radiations[0 if len(fit_global_parameters.fit_initialization.incident_radiations) == 1 else diffraction_pattern_index]
@@ -297,14 +310,32 @@ def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern
         size_parameters = fit_global_parameters.size_parameters[0 if len(fit_global_parameters.size_parameters) == 1 else diffraction_pattern_index]
 
         if size_parameters.distribution == Distribution.LOGNORMAL:
-            if fourier_amplitudes is None:
-                fourier_amplitudes = size_function_lognormal(fit_space_parameters.L,
-                                                             size_parameters.sigma.value,
-                                                             size_parameters.mu.value)
-            else:
-                fourier_amplitudes *= size_function_lognormal(fit_space_parameters.L,
-                                                              size_parameters.sigma.value,
-                                                              size_parameters.mu.value)
+            if size_parameters.shape == Shape.SPHERE:
+                if fourier_amplitudes is None:
+                    fourier_amplitudes = size_function_lognormal(fit_space_parameters.L,
+                                                                 size_parameters.sigma.value,
+                                                                 size_parameters.mu.value)
+                else:
+                    fourier_amplitudes *= size_function_lognormal(fit_space_parameters.L,
+                                                                  size_parameters.sigma.value,
+                                                                  size_parameters.mu.value)
+            elif size_parameters.shape == Shape.WULFF:
+                if fourier_amplitudes is None:
+                    fourier_amplitudes = size_function_wulff_solids_lognormal(fit_space_parameters.L,
+                                                                              reflection.h,
+                                                                              reflection.k,
+                                                                              reflection.l,
+                                                                              size_parameters.sigma.value,
+                                                                              size_parameters.mu.value,
+                                                                              size_parameters.truncation.value)
+                else:
+                    fourier_amplitudes *= size_function_wulff_solids_lognormal(fit_space_parameters.L,
+                                                                               reflection.h,
+                                                                               reflection.k,
+                                                                               reflection.l,
+                                                                               size_parameters.sigma.value,
+                                                                               size_parameters.mu.value,
+                                                                               size_parameters.truncation.value)
         elif size_parameters.distribution == Distribution.GAMMA:
             if fourier_amplitudes is None:
                 fourier_amplitudes = size_function_gamma(fit_space_parameters.L,
@@ -550,7 +581,7 @@ def york_distribution(mu, g, x):
     return (g/(mu*G(g)))*(gxm**g)*numpy.exp(-gxm)
 
 def lognormal_average(mu, sigma):
-    return numpy.exp(mu+0.5*sigma**2)
+    return lognormal_moment(1, mu, sigma)
 
 def lognormal_average_surface_weigthed(mu, sigma):
     return numpy.exp(mu+1.25*sigma**2)
@@ -560,6 +591,136 @@ def lognormal_average_volume_weigthed(mu, sigma):
 
 def lognormal_standard_deviation(mu, sigma):
     return numpy.sqrt(numpy.exp(2*mu + sigma**2)*(numpy.exp(sigma**2)-1))
+
+def lognormal_moment(n, mu, sigma):
+    return numpy.exp(n*mu + 0.5*(n**2)*(sigma**2))
+
+######################################################################
+# SIZE - WULFF SOLIDS
+######################################################################
+
+class WulffSolidDataRow:
+    def __init__(self,
+                 h, k, l,
+                 level, limit_dist,
+                 aa, bb, cc, dd, chi_square_1,
+                 a0, b0, c0, d0, xj, a1, b1, c1, d1, xl, chi_square_2):
+        self.h = h
+        self.k = k
+        self.l = l
+        self.level        = level
+        self.limit_dist   = limit_dist
+        self.aa           = aa
+        self.bb           = bb
+        self.cc           = cc
+        self.dd           = dd
+        self.chi_square_1 = chi_square_1
+        self.a0           = a0
+        self.b0           = b0
+        self.c0           = c0
+        self.d0           = d0
+        self.xj           = xj
+        self.a1           = a1
+        self.b1           = b1
+        self.c1           = c1
+        self.d1           = d1
+        self.xl           = xl
+        self.chi_square_2 = chi_square_2
+
+    @classmethod
+    def parse_row(cls, row):
+        return WulffSolidDataRow(int(row[0]),
+                                 int(row[1]),
+                                 int(row[2]),
+                                 int(row[3]),
+                                 row[4],
+                                 row[5],
+                                 row[6],
+                                 row[7],
+                                 row[8],
+                                 row[9],
+                                 row[10],
+                                 row[11],
+                                 row[12],
+                                 row[13],
+                                 row[14],
+                                 row[15],
+                                 row[16],
+                                 row[17],
+                                 row[18],
+                                 row[19],
+                                 row[20])
+
+    @classmethod
+    def get_key(cls, h, k, l, level):
+        return str(int(h)) + str(int(k)) + str(int(l)) + "_" + str(int(level))
+
+    def key(self):
+        return WulffSolidDataRow.get_key(self.h, self.k, self.l, self.level)
+
+def load_wulff_solids_data(file_name):
+    wulff_data_path = os.path.join(os.path.dirname(__file__), "data")
+    wulff_data_path = os.path.join(wulff_data_path, "wulff_solids")
+
+    rows = numpy.loadtxt(os.path.join(wulff_data_path, file_name), skiprows=2)
+
+    wulff_solids_data = {}
+
+    for row in rows:
+        wulff_solids_data_row = WulffSolidDataRow.parse_row(row)
+        wulff_solids_data[wulff_solids_data_row.key()] = wulff_solids_data_row
+
+    return wulff_solids_data
+
+if not 'wulff_solids_data_hexagonal' in globals():
+    wulff_solids_data_hexagonal = load_wulff_solids_data("Cube_TruncatedCubeHexagonalFace_L_FIT.data")
+    wulff_solids_data_triangular = load_wulff_solids_data("Cube_TruncatedCubeTriangularFace_L_FIT.data")
+
+    wulff_solids_data = wulff_solids_data_hexagonal
+
+def __get_Hc_Kc_coefficients(L, h, k, l, truncation): # N.B. L, truncation >= 0!
+    divisor = numpy.gcd.reduce([h, k, l])
+
+    wsd_row = wulff_solids_data[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
+
+    Kc = wsd_row.limit_dist/100
+
+    if wsd_row.chi_square_1 <= wsd_row.chi_square_2:
+        if L <= Kc:
+            return [wsd_row.aa, wsd_row.bb, wsd_row.cc, wsd_row.dd, Kc]
+        else:
+            return [0.0, 0.0, 0.0, 0.0, wsd_row.limit_dist]
+    else:
+        if L <= Kc*wsd_row.xj:
+            return [wsd_row.a0, wsd_row.b0, wsd_row.c0, wsd_row.d0, Kc]
+        elif L <= Kc:
+            return [wsd_row.a1, wsd_row.b1, wsd_row.c1, wsd_row.d1, Kc]
+        else:
+            return [0.0, 0.0, 0.0, 0.0, Kc]
+
+def __wulff_solids_lognormal_term_n(n, L, mu, sigma, Hc, Kc):
+    M3n = lognormal_moment(3-n, mu, sigma)
+    M3  = lognormal_moment(3, mu, sigma)
+
+    return Hc*erfc((numpy.log(L*Kc) - mu - ((3-n)*(sigma**2)))/(sigma*numpy.sqrt(2)))*(0.5*M3n*(L**n)/M3)
+
+def size_function_wulff_solids_lognormal(L, h, k, l, mu, sigma, truncation):
+    L /= 2*lognormal_average(mu, sigma)
+
+    dim = len(L)
+
+    fourier_amplitude = numpy.zeros(dim)
+
+    for i in range(dim):
+        coefficients = __get_Hc_Kc_coefficients(L[i], h, k, l, truncation)
+
+        Kc  = coefficients[-1]
+
+        for j in range(0, 4):
+            fourier_amplitude[i] += __wulff_solids_lognormal_term_n(j, L[i], mu, sigma, coefficients[j], Kc)
+
+    return fourier_amplitude
+
 
 ######################################################################
 # STRAIN

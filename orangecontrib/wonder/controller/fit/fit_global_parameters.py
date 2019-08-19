@@ -5,7 +5,7 @@ from orangecontrib.wonder.controller.fit.fit_parameter import FreeInputParameter
 from orangecontrib.wonder.controller.fit.instrument.background_parameters import ChebyshevBackground, ExpDecayBackground
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection, ZeroError, SpecimenDisplacement
 from orangecontrib.wonder.controller.fit.microstructure.strain import InvariantPAH, KrivoglazWilkensModel, WarrenModel
-from orangecontrib.wonder.controller.fit.wppm_functions import Distribution
+from orangecontrib.wonder.controller.fit.wppm_functions import Distribution, Shape
 
 class FitGlobalParameters(ParametersList):
 
@@ -237,7 +237,11 @@ class FitGlobalParameters(ParametersList):
                     last_index += 1
                 else:
                     parameters[last_index + 2] = size_parameters.sigma
-                    last_index += 2
+                    if size_parameters.shape == Shape.WULFF:
+                        parameters[last_index + 3] = size_parameters.truncation
+                        last_index += 3
+                    else:
+                        last_index += 2
 
         if not self.strain_parameters is None:
             for strain_parameters in self.strain_parameters:
@@ -376,7 +380,11 @@ class FitGlobalParameters(ParametersList):
                     last_index += 1
                 else:
                     size_parameters.sigma.set_value(fitted_parameters[last_index + 2].value)
-                    last_index += 2
+                    if size_parameters.shape == Shape.WULFF:
+                        size_parameters.truncation.set_value(fitted_parameters[last_index + 3].value)
+                        last_index += 3
+                    else:
+                        last_index += 2
 
         if not self.strain_parameters is None:
             for strain_parameters in self.strain_parameters:
@@ -519,7 +527,11 @@ class FitGlobalParameters(ParametersList):
                     last_index += 1
                 else:
                     size_parameters.sigma.error = errors[last_index + 2]
-                    last_index += 2
+                    if size_parameters.shape == Shape.WULFF:
+                        size_parameters.truncation.error = errors[last_index + 3]
+                        last_index += 3
+                    else:
+                        last_index += 2
 
         if not self.strain_parameters is None:
             for strain_parameters in self.strain_parameters:
@@ -700,7 +712,12 @@ class FitGlobalParameters(ParametersList):
                 else:
                     size_parameters.sigma.set_value(fitted_parameters[last_index + 2].value)
                     size_parameters.sigma.error = errors[last_index + 2]
-                    last_index += 2
+                    if size_parameters.shape == Shape.WULFF:
+                        size_parameters.truncation.set_value(fitted_parameters[last_index + 3].value)
+                        size_parameters.truncation.error = errors[last_index + 3]
+                        last_index += 3
+                    else:
+                        last_index += 2
 
         if not self.strain_parameters is None:
             for strain_parameters in self.strain_parameters:

@@ -9,8 +9,8 @@ from orangecontrib.wonder.util.widgets.ow_generic_widget import OWGenericWidget
 from orangecontrib.wonder.util.gui.gui_utility import gui, ShowTextDialog
 from orangecontrib.wonder.util import congruence
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters
-from orangecontrib.wonder.controller.fit.microstructure.size import SizeParameters, Shape
-from orangecontrib.wonder.controller.fit.wppm_functions import Distribution, Normalization
+from orangecontrib.wonder.controller.fit.microstructure.size import SizeParameters
+from orangecontrib.wonder.controller.fit.wppm_functions import Distribution, Normalization, Shape
 
 class OWSize(OWGenericWidget):
 
@@ -25,28 +25,31 @@ class OWSize(OWGenericWidget):
     distribution = Setting(1)
 
     mu = Setting(4.0)
-    sigma = Setting(0.5)
-
     mu_fixed = Setting(0)
-    sigma_fixed = Setting(0)
-
     mu_has_min = Setting(1)
-    sigma_has_min = Setting(1)
-
     mu_min = Setting(0.01)
-    sigma_min = Setting(0.01)
-
     mu_has_max = Setting(0)
-    sigma_has_max = Setting(1)
-
     mu_max = Setting(0.0)
-    sigma_max = Setting(1.0)
-
     mu_function = Setting(0)
-    sigma_function = Setting(0)
-
     mu_function_value = Setting("")
+
+    sigma = Setting(0.5)
+    sigma_fixed = Setting(0)
+    sigma_has_min = Setting(1)
+    sigma_min = Setting(0.01)
+    sigma_has_max = Setting(1)
+    sigma_max = Setting(1.0)
+    sigma_function = Setting(0)
     sigma_function_value = Setting("")
+
+    truncation = Setting(0.5)
+    truncation_fixed = Setting(0)
+    truncation_has_min = Setting(1)
+    truncation_min = Setting(0.01)
+    truncation_has_max = Setting(1)
+    truncation_max = Setting(1.0)
+    truncation_function = Setting(0)
+    truncation_function_value = Setting("")
 
     add_saxs = Setting(False)
     normalize_to = Setting(0)
@@ -79,6 +82,10 @@ class OWSize(OWGenericWidget):
 
         self.create_box(self.sigma_box, "sigma", label="\u03c3")
 
+        self.truncation_box = gui.widgetBox(size_box, "", orientation="vertical")
+
+        self.create_box(self.truncation_box, "truncation", label="trunc.")
+
         self.saxs_box = gui.widgetBox(size_box, "", orientation="vertical")
 
         orangegui.comboBox(self.saxs_box, self, "add_saxs", label="Add SAXS", items=["No", "Yes"], labelWidth=300, orientation="horizontal",
@@ -88,15 +95,25 @@ class OWSize(OWGenericWidget):
 
         orangegui.comboBox(self.normalize_box, self, "normalize_to", label="Normalize to", items=Normalization.tuple(), labelWidth=300, orientation="horizontal")
 
-        self.set_distribution(is_init=True)
+        self.set_shape(is_init=True)
 
-    def set_shape(self):
-        if not self.cb_shape.currentText() == Shape.SPHERE:
-            QMessageBox.critical(self, "Error",
-                                 "Only Sphere shape is supported",
-                                 QMessageBox.Ok)
+    def set_shape(self, is_init=False):
+        if self.cb_distribution.currentText() == Distribution.LOGNORMAL:
+            if not (self.cb_shape.currentText() == Shape.SPHERE or self.cb_shape.currentText() == Shape.WULFF):
+                QMessageBox.critical(self, "Error",
+                                     "Only Sphere/Wulff Solid shape is supported",
+                                     QMessageBox.Ok)
 
-            self.shape = 1
+                self.shape = 1
+        else:
+            if not self.cb_shape.currentText() == Shape.SPHERE:
+                QMessageBox.critical(self, "Error",
+                                     "Only Sphere shape is supported",
+                                     QMessageBox.Ok)
+
+                self.shape = 1
+
+        self.set_distribution(is_init)
 
     def set_add_saxs(self):
         self.normalize_box.setVisible(self.add_saxs==1)
@@ -116,6 +133,7 @@ class OWSize(OWGenericWidget):
             self.sigma_box.setVisible(self.cb_distribution.currentText() != Distribution.DELTA)
             self.saxs_box.setVisible(self.cb_distribution.currentText() == Distribution.DELTA)
             if self.cb_distribution.currentText() == Distribution.DELTA: self.set_add_saxs()
+            self.truncation_box.setVisible(self.cb_distribution.currentText() == Distribution.LOGNORMAL and self.cb_shape.currentText() == Shape.WULFF)
 
     def send_size(self):
         try:
@@ -130,6 +148,7 @@ class OWSize(OWGenericWidget):
                                                                              distribution=self.cb_distribution.currentText(),
                                                                              mu=self.populate_parameter("mu", SizeParameters.get_parameters_prefix()),
                                                                              sigma=None if self.cb_distribution.currentText() == Distribution.DELTA else self.populate_parameter("sigma", SizeParameters.get_parameters_prefix()),
+                                                                             truncation=self.populate_parameter("truncation", SizeParameters.get_parameters_prefix()) if (self.cb_distribution.currentText() == Distribution.LOGNORMAL and self.cb_shape.currentText() == Shape.WULFF) else None,
                                                                              add_saxs=self.add_saxs if self.cb_distribution.currentText() == Distribution.DELTA else False)]
                 self.fit_global_parameters.regenerate_parameters()
 
