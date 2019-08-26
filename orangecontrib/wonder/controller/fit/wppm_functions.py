@@ -676,7 +676,7 @@ if not 'wulff_solids_data_hexagonal' in globals():
     wulff_solids_data_hexagonal = load_wulff_solids_data("Cube_TruncatedCubeHexagonalFace_L_FIT.data")
     wulff_solids_data_triangular = load_wulff_solids_data("Cube_TruncatedCubeTriangularFace_L_FIT.data")
 
-    wulff_solids_data = wulff_solids_data_hexagonal
+    wulff_solids_data = wulff_solids_data_triangular #wulff_solids_data_hexagonal
 
 def __get_Hc_Kc_coefficients(L, h, k, l, truncation): # N.B. L, truncation >= 0!
     divisor = numpy.gcd.reduce([h, k, l])
