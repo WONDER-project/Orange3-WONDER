@@ -689,13 +689,57 @@ if not 'wulff_solids_data_hexagonal' in globals():
     wulff_solids_data_hexagonal = load_wulff_solids_data("Cube_TruncatedCubeHexagonalFace_L_FIT.data")
     wulff_solids_data_triangular = load_wulff_solids_data("Cube_TruncatedCubeTriangularFace_L_FIT.data")
 
+
+def __point_in_between(y1, y2, x):
+
+    # x - x1 / x2 - x1 = y - y1 / y2 - y1
+    # x1 = 0, x2 = 1
+
+    # y = y1 + x (y2 - y1)
+
+    return y1 + x*(y2 - y1)
+
 def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
     divisor = numpy.gcd.reduce([h, k, l])
 
-    if face == WulffCubeFace.TRIANGULAR:
-        return wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
+    if truncation.is_integer():
+        if face == WulffCubeFace.TRIANGULAR:
+            return wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
+        else:
+            return wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
     else:
-        return wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
+        x = truncation % 1 # decimal part
+
+        if face == WulffCubeFace.TRIANGULAR:
+            coefficients_bottom = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation)*100)]
+            coefficients_top    = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation)*100))]
+        else:
+            coefficients_bottom = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation)*100)]
+            coefficients_top    = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation)*100))]
+
+        return  WulffSolidDataRow(h,
+                                  k,
+                                  l,
+                                  truncation,
+                                  __point_in_between(coefficients_top.limit_dist  , coefficients_bottom.limit_dist  , x),
+                                  __point_in_between(coefficients_top.aa          , coefficients_bottom.aa          , x),
+                                  __point_in_between(coefficients_top.bb          , coefficients_bottom.bb          , x),
+                                  __point_in_between(coefficients_top.cc          , coefficients_bottom.cc          , x),
+                                  __point_in_between(coefficients_top.dd          , coefficients_bottom.dd          , x),
+                                  __point_in_between(coefficients_top.chi_square_1, coefficients_bottom.chi_square_1, x),
+                                  __point_in_between(coefficients_top.a0          , coefficients_bottom.a0          , x),
+                                  __point_in_between(coefficients_top.b0          , coefficients_bottom.b0          , x),
+                                  __point_in_between(coefficients_top.c0          , coefficients_bottom.c0          , x),
+                                  __point_in_between(coefficients_top.d0          , coefficients_bottom.d0          , x),
+                                  __point_in_between(coefficients_top.xj          , coefficients_bottom.xj          , x),
+                                  __point_in_between(coefficients_top.a1          , coefficients_bottom.a1          , x),
+                                  __point_in_between(coefficients_top.b1          , coefficients_bottom.b1          , x),
+                                  __point_in_between(coefficients_top.c1          , coefficients_bottom.c1          , x),
+                                  __point_in_between(coefficients_top.d1          , coefficients_bottom.d1          , x),
+                                  __point_in_between(coefficients_top.xl          , coefficients_bottom.xl          , x),
+                                  __point_in_between(coefficients_top.chi_square_2, coefficients_bottom.chi_square_2, x))
+
+
 
 def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2):
     is_array = isinstance(L, list) or isinstance(L, numpy.ndarray)
@@ -717,12 +761,10 @@ def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2):
     return A
 
 def size_function_wulff_solids_lognormal(L_ext, h, k, l, sigma, mu, truncation, face):
-    dimension = len(L_ext)
-    fourier_amplitude = numpy.zeros(dimension)
     sigma2 = sigma*sigma
     ssqrt2 = sigma*numpy.sqrt(2.0)
 
-    L = L_ext/lognormal_average(mu, sigma)
+    L = L_ext/lognormal_average(mu, sigma) # Limit dist = <D>
 
     coefficients = __get_Hj_coefficients(h, k, l, truncation, face)
 
@@ -733,20 +775,16 @@ def size_function_wulff_solids_lognormal(L_ext, h, k, l, sigma, mu, truncation, 
     Hn_xj = coefficients.xj
 
     if numpy.abs(Hn_xj-1.0)<THRESHOLD:
-        distr = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2)
-        if distr > 1e-20: fourier_amplitude += distr
+        fourier_amplitude = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2)
     else:
-        fourier_amplitude += __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.      , mu, sigma2, ssqrt2) # integr(f2) on LK
+        fourier_amplitude =  __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.      , mu, sigma2, ssqrt2) # integr(f2) on LK
         fourier_amplitude += __FFourierLognormal(Hn_do1, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2) # (integr(f1)) on LKxj
         fourier_amplitude -= __FFourierLognormal(Hn_do2, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2) # (integr(f2)) on LKxj
 
     fourier_amplitude[numpy.where(L == 0.0)] = 1.0
     fourier_amplitude[numpy.where(fourier_amplitude < 0.0)] = 0.0
     fourier_amplitude[numpy.where(fourier_amplitude > 1.0)] = 1.0
-
-    for i in range(1, dimension): #control statements from PM2K
-        if fourier_amplitude[i] > fourier_amplitude[i-1]:
-            fourier_amplitude[i] = 0
+    fourier_amplitude[2:][numpy.where(numpy.greater(fourier_amplitude[2:], fourier_amplitude[1:-1]))] = 0
 
     return fourier_amplitude
 
@@ -1239,6 +1277,19 @@ def integral_breadth_total(reflection, lattice_parameter, wavelength, instrument
     return 1 / (2 * integrate.quad(total_function, 0, numpy.inf)[0])
 
 if __name__=="__main__":
+
+
+    array = numpy.array([1, 0.9, 0.8, 0.7, 0.6, 0.65, 0.5])
+
+    print(array[1:-1],array[2:] )
+
+    numpy.greater(array[1:-1], array[2:])
+
+    array[2:][numpy.where(numpy.greater(array[2:], array[1:-1]))] = 0
+
+    print(array)
+
+    '''
     import matplotlib.pyplot as plt
 
     from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters, FitSpaceParameters
@@ -1280,3 +1331,4 @@ if __name__=="__main__":
 
 #------------------------------------------------------------------------------------------------------------------
     plt.show()
+    '''
