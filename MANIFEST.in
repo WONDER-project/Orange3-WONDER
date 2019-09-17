@@ -2,6 +2,7 @@ recursive-include orangecontrib/wonder *.svg *.png *.jpg
 recursive-include orangecontrib/wonder *.pyx
 
 recursive-include orangecontrib/wonder/controller/fit/data *.dat
+recursive-include orangecontrib/wonder/controller/fit/data/wulff_solids *.data
 recursive-include orangecontrib/wonder/controller/fit/data/delta_l_files *.FTinfo
 recursive-include orangecontrib/wonder/view/wonder/data *.dat
 

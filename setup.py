@@ -12,7 +12,7 @@ NAME = 'Orange3-WONDER-1'
 
 MAJOR = 1
 MINOR = 0
-MICRO = 23
+MICRO = 27
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 AUTHOR = 'Luca Rebuffi, Paolo Scardi, Alberto Flor'
@@ -40,7 +40,7 @@ PACKAGES = find_packages()
 
 PACKAGE_DATA = {
     'orangecontrib.wonder.view.wonder'        : ['icons/*.*', 'data/*.*'],
-    'orangecontrib.wonder.controller.fit.data': ['*.*', 'delta_l_files/*.*'],
+    'orangecontrib.wonder.controller.fit.data': ['*.*', 'delta_l_files/*.*', 'wulff_solids/*.*'],
 }
 
 INSTALL_REQUIRES = sorted(set(

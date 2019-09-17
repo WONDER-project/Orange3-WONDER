@@ -694,7 +694,6 @@ def __point_in_between(y1, y2, x):
 
     # x - x1 / x2 - x1 = y - y1 / y2 - y1
     # x1 = 0, x2 = 1
-
     # y = y1 + x (y2 - y1)
 
     return y1 + x*(y2 - y1)
