@@ -153,7 +153,7 @@ class OWSize(OWGenericWidget):
                                                                              mu=self.populate_parameter("mu", SizeParameters.get_parameters_prefix()),
                                                                              sigma=None if self.cb_distribution.currentText() == Distribution.DELTA else self.populate_parameter("sigma", SizeParameters.get_parameters_prefix()),
                                                                              truncation=self.populate_parameter("truncation", SizeParameters.get_parameters_prefix()) if (self.cb_distribution.currentText() == Distribution.LOGNORMAL and self.cb_shape.currentText() == Shape.WULFF) else None,
-                                                                             cube_face=self.self.cb_cube_face.currentText() if (self.cb_distribution.currentText() == Distribution.LOGNORMAL and self.cb_shape.currentText() == Shape.WULFF) else None,
+                                                                             cube_face=self.cb_cube_face.currentText() if (self.cb_distribution.currentText() == Distribution.LOGNORMAL and self.cb_shape.currentText() == Shape.WULFF) else None,
                                                                              add_saxs=self.add_saxs if self.cb_distribution.currentText() == Distribution.DELTA else False,
                                                                              normalize_to=self.normalize_to if self.cb_distribution.currentText() == Distribution.DELTA else None)]
                 self.fit_global_parameters.regenerate_parameters()
@@ -172,12 +172,19 @@ class OWSize(OWGenericWidget):
             self.fit_global_parameters = data.duplicate()
 
             if not self.fit_global_parameters.size_parameters is None:
-                self.populate_fields("mu",    self.fit_global_parameters.size_parameters[0].mu)
-                self.populate_fields("sigma", self.fit_global_parameters.size_parameters[0].sigma)
-                self.populate_fields("truncation", self.fit_global_parameters.size_parameters[0].truncation)
-                self.cube_face = self.fit_global_parameters.size_parameters[0].cube_face
-                self.add_saxs = self.fit_global_parameters.size_parameters[0].add_saxs
-                self.normalize_to = self.fit_global_parameters.size_parameters[0].normalize_to
+                size_parameters = self.fit_global_parameters.size_parameters[0]
+
+                self.populate_fields("mu",    size_parameters.mu)
+                self.populate_fields("sigma", size_parameters.sigma)
+
+                if size_parameters.shape == Shape.WULFF:
+                    self.populate_fields("truncation", size_parameters.truncation)
+                    self.cb_cube_face.setCurrentText(size_parameters.cube_face)
+
+                self.add_saxs = size_parameters.add_saxs
+
+                if size_parameters.add_saxs:
+                    self.normalize_to = size_parameters.normalize_to
 
                 self.set_shape()
                 self.set_distribution()
