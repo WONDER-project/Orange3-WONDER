@@ -10,7 +10,7 @@ from orangecontrib.wonder.util.gui.gui_utility import gui, ShowTextDialog
 from orangecontrib.wonder.util import congruence
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters
 from orangecontrib.wonder.controller.fit.microstructure.size import SizeParameters
-from orangecontrib.wonder.controller.fit.wppm_functions import Distribution, Normalization, Shape
+from orangecontrib.wonder.controller.fit.wppm_functions import Distribution, Normalization, Shape, WulffCubeFace
 
 class OWSize(OWGenericWidget):
 
@@ -51,6 +51,8 @@ class OWSize(OWGenericWidget):
     truncation_function = Setting(0)
     truncation_function_value = Setting("")
 
+    cube_face = Setting(1)
+
     add_saxs = Setting(False)
     normalize_to = Setting(0)
 
@@ -85,6 +87,8 @@ class OWSize(OWGenericWidget):
         self.truncation_box = gui.widgetBox(size_box, "", orientation="vertical")
 
         self.create_box(self.truncation_box, "truncation", label="trunc.")
+
+        self.cb_cube_face = orangegui.comboBox(self.truncation_box, self, "cube_face", label="Cube Face", items=WulffCubeFace.tuple(), labelWidth=300, orientation="horizontal")
 
         self.saxs_box = gui.widgetBox(size_box, "", orientation="vertical")
 
@@ -149,7 +153,9 @@ class OWSize(OWGenericWidget):
                                                                              mu=self.populate_parameter("mu", SizeParameters.get_parameters_prefix()),
                                                                              sigma=None if self.cb_distribution.currentText() == Distribution.DELTA else self.populate_parameter("sigma", SizeParameters.get_parameters_prefix()),
                                                                              truncation=self.populate_parameter("truncation", SizeParameters.get_parameters_prefix()) if (self.cb_distribution.currentText() == Distribution.LOGNORMAL and self.cb_shape.currentText() == Shape.WULFF) else None,
-                                                                             add_saxs=self.add_saxs if self.cb_distribution.currentText() == Distribution.DELTA else False)]
+                                                                             cube_face=self.self.cb_cube_face.currentText() if (self.cb_distribution.currentText() == Distribution.LOGNORMAL and self.cb_shape.currentText() == Shape.WULFF) else None,
+                                                                             add_saxs=self.add_saxs if self.cb_distribution.currentText() == Distribution.DELTA else False,
+                                                                             normalize_to=self.normalize_to if self.cb_distribution.currentText() == Distribution.DELTA else None)]
                 self.fit_global_parameters.regenerate_parameters()
 
                 self.send("Fit Global Parameters", self.fit_global_parameters)
@@ -168,6 +174,8 @@ class OWSize(OWGenericWidget):
             if not self.fit_global_parameters.size_parameters is None:
                 self.populate_fields("mu",    self.fit_global_parameters.size_parameters[0].mu)
                 self.populate_fields("sigma", self.fit_global_parameters.size_parameters[0].sigma)
+                self.populate_fields("truncation", self.fit_global_parameters.size_parameters[0].truncation)
+                self.cube_face = self.fit_global_parameters.size_parameters[0].cube_face
                 self.add_saxs = self.fit_global_parameters.size_parameters[0].add_saxs
                 self.normalize_to = self.fit_global_parameters.size_parameters[0].normalize_to
 

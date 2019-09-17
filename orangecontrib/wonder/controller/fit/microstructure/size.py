@@ -2,7 +2,7 @@ import numpy
 
 from orangecontrib.wonder.controller.fit.fit_parameter import ParametersList
 from orangecontrib.wonder.controller.fit.wppm_functions import \
-    Normalization, Distribution, Shape, \
+    Normalization, Distribution, Shape, WulffCubeFace, \
     lognormal_distribution, delta_distribution, gamma_distribution, york_distribution, \
     lognormal_average, lognormal_average_surface_weigthed, lognormal_average_volume_weigthed, lognormal_standard_deviation
 
@@ -17,6 +17,7 @@ class SizeDistribution:
     D_avg_volume_weighted  = None
     standard_deviation     = None
 
+
 class SizeParameters(ParametersList):
 
     shape = Shape.SPHERE
@@ -24,6 +25,7 @@ class SizeParameters(ParametersList):
     mu = None
     sigma = None
     truncation = None
+    cube_face = WulffCubeFace.HEXAGONAL
     add_saxs = False
     normalize_to = Normalization.NORMALIZE_TO_N
 
@@ -31,7 +33,7 @@ class SizeParameters(ParametersList):
     def get_parameters_prefix(cls):
         return "size_"
 
-    def __init__(self, shape, distribution, mu, sigma, truncation=0.0, add_saxs=False, normalize_to=Normalization.NORMALIZE_TO_N):
+    def __init__(self, shape, distribution, mu, sigma, truncation=0.0, cube_face = WulffCubeFace.HEXAGONAL, add_saxs=False, normalize_to=Normalization.NORMALIZE_TO_N):
         super(SizeParameters, self).__init__()
 
         self.shape = shape
@@ -39,6 +41,7 @@ class SizeParameters(ParametersList):
         self.mu = mu
         self.sigma = sigma
         self.truncation = truncation
+        self.cube_face = cube_face
         self.add_saxs = add_saxs
         self.normalize_to = normalize_to
 

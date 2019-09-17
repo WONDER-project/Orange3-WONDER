@@ -41,6 +41,14 @@ class Shape:
     def tuple(cls):
         return [cls.NONE, cls.SPHERE, cls.CUBE, cls.TETRAHEDRON, cls.OCTAHEDRON, cls.CYLINDER, cls.WULFF]
 
+class WulffCubeFace:
+    TRIANGULAR = "triangular"
+    HEXAGONAL = "hexagonal"
+
+    @classmethod
+    def tuple(cls):
+        return [cls.TRIANGULAR, cls.HEXAGONAL]
+
 class Normalization:
     NORMALIZE_TO_N = 0
     NORMALIZE_TO_N2 = 1
@@ -327,15 +335,18 @@ def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern
                                                                               reflection.l,
                                                                               size_parameters.sigma.value,
                                                                               size_parameters.mu.value,
-                                                                              size_parameters.truncation.value)
+                                                                              size_parameters.truncation.value,
+                                                                              size_parameters.cube_face)
                 else:
-                    fourier_amplitudes *= size_function_wulff_solids_lognormal(fit_space_parameters.L,
-                                                                               reflection.h,
-                                                                               reflection.k,
-                                                                               reflection.l,
-                                                                               size_parameters.sigma.value,
-                                                                               size_parameters.mu.value,
-                                                                               size_parameters.truncation.value)
+                    fourier_amplitudes *=size_function_wulff_solids_lognormal(fit_space_parameters.L,
+                                                                              reflection.h,
+                                                                              reflection.k,
+                                                                              reflection.l,
+                                                                              size_parameters.sigma.value,
+                                                                              size_parameters.mu.value,
+                                                                              size_parameters.truncation.value,
+                                                                              size_parameters.cube_face)
+
         elif size_parameters.distribution == Distribution.GAMMA:
             if fourier_amplitudes is None:
                 fourier_amplitudes = size_function_gamma(fit_space_parameters.L,
@@ -599,6 +610,8 @@ def lognormal_moment(n, mu, sigma):
 # SIZE - WULFF SOLIDS
 ######################################################################
 
+THRESHOLD = 1e-3
+
 class WulffSolidDataRow:
     def __init__(self,
                  h, k, l,
@@ -676,51 +689,66 @@ if not 'wulff_solids_data_hexagonal' in globals():
     wulff_solids_data_hexagonal = load_wulff_solids_data("Cube_TruncatedCubeHexagonalFace_L_FIT.data")
     wulff_solids_data_triangular = load_wulff_solids_data("Cube_TruncatedCubeTriangularFace_L_FIT.data")
 
-    wulff_solids_data = wulff_solids_data_triangular #wulff_solids_data_hexagonal
-
-def __get_Hc_Kc_coefficients(L, h, k, l, truncation): # N.B. L, truncation >= 0!
+def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
     divisor = numpy.gcd.reduce([h, k, l])
 
-    wsd_row = wulff_solids_data[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
-
-    Kc = wsd_row.limit_dist/100
-
-    if wsd_row.chi_square_1 <= wsd_row.chi_square_2:
-        if L <= Kc:
-            return [wsd_row.aa, wsd_row.bb, wsd_row.cc, wsd_row.dd, Kc]
-        else:
-            return [0.0, 0.0, 0.0, 0.0, wsd_row.limit_dist]
+    if face == WulffCubeFace.TRIANGULAR:
+        return wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
     else:
-        if L <= Kc*wsd_row.xj:
-            return [wsd_row.a0, wsd_row.b0, wsd_row.c0, wsd_row.d0, Kc]
-        elif L <= Kc:
-            return [wsd_row.a1, wsd_row.b1, wsd_row.c1, wsd_row.d1, Kc]
-        else:
-            return [0.0, 0.0, 0.0, 0.0, Kc]
+        return wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
 
-def __wulff_solids_lognormal_term_n(n, L, mu, sigma, Hc, Kc):
-    M3n = lognormal_moment(3-n, mu, sigma)
-    M3  = lognormal_moment(3, mu, sigma)
+def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2):
+    is_array = isinstance(L, list) or isinstance(L, numpy.ndarray)
 
-    return Hc*erfc((numpy.log(L*Kc) - mu - ((3-n)*(sigma**2)))/(sigma*numpy.sqrt(2)))*(0.5*M3n*(L**n)/M3)
+    if is_array:
+        A = numpy.zeros(len(L))
+    else:
+        A = 0.0
 
-def size_function_wulff_solids_lognormal(L, h, k, l, mu, sigma, truncation):
-    L /= 2*lognormal_average(mu, sigma)
+    for n in range(0, 4):
+        Mn_ratio = n*(-mu+(n/2.0-3.0)*sigma2)
 
-    dim = len(L)
+        if Mn_ratio > -50.:
+            YI = (numpy.log(L*Kc)-mu-(3.0-1.0*n)*sigma2)/ssqrt2
+            A += poly_coefficients[n]*erfc(YI)*numpy.exp(Mn_ratio)*(L**n)/2.0
 
-    fourier_amplitude = numpy.zeros(dim)
+    A[numpy.where(A <= 1e-20)] = 0.0
 
-    for i in range(dim):
-        coefficients = __get_Hc_Kc_coefficients(L[i], h, k, l, truncation)
+    return A
 
-        Kc  = coefficients[-1]
+def size_function_wulff_solids_lognormal(L_ext, h, k, l, sigma, mu, truncation, face):
+    dimension = len(L_ext)
+    fourier_amplitude = numpy.zeros(dimension)
+    sigma2 = sigma*sigma
+    ssqrt2 = sigma*numpy.sqrt(2.0)
 
-        for j in range(0, 4):
-            fourier_amplitude[i] += __wulff_solids_lognormal_term_n(j, L[i], mu, sigma, coefficients[j], Kc)
+    L = L_ext/lognormal_average(mu, sigma)
+
+    coefficients = __get_Hj_coefficients(h, k, l, truncation, face)
+
+    Hn_do1 = numpy.array([coefficients.a0, coefficients.b0, coefficients.c0, coefficients.d0])
+    Hn_do2 = numpy.array([coefficients.a1, coefficients.b1, coefficients.c1, coefficients.d1])
+    Hn_LD = coefficients.limit_dist * 0.01
+    Hn_Kc = 1/Hn_LD
+    Hn_xj = coefficients.xj
+
+    if numpy.abs(Hn_xj-1.0)<THRESHOLD:
+        distr = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2)
+        if distr > 1e-20: fourier_amplitude += distr
+    else:
+        fourier_amplitude += __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.      , mu, sigma2, ssqrt2) # integr(f2) on LK
+        fourier_amplitude += __FFourierLognormal(Hn_do1, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2) # (integr(f1)) on LKxj
+        fourier_amplitude -= __FFourierLognormal(Hn_do2, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2) # (integr(f2)) on LKxj
+
+    fourier_amplitude[numpy.where(L == 0.0)] = 1.0
+    fourier_amplitude[numpy.where(fourier_amplitude < 0.0)] = 0.0
+    fourier_amplitude[numpy.where(fourier_amplitude > 1.0)] = 1.0
+
+    for i in range(1, dimension): #control statements from PM2K
+        if fourier_amplitude[i] > fourier_amplitude[i-1]:
+            fourier_amplitude[i] = 0
 
     return fourier_amplitude
-
 
 ######################################################################
 # STRAIN
@@ -1209,3 +1237,46 @@ def integral_breadth_total(reflection, lattice_parameter, wavelength, instrument
                                __strain_function(L, reflection, lattice_parameter, strain_parameters, True)
 
     return 1 / (2 * integrate.quad(total_function, 0, numpy.inf)[0])
+
+if __name__=="__main__":
+    import matplotlib.pyplot as plt
+
+    from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters, FitSpaceParameters
+    from orangecontrib.wonder.controller.fit.init.fit_initialization import FitInitialization
+    from orangecontrib.wonder.controller.fit.init.fft_parameters import FFTInitParameters
+    fitP = FitGlobalParameters()
+    fitP.fit_initialization = FitInitialization()
+    fitP.fit_initialization.fft_parameters = FFTInitParameters(s_max=2.0, n_step=1024)
+    fsp = fitP.space_parameters()
+
+    L = fsp.L
+
+    L = numpy.arange(0, 3, 0.01)
+
+    h = 1
+    k = 0
+    l = 0
+
+    mu = 1.0
+    sigma = 0.02
+
+    truncation = 0.0
+
+    fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.HEXAGONAL)
+
+    H = numpy.sqrt(h**2 + k**2 + l**2)
+
+    limit_dist = H/h
+
+    L /= lognormal_average(mu, sigma)
+#---- Testing against analytical expression, not part of routine ------------------------------------------
+    analytical100 = numpy.where((L >= 0) & (L < limit_dist), 1 - L/2.7, 0)
+    analytical110 = numpy.where((L >= 0) & (L < limit_dist), 1 - 2*L/3.8 + (L/3.8)**2, 0)
+    analytical111 = numpy.where((L >= 0) & (L < limit_dist), 1 - numpy.sqrt(3)*L/2.7 +(L/2.7)**2 - (1/(numpy.sqrt(3))**3)*(L/2.7)**3, 0)
+    plt.plot(L,analytical100)
+    #plt.plot(L,analytical110)
+    #plt.plot(L,analytical111)
+    plt.plot(L,fourier_amplitude)
+
+#------------------------------------------------------------------------------------------------------------------
+    plt.show()
