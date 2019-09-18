@@ -23,7 +23,7 @@ from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalP
 from orangecontrib.wonder.controller.fit.init.thermal_polarization_parameters import ThermalPolarizationParameters
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import SpecimenDisplacement
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection
-from orangecontrib.wonder.controller.fit.wppm_functions import caglioti_fwhm, caglioti_eta, delta_two_theta_lab6, \
+from orangecontrib.wonder.controller.fit.wppm_functions import Shape, caglioti_fwhm, caglioti_eta, delta_two_theta_lab6, \
     integral_breadth_instrumental_function, integral_breadth_size, integral_breadth_strain, integral_breadth_total
 
 
@@ -998,8 +998,8 @@ class OWFitter(OWGenericWidget):
                 plot_size = not size_parameters is None
                 plot_strain = not strain_parameters is None
 
-                if not size_parameters is None:
-                        y_ib_size = numpy.full(crystal_structure.get_reflections_count(), integral_breadth_size(size_parameters))
+                if not size_parameters is None and not size_parameters.shape == Shape.WULFF:
+                    y_ib_size = numpy.full(crystal_structure.get_reflections_count(), integral_breadth_size(None, size_parameters))
                 else:
                     y_ib_size = numpy.zeros(nr_points)
 
@@ -1010,6 +1010,9 @@ class OWFitter(OWGenericWidget):
                 i = -1
                 for reflection in crystal_structure.get_reflections():
                     i += 1
+
+                    if not size_parameters is None and size_parameters.shape == Shape.WULFF:
+                        y_ib_size[i] = integral_breadth_size(reflection, size_parameters)
 
                     if not strain_parameters is None:
                         y_ib_strain[i] = integral_breadth_strain(reflection, lattice_parameter,
@@ -1029,6 +1032,9 @@ class OWFitter(OWGenericWidget):
                 if plot_instr:  self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_instr, legend="IPF", symbol='o', color="black")
                 if plot_size:   self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_size, legend="Size", symbol='o', color="red")
                 if plot_strain: self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_strain, legend="Strain", symbol='o', color="blue")
+
+                y_ib_total[numpy.where(numpy.logical_or(numpy.isinf(y_ib_total), numpy.isnan(y_ib_total)))] = 0.0
+
                 self.plot_integral_breadth[diffraction_pattern_index].addCurve(x_ib, y_ib_total, legend="Total", symbol='o', color="#2D811B")
                 self.plot_integral_breadth[diffraction_pattern_index].setGraphYLimits(-0.05,
                                                                                       numpy.max(y_ib_total)*1.2)

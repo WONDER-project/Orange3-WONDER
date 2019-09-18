@@ -88,11 +88,11 @@ class SizeParameters(ParametersList):
 
 
     def __get_distribution_frequency_values(self, x):
-        if self.distribution == Distribution.LOGNORMAL and self.shape == Shape.SPHERE:
+        if self.distribution == Distribution.LOGNORMAL:
             y = lognormal_distribution(self.mu.value, self.sigma.value, x)
-        elif self.distribution == Distribution.GAMMA and self.shape == Shape.SPHERE:
+        elif self.distribution == Distribution.GAMMA:
             y = gamma_distribution(self.mu.value, self.sigma.value, x)
-        elif self.distribution == Distribution.YORK and self.shape == Shape.SPHERE:
+        elif self.distribution == Distribution.YORK:
             y = york_distribution(self.mu.value, self.sigma.value, x)
         elif self.distribution == Distribution.DELTA:
             y = delta_distribution(self.mu.value, x)

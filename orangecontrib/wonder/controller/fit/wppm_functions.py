@@ -690,12 +690,11 @@ if not 'wulff_solids_data_hexagonal' in globals():
     wulff_solids_data_triangular = load_wulff_solids_data("Cube_TruncatedCubeTriangularFace_L_FIT.data")
 
 
+
+# x - x1 / x2 - x1 = y - y1 / y2 - y1
+# x1 = 0, x2 = 1
+# -> y = y1 + x (y2 - y1)
 def __point_in_between(y1, y2, x):
-
-    # x - x1 / x2 - x1 = y - y1 / y2 - y1
-    # x1 = 0, x2 = 1
-    # y = y1 + x (y2 - y1)
-
     return y1 + x*(y2 - y1)
 
 def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
@@ -740,9 +739,7 @@ def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
 
 
 
-def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2):
-    is_array = isinstance(L, list) or isinstance(L, numpy.ndarray)
-
+def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2, is_array):
     if is_array:
         A = numpy.zeros(len(L))
     else:
@@ -755,15 +752,20 @@ def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2):
             YI = (numpy.log(L*Kc)-mu-(3.0-1.0*n)*sigma2)/ssqrt2
             A += poly_coefficients[n]*erfc(YI)*numpy.exp(Mn_ratio)*(L**n)/2.0
 
-    A[numpy.where(A <= 1e-20)] = 0.0
+    if is_array:
+        A[numpy.where(A <= 1e-20)] = 0.0
+    else:
+       if A <= 1e-20: A = 0.0
 
     return A
 
-def size_function_wulff_solids_lognormal(L_ext, h, k, l, sigma, mu, truncation, face):
+def size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, face):
+    is_array = isinstance(L, list) or isinstance(L, numpy.ndarray)
+
+    if not is_array and L==0: return 1.0
+
     sigma2 = sigma*sigma
     ssqrt2 = sigma*numpy.sqrt(2.0)
-
-    L = L_ext/lognormal_average(mu, sigma) # Limit dist = <D>
 
     coefficients = __get_Hj_coefficients(h, k, l, truncation, face)
 
@@ -774,16 +776,21 @@ def size_function_wulff_solids_lognormal(L_ext, h, k, l, sigma, mu, truncation, 
     Hn_xj = coefficients.xj
 
     if numpy.abs(Hn_xj-1.0)<THRESHOLD:
-        fourier_amplitude = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2)
+        fourier_amplitude = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2, is_array)
     else:
-        fourier_amplitude =  __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.      , mu, sigma2, ssqrt2) # integr(f2) on LK
-        fourier_amplitude += __FFourierLognormal(Hn_do1, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2) # (integr(f1)) on LKxj
-        fourier_amplitude -= __FFourierLognormal(Hn_do2, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2) # (integr(f2)) on LKxj
+        fourier_amplitude =  __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.      , mu, sigma2, ssqrt2, is_array) # integr(f2) on LK
+        fourier_amplitude += __FFourierLognormal(Hn_do1, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2, is_array) # (integr(f1)) on LKxj
+        fourier_amplitude -= __FFourierLognormal(Hn_do2, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2, is_array) # (integr(f2)) on LKxj
 
-    fourier_amplitude[numpy.where(L == 0.0)] = 1.0
-    fourier_amplitude[numpy.where(fourier_amplitude < 0.0)] = 0.0
-    fourier_amplitude[numpy.where(fourier_amplitude > 1.0)] = 1.0
-    fourier_amplitude[2:][numpy.where(numpy.greater(fourier_amplitude[2:], fourier_amplitude[1:-1]))] = 0
+    if is_array:
+        fourier_amplitude[numpy.where(L == 0.0)] = 1.0
+        fourier_amplitude[numpy.where(fourier_amplitude < 0.0)] = 0.0
+        fourier_amplitude[numpy.where(fourier_amplitude > 1.0)] = 1.0
+        fourier_amplitude[2:][numpy.where(numpy.greater(fourier_amplitude[2:], fourier_amplitude[1:-1]))] = 0
+    else:
+        if fourier_amplitude > 1.0 : return 1.0
+        if fourier_amplitude < 0.0 : return 0.0
+        #check the previous
 
     return fourier_amplitude
 
@@ -1215,12 +1222,17 @@ def __instrumental_function(L, reflection, lattice_parameter, wavelength, instru
                                      instrumental_parameters.c.value)
 
 
-def __size_function(L, size_parameters, ib_total=False):
+def __size_function(L, reflection, size_parameters, ib_total=False):
     if size_parameters is None:
         return 1.0 if ib_total else 0.0
     else:
         if size_parameters.distribution == Distribution.LOGNORMAL:
-            return size_function_lognormal(L, size_parameters.sigma.value, size_parameters.mu.value)
+            if size_parameters.shape == Shape.WULFF:
+                return size_function_wulff_solids_lognormal(L, reflection.h, reflection.k, reflection.l,
+                                                            size_parameters.sigma.value, size_parameters.mu.value,
+                                                            size_parameters.truncation.value, size_parameters.cube_face)
+            else:
+                return size_function_lognormal(L, size_parameters.sigma.value, size_parameters.mu.value)
         elif size_parameters.distribution == Distribution.DELTA:
             return size_function_delta(L, size_parameters.mu.value)
         elif size_parameters.distribution == Distribution.GAMMA:
@@ -1262,15 +1274,15 @@ def __strain_function(L, reflection, lattice_parameter, strain_parameters, ib_to
 def integral_breadth_instrumental_function(reflection, lattice_parameter, wavelength, instrumental_parameters):
      return 1 / (2 * integrate.quad(lambda L: __instrumental_function(L, reflection, lattice_parameter, wavelength, instrumental_parameters), 0, numpy.inf)[0])
 
-def integral_breadth_size(size_parameters):
-    return 1 / (2 * integrate.quad(lambda L: __size_function(L, size_parameters), 0, numpy.inf)[0])
+def integral_breadth_size(reflection, size_parameters):
+    return 1 / (2 * integrate.quad(lambda L: __size_function(L, reflection, size_parameters), 0, numpy.inf)[0])
 
 def integral_breadth_strain(reflection, lattice_parameter, strain_parameters):
     return 1 / (2 * integrate.quad(lambda L: __strain_function(L, reflection, lattice_parameter, strain_parameters), 0, numpy.inf)[0])
 
 def integral_breadth_total(reflection, lattice_parameter, wavelength, instrumental_parameters, size_parameters, strain_parameters):
     total_function = lambda L: __instrumental_function(L, reflection, lattice_parameter, wavelength, instrumental_parameters, True) * \
-                               __size_function(L, size_parameters, True) * \
+                               __size_function(L, reflection, size_parameters, True) * \
                                __strain_function(L, reflection, lattice_parameter, strain_parameters, True)
 
     return 1 / (2 * integrate.quad(total_function, 0, numpy.inf)[0])
