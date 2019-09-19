@@ -78,15 +78,15 @@ class OWSize(OWGenericWidget):
 
         size_box = gui.widgetBox(main_box, "Size Parameters", orientation="vertical", width=self.CONTROL_AREA_WIDTH - 30)
 
-        self.create_box(size_box, "mu", label="\u03bc or D")
+        self.create_box(size_box, "mu", label="\u03bc or D", min_value=0.0, min_accepted=False)
 
         self.sigma_box = gui.widgetBox(size_box, "", orientation="vertical")
 
-        self.create_box(self.sigma_box, "sigma", label="\u03c3")
+        self.create_box(self.sigma_box, "sigma", label="\u03c3", min_value=0.0, min_accepted=False)
 
         self.truncation_box = gui.widgetBox(size_box, "", orientation="vertical")
 
-        self.create_box(self.truncation_box, "truncation", label="trunc.")
+        self.create_box(self.truncation_box, "truncation", label="trunc.", min_value=0.0, min_accepted=True, max_value=1.0, max_accepted=True)
 
         self.cb_cube_face = orangegui.comboBox(self.truncation_box, self, "cube_face", label="Cube Face", items=WulffCubeFace.tuple(), labelWidth=300, orientation="horizontal")
 

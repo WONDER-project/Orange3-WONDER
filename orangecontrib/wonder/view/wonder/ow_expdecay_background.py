@@ -1,10 +1,8 @@
-import os, sys, numpy
+import sys
 
-from PyQt5.QtWidgets import QMessageBox, QScrollArea, QTableWidget, QApplication
-
+from PyQt5.QtWidgets import QMessageBox, QApplication
 
 from Orange.widgets.settings import Setting
-from Orange.widgets import gui as orangegui
 
 from orangecontrib.wonder.util.widgets.ow_generic_widget import OWGenericWidget
 from orangecontrib.wonder.util.gui.gui_utility import gui

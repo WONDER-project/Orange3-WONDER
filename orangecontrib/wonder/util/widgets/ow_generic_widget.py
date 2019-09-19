@@ -8,11 +8,59 @@ from Orange.widgets import gui as orangegui
 
 from PyQt5.QtWidgets import QApplication, QSizePolicy
 from PyQt5.QtCore import QRect
-from PyQt5.QtGui import QDoubleValidator
+from PyQt5.QtGui import QDoubleValidator, QValidator
 
 from orangecontrib.wonder.util.gui.gui_utility import ConfirmDialog, gui, ShowTextDialog, OW_IS_DEVELOP
 from orangecontrib.wonder.controller.fit.fit_parameter import FitParameter, Boundary
 from orangecontrib.wonder.controller.fit.fit_parameter import PARAM_HWMAX, PARAM_HWMIN
+
+class QMinValueValidator(QDoubleValidator):
+
+    def __init__(self, min_value, max_value=None, min_accepted=True, parent=None):
+        super().__init__(parent)
+        self.__min_value = min_value
+        self.__max_value = max_value
+        self.__min_accepted = min_accepted
+
+    def validate(self, string, pos):
+        try:
+            value = float(string)
+        except:
+            return (QValidator.Invalid, string, pos)
+
+        good = True
+        if not self.__min_accepted              : good = value > self.__min_value
+        if good and self.__min_accepted         : good = value >= self.__min_value
+        if good and not self.__max_value is None: good = value <= self.__max_value
+
+        if good:
+            return (QValidator.Acceptable, string, pos)
+        else:
+            return (QValidator.Invalid, string, pos)
+
+class QMaxValueValidator(QDoubleValidator):
+
+    def __init__(self, max_value, min_value=None, max_accepted=True, parent=None):
+        super(QDoubleValidator, self).__init__(parent)
+        self.__max_value = max_value
+        self.__min_value = min_value
+        self.__max_accepted = max_accepted
+
+    def validate(self, string, pos):
+        try:
+            value = float(string)
+        except:
+            return (QValidator.Invalid, string, pos)
+
+        good = True
+        if not self.__max_accepted              : good = value < self.__max_value
+        if good and self.__max_accepted         : good = value <= self.__max_value
+        if good and not self.__min_value is None: good = value >= self.__min_value
+
+        if good:
+            return (QValidator.Acceptable, string, pos)
+        else:
+            return (QValidator.Invalid, string, pos)
 
 class OWGenericWidget(widget.OWWidget):
 
@@ -74,11 +122,11 @@ class OWGenericWidget(widget.OWWidget):
 
         return flag
 
-    def create_box(self, parent_box, var, label=None, disable_function=False, add_callback=False, label_width=40):
-        self.create_box_in_widget(self, parent_box, var, label, disable_function, add_callback, label_width)
+    def create_box(self, parent_box, var, label=None, disable_function=False, add_callback=False, label_width=40, min_value=None, min_accepted=True, max_value=None, max_accepted=True):
+        self.create_box_in_widget(self, parent_box, var, label, disable_function, add_callback, label_width, min_value, min_accepted, max_value, max_accepted)
 
     @classmethod
-    def create_box_in_widget(cls, widget, parent_box, var, label=None, disable_function=False, add_callback=False, label_width=40):
+    def create_box_in_widget(cls, widget, parent_box, var, label=None, disable_function=False, add_callback=False, label_width=40, min_value=None, min_accepted=True, max_value=None, max_accepted=True):
         box = gui.widgetBox(parent_box, "", orientation="horizontal", width=widget.CONTROL_AREA_WIDTH - 50, height=25)
 
         box_value_width = 100 - (label_width-40)
@@ -144,26 +192,39 @@ class OWGenericWidget(widget.OWWidget):
             setattr(widget, var + "_has_max", 1)
             if add_callback: getattr(widget, "callback_" + var)()
 
+        min_validator = QMinValueValidator(min_value, max_value, min_accepted) if not min_value is None else (QDoubleValidator() if max_value is None else QMaxValueValidator(max_value, min_value, True))
+        max_validator = QMaxValueValidator(max_value, min_value, max_accepted) if not max_value is None else (QDoubleValidator() if min_value is None else QMinValueValidator(min_value, max_value, True))
+
         if add_callback:
-            orangegui.checkBox(box_min_max, widget, var + "_has_min", "min", callback=getattr(widget, "callback_" + var))
-            gui.lineEdit(box_min_max, widget, var + "_min", "", valueType=float, validator=QDoubleValidator(), callback=set_min)
-            orangegui.checkBox(box_min_max, widget, var + "_has_max", "max", callback=getattr(widget, "callback_" + var))
-            gui.lineEdit(box_min_max, widget, var + "_max", "", valueType=float, validator=QDoubleValidator(), callback=set_max)
+            cb_min = orangegui.checkBox(box_min_max, widget, var + "_has_min", "min", callback=getattr(widget, "callback_" + var))
+            gui.lineEdit(box_min_max, widget, var + "_min", "", valueType=float, validator=min_validator, callback=set_min)
+            cb_max = orangegui.checkBox(box_min_max, widget, var + "_has_max", "max", callback=getattr(widget, "callback_" + var))
+            gui.lineEdit(box_min_max, widget, var + "_max", "", valueType=float, validator=max_validator, callback=set_max)
 
             cb = orangegui.checkBox(box_function, widget, var + "_function", "f(x)", callback=set_flags)
             cb.setEnabled(not disable_function)
 
             gui.lineEdit(box_function_value, widget, var + "_function_value", "expression", valueType=str, callback=getattr(widget, "callback_" + var))
         else:
-            orangegui.checkBox(box_min_max, widget, var + "_has_min", "min")
-            gui.lineEdit(box_min_max, widget, var + "_min", "", valueType=float, validator=QDoubleValidator(), callback=set_min)
-            orangegui.checkBox(box_min_max, widget, var + "_has_max", "max")
-            gui.lineEdit(box_min_max, widget, var + "_max", "", valueType=float, validator=QDoubleValidator(), callback=set_max)
+            cb_min = orangegui.checkBox(box_min_max, widget, var + "_has_min", "min")
+            gui.lineEdit(box_min_max, widget, var + "_min", "", valueType=float, validator=min_validator, callback=set_min)
+            cb_max = orangegui.checkBox(box_min_max, widget, var + "_has_max", "max")
+            gui.lineEdit(box_min_max, widget, var + "_max", "", valueType=float, validator=max_validator, callback=set_max)
 
             cb = orangegui.checkBox(box_function, widget, var + "_function", "f(x)", callback=set_flags)
             cb.setEnabled(not disable_function)
 
             gui.lineEdit(box_function_value, widget, var + "_function_value", "expression", valueType=str)
+
+        if not min_value is None:
+            setattr(widget, var + "_has_min", 1)
+            setattr(widget, var + "_min", min_value)
+            cb_min.setEnabled(False)
+
+        if not max_value is None:
+            setattr(widget, var + "_has_max", 1)
+            setattr(widget, var + "_max", max_value)
+            cb_max.setEnabled(False)
 
         set_flags()
 

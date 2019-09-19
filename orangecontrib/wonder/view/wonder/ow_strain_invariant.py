@@ -85,8 +85,8 @@ class OWStrainInvariant(OWGenericWidget):
 
         gui.button(button_box,  self, "Send Strain", height=50, callback=self.send_strain)
 
-        self.create_box(main_box, "aa")
-        self.create_box(main_box, "bb")
+        self.create_box(main_box, "aa", min_value=0.0, min_accepted=True)
+        self.create_box(main_box, "bb", min_value=0.0, min_accepted=True)
 
 
         invariant_box = gui.widgetBox(main_box,

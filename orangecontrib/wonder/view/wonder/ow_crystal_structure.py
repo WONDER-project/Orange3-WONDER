@@ -461,7 +461,7 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
 
         self.cb_symmetry = orangegui.comboBox(container, self, "symmetry", label="Symmetry", items=Symmetry.tuple(), callback=self.set_symmetry, orientation="horizontal")
 
-        widget.create_box_in_widget(self, container, "a", "a [nm]", add_callback=True)
+        widget.create_box_in_widget(self, container, "a", "a [nm]", add_callback=True, min_value=0.0, min_accepted=False)
 
         orangegui.separator(container)
 
@@ -478,7 +478,7 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
                                        width=self.CONTROL_AREA_WIDTH - 50, height=60)
 
         gui.lineEdit(self.structure_box_1, self, "formula", "Chemical Formula", labelWidth=90, valueType=str, callback=widget.dump_formula)
-        widget.create_box_in_widget(self, self.structure_box_1, "intensity_scale_factor", "I0", add_callback=True)
+        widget.create_box_in_widget(self, self.structure_box_1, "intensity_scale_factor", "I0", add_callback=True, min_value=0.0, min_accepted=False)
 
         self.structure_box_2 = gui.widgetBox(structure_box,
                                        "", orientation="vertical",

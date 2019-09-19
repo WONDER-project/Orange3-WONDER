@@ -131,14 +131,14 @@ class OWStrainKW(OWGenericWidget):
 
         gui.button(button_box,  self, "Send Strain", height=50, callback=self.send_strain)
 
-        self.create_box(main_box, "rho", label="\u03c1")
-        self.create_box(main_box, "Re")
+        self.create_box(main_box, "rho", label="\u03c1", min_value=0.0, min_accepted=False)
+        self.create_box(main_box, "Re", min_value=0.0, min_accepted=False)
         self.create_box(main_box, "Ae")
         self.create_box(main_box, "Be")
         self.create_box(main_box, "As")
         self.create_box(main_box, "Bs")
-        self.create_box(main_box, "mix")
-        self.create_box(main_box, "b")
+        self.create_box(main_box, "mix", min_value=0.0, min_accepted=True, max_value=1.0, max_accepted=True)
+        self.create_box(main_box, "b", min_value=0.0, min_accepted=False)
 
 
     def send_strain(self):

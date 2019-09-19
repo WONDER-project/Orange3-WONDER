@@ -57,7 +57,7 @@ class OWDebyeWaller(OWGenericWidget):
         self.box_dw       = gui.widgetBox(box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH - 30, height=30)
         self.box_dw_empty = gui.widgetBox(box, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH - 30, height=30)
 
-        self.create_box(self.box_dw, "debye_waller_factor", "B [Å-2]")
+        self.create_box(self.box_dw, "debye_waller_factor", "B [Å-2]", min_value=0.0, min_accepted=False)
 
         self.set_dw()
 

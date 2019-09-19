@@ -991,7 +991,7 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
 
         self.secondary_box_empty = gui.widgetBox(container, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH - 35, spacing=0)
 
-        widget.create_box_in_widget(self, container,  "wavelength", label="\u03BB  [nm]", disable_function=True, add_callback=True)
+        widget.create_box_in_widget(self, container,  "wavelength", label="\u03BB  [nm]", disable_function=True, add_callback=True, min_value=0.0, min_accepted=False)
 
         self.secondary_box_2 = gui.widgetBox(container, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH - 35, )
         self.secondary_box_2_empty = gui.widgetBox(container, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH - 35)
@@ -1048,8 +1048,8 @@ class RadiationBox(QtWidgets.QWidget, OWComponent):
                     label_wl = "\u03BB" + " " + str(secondary_index) + "  [nm]"
                     label_we = "weight " + str(secondary_index)
 
-                    OWGenericWidget.create_box_in_widget(self, self.secondary_wavelengths_boxes[key],  var_wl, label=label_wl, label_width=55, add_callback=True)
-                    OWGenericWidget.create_box_in_widget(self, self.secondary_wavelengths_boxes[key],  var_we, label=label_we, label_width=55, add_callback=True)
+                    OWGenericWidget.create_box_in_widget(self, self.secondary_wavelengths_boxes[key],  var_wl, label=label_wl, label_width=55, add_callback=True, min_value=0.0, min_accepted=False)
+                    OWGenericWidget.create_box_in_widget(self, self.secondary_wavelengths_boxes[key],  var_we, label=label_we, label_width=55, add_callback=True, min_value=0.0, min_accepted=True)
 
                     secondary_index += 1
 
