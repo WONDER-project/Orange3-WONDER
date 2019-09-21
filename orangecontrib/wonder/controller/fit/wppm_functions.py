@@ -702,9 +702,9 @@ def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
 
     if truncation.is_integer():
         if face == WulffCubeFace.TRIANGULAR:
-            return wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
+            return wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation*100)]
         else:
-            return wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, numpy.round(truncation*100, 0))]
+            return wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation*100)]
     else:
         x = truncation % 1 # decimal part
 
@@ -736,8 +736,6 @@ def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
                                   __point_in_between(coefficients_top.d1          , coefficients_bottom.d1          , x),
                                   __point_in_between(coefficients_top.xl          , coefficients_bottom.xl          , x),
                                   __point_in_between(coefficients_top.chi_square_2, coefficients_bottom.chi_square_2, x))
-
-
 
 def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2, is_array):
     if is_array:
@@ -1145,60 +1143,48 @@ def add_chebyshev_background(x, I, parameters=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]):
 
 def add_polynomial_background(x, I, parameters=[0, 0, 0, 0, 0, 0]):
     degree = len(parameters)
-    bkg = numpy.zeros(len(x))
 
     for j in range(0, degree):
         I += parameters[j]*numpy.pow(x, j)
 
 def add_polynomial_N_background(x, I, parameters=[0, 0, 0, 0, 0, 0]):
     degree = len(parameters)
-    bkg = numpy.zeros(len(x))
 
     for j in range(0, int(degree/2 - 1)):
         a_i = parameters[2*j]
         b_i = parameters[2*j+1]
 
-        bkg += a_i*numpy.pow(x, b_i)
-
-    I += bkg
+        I += a_i*numpy.pow(x, b_i)
 
 def add_polynomial_0N_background(x, I, parameters=[0, 0, 0, 0, 0, 0]):
     degree = len(parameters)
-    bkg = numpy.zeros(len(x))
     x0 = parameters[0]
 
     for j in range(0, int(degree/2 - 1)):
         a_i = parameters[1 + 2*j]
         b_i = parameters[1 + 2*j+1]
 
-        bkg += a_i*numpy.pow((x-x0), b_i)
+        I += a_i*numpy.pow((x-x0), b_i)
 
-    I += bkg
 
 def add_expdecay_background(x, I, parameters=[0, 0, 0, 0, 0, 0]):
     degree = len(parameters)
-    bkg = numpy.zeros(len(x))
 
     for j in range(0, int(degree/2 - 1)):
         a_i = parameters[2*j]
         b_i = parameters[2*j+1]
 
-        bkg += a_i*numpy.exp(-numpy.abs(x)*b_i)
-
-    I += bkg
+        I += a_i*numpy.exp(-numpy.abs(x)*b_i)
 
 def add_expdecay_0_background(x, I, parameters=[0, 0, 0, 0, 0, 0]):
     degree = len(parameters)
-    bkg = numpy.zeros(len(x))
     x0 = parameters[0]
 
     for j in range(0, int(degree/2 - 1)):
         a_i = parameters[1 + 2*j]
         b_i = parameters[1 + 2*j+1]
 
-        bkg += a_i*numpy.exp(-numpy.abs(x-x0)*b_i)
-
-    I += bkg
+        I += a_i*numpy.exp(-numpy.abs(x-x0)*b_i)
 
 ######################################################################
 # CALCULATION OF INTEGRAL BREADTH
@@ -1288,19 +1274,6 @@ def integral_breadth_total(reflection, lattice_parameter, wavelength, instrument
     return 1 / (2 * integrate.quad(total_function, 0, numpy.inf)[0])
 
 if __name__=="__main__":
-
-
-    array = numpy.array([1, 0.9, 0.8, 0.7, 0.6, 0.65, 0.5])
-
-    print(array[1:-1],array[2:] )
-
-    numpy.greater(array[1:-1], array[2:])
-
-    array[2:][numpy.where(numpy.greater(array[2:], array[1:-1]))] = 0
-
-    print(array)
-
-    '''
     import matplotlib.pyplot as plt
 
     from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters, FitSpaceParameters
@@ -1313,7 +1286,7 @@ if __name__=="__main__":
 
     L = fsp.L
 
-    L = numpy.arange(0, 3, 0.01)
+    L = numpy.arange(0, 2, 0.01)
 
     h = 1
     k = 0
@@ -1330,7 +1303,6 @@ if __name__=="__main__":
 
     limit_dist = H/h
 
-    L /= lognormal_average(mu, sigma)
 #---- Testing against analytical expression, not part of routine ------------------------------------------
     analytical100 = numpy.where((L >= 0) & (L < limit_dist), 1 - L/2.7, 0)
     analytical110 = numpy.where((L >= 0) & (L < limit_dist), 1 - 2*L/3.8 + (L/3.8)**2, 0)
@@ -1342,4 +1314,4 @@ if __name__=="__main__":
 
 #------------------------------------------------------------------------------------------------------------------
     plt.show()
-    '''
+
