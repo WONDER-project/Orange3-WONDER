@@ -618,9 +618,9 @@ class WulffSolidDataRow:
                  level, limit_dist,
                  aa, bb, cc, dd, chi_square_1,
                  a0, b0, c0, d0, xj, a1, b1, c1, d1, xl, chi_square_2):
-        self.h = h
-        self.k = k
-        self.l = l
+        self.h            = h
+        self.k            = k
+        self.l            = l
         self.level        = level
         self.limit_dist   = limit_dist
         self.aa           = aa
@@ -671,7 +671,31 @@ class WulffSolidDataRow:
     def key(self):
         return WulffSolidDataRow.get_key(self.h, self.k, self.l, self.level)
 
-def load_wulff_solids_data(file_name):
+    def __str__(self):
+        return str(self.h           ) + " "  + \
+               str(self.k           ) + " "  + \
+               str(self.l           ) + " "  + \
+               str(self.level       ) + " "  + \
+               str(self.limit_dist  ) + " "  + \
+               str(self.aa          ) + " "  + \
+               str(self.bb          ) + " "  + \
+               str(self.cc          ) + " "  + \
+               str(self.dd          ) + " "  + \
+               str(self.chi_square_1) + " "  + \
+               str(self.a0          ) + " "  + \
+               str(self.b0          ) + " "  + \
+               str(self.c0          ) + " "  + \
+               str(self.d0          ) + " "  + \
+               str(self.xj          ) + " "  + \
+               str(self.a1          ) + " "  + \
+               str(self.b1          ) + " "  + \
+               str(self.c1          ) + " "  + \
+               str(self.d1          ) + " "  + \
+               str(self.xl          ) + " "  + \
+               str(self.chi_square_2)
+
+
+def __load_wulff_solids_data(file_name):
     wulff_data_path = os.path.join(os.path.dirname(__file__), "data")
     wulff_data_path = os.path.join(wulff_data_path, "wulff_solids")
 
@@ -686,8 +710,8 @@ def load_wulff_solids_data(file_name):
     return wulff_solids_data
 
 if not 'wulff_solids_data_hexagonal' in globals():
-    wulff_solids_data_hexagonal = load_wulff_solids_data("Cube_TruncatedCubeHexagonalFace_L_FIT.data")
-    wulff_solids_data_triangular = load_wulff_solids_data("Cube_TruncatedCubeTriangularFace_L_FIT.data")
+    wulff_solids_data_hexagonal = __load_wulff_solids_data("Cube_TruncatedCubeHexagonalFace_L_FIT.data")
+    wulff_solids_data_triangular = __load_wulff_solids_data("Cube_TruncatedCubeTriangularFace_L_FIT.data")
 
 
 
@@ -697,28 +721,34 @@ if not 'wulff_solids_data_hexagonal' in globals():
 def __point_in_between(y1, y2, x):
     return y1 + x*(y2 - y1)
 
+import copy
+
 def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
     divisor = numpy.gcd.reduce([h, k, l])
 
-    if truncation.is_integer():
+    truncation_on_file = 100*truncation
+
+    if truncation_on_file.is_integer():
         if face == WulffCubeFace.TRIANGULAR:
-            return wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation*100)]
+            wulff_solid_data_row = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation_on_file)]
         else:
-            return wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation*100)]
+            wulff_solid_data_row = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation_on_file)]
+
+        return wulff_solid_data_row
     else:
         x = truncation % 1 # decimal part
 
         if face == WulffCubeFace.TRIANGULAR:
-            coefficients_bottom = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation)*100)]
-            coefficients_top    = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation)*100))]
+            coefficients_bottom = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation_on_file))]
+            coefficients_top    = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation_on_file)))]
         else:
-            coefficients_bottom = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation)*100)]
-            coefficients_top    = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation)*100))]
+            coefficients_bottom = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation_on_file))]
+            coefficients_top    = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation_on_file)))]
 
         return  WulffSolidDataRow(h,
                                   k,
                                   l,
-                                  truncation,
+                                  truncation_on_file,
                                   __point_in_between(coefficients_top.limit_dist  , coefficients_bottom.limit_dist  , x),
                                   __point_in_between(coefficients_top.aa          , coefficients_bottom.aa          , x),
                                   __point_in_between(coefficients_top.bb          , coefficients_bottom.bb          , x),
@@ -754,6 +784,74 @@ def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2, is_array
         A[numpy.where(A <= 1e-20)] = 0.0
     else:
        if A <= 1e-20: A = 0.0
+
+    return A
+
+def size_function_wulff_solids_lognormal_old(L, h, k, l, sigma, mu, truncation, face):
+    is_array = isinstance(L, list) or isinstance(L, numpy.ndarray)
+
+    sigma2 = sigma*sigma
+    ssqrt2 = sigma*numpy.sqrt(2.0)
+
+    coefficients = __get_Hj_coefficients(h, k, l, truncation, face)
+
+    Hn_do1 = numpy.array([coefficients.a0, coefficients.b0, coefficients.c0, coefficients.d0])
+    Hn_do2 = numpy.array([coefficients.a1, coefficients.b1, coefficients.c1, coefficients.d1])
+    Hn_LD = coefficients.limit_dist * 0.01
+    Hn_Kc = 1/Hn_LD
+    Hn_xj = coefficients.xj
+
+    if is_array:
+        nrPoints = len(L)
+
+        A = numpy.zeros(nrPoints)
+        cyc = 1
+        j = 0
+
+        while ((j<nrPoints) and (cyc == 1)):
+            A[j] = 0.0
+
+            if L[j] == 0.0:
+                A[j] = 1.0
+            else:
+                if numpy.abs(Hn_xj-1.0) < THRESHOLD:
+                    distr = __FFourierLognormal(Hn_do1, L[j]*Hn_Kc, 1.0, mu, sigma2, ssqrt2, False)
+                    if distr > 1e-20: A[j] += distr
+                else:
+                    distr  = __FFourierLognormal(Hn_do2, L[j]*Hn_Kc, 1.0,       mu, sigma2, ssqrt2, False)
+                    distr2 = __FFourierLognormal(Hn_do1, L[j]*Hn_Kc, 1.0/Hn_xj, mu, sigma2, ssqrt2, False)
+                    distr3 = __FFourierLognormal(Hn_do2, L[j]*Hn_Kc, 1.0/Hn_xj, mu, sigma2, ssqrt2, False)
+
+                    if distr > 1e-20: A[j] += distr
+                    if distr2 > 1e-20: A[j] += distr2
+                    if distr3 > 1e-20: A[j] += distr3
+
+
+                if ((A[j]<=0.0) or (j>0 and A[j]>A[j-1])):
+                    A[j] = 0.0
+                    cyc = 0
+                    break
+
+            j += 1
+    else:
+        A = 0.0
+
+        if L == 0.0:
+            A = 1.0
+        else:
+            if numpy.abs(Hn_xj-1.0) < THRESHOLD:
+                distr = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2, False)
+                if distr > 1e-20: A += distr
+            else:
+                distr  = __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.0,       mu, sigma2, ssqrt2, False)
+                distr2 = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0/Hn_xj, mu, sigma2, ssqrt2, False)
+                distr3 = __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.0/Hn_xj, mu, sigma2, ssqrt2, False)
+
+                if distr > 1e-20:  A += distr
+                if distr2 > 1e-20: A += distr2
+                if distr3 > 1e-20: A += distr3
+
+            if A<=0.0: A = 0.0
 
     return A
 
@@ -1274,6 +1372,7 @@ def integral_breadth_total(reflection, lattice_parameter, wavelength, instrument
     return 1 / (2 * integrate.quad(total_function, 0, numpy.inf)[0])
 
 if __name__=="__main__":
+
     import matplotlib.pyplot as plt
 
     from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters, FitSpaceParameters
@@ -1286,30 +1385,24 @@ if __name__=="__main__":
 
     L = fsp.L
 
-    L = numpy.arange(0, 2, 0.01)
+    L = numpy.arange(0, 25, 0.01)
 
     h = 1
     k = 0
     l = 0
 
-    mu = 1.0
+    mu = 2.0
     sigma = 0.02
 
-    truncation = 0.0
+    truncation = 0.5
 
-    fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.HEXAGONAL)
+    fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.TRIANGULAR)
 
     H = numpy.sqrt(h**2 + k**2 + l**2)
 
     limit_dist = H/h
 
 #---- Testing against analytical expression, not part of routine ------------------------------------------
-    analytical100 = numpy.where((L >= 0) & (L < limit_dist), 1 - L/2.7, 0)
-    analytical110 = numpy.where((L >= 0) & (L < limit_dist), 1 - 2*L/3.8 + (L/3.8)**2, 0)
-    analytical111 = numpy.where((L >= 0) & (L < limit_dist), 1 - numpy.sqrt(3)*L/2.7 +(L/2.7)**2 - (1/(numpy.sqrt(3))**3)*(L/2.7)**3, 0)
-    plt.plot(L,analytical100)
-    #plt.plot(L,analytical110)
-    #plt.plot(L,analytical111)
     plt.plot(L,fourier_amplitude)
 
 #------------------------------------------------------------------------------------------------------------------
