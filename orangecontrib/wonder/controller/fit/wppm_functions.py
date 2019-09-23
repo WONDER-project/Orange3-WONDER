@@ -767,91 +767,27 @@ def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
                                   __point_in_between(coefficients_top.xl          , coefficients_bottom.xl          , x),
                                   __point_in_between(coefficients_top.chi_square_2, coefficients_bottom.chi_square_2, x))
 
+
+def __lognormal_momentum(mu, sigma2, n):
+    return numpy.exp((n*mu) + (0.5*sigma2*(n**2)))
+
 def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2, is_array):
     if is_array:
         A = numpy.zeros(len(L))
     else:
         A = 0.0
 
-    for n in range(0, 4):
-        Mn_ratio = n*(-mu+(n/2.0-3.0)*sigma2)
+    M3 = __lognormal_momentum(mu, sigma2, 3)
 
-        if Mn_ratio > -50.:
-            YI = (numpy.log(L*Kc)-mu-(3.0-1.0*n)*sigma2)/ssqrt2
-            A += poly_coefficients[n]*erfc(YI)*numpy.exp(Mn_ratio)*(L**n)/2.0
+    for n in range(0, 4):
+        A += poly_coefficients[n]*\
+             erfc((numpy.log(L*Kc)-mu-((3.0-n)*sigma2))/ssqrt2)*\
+             (L**n)*0.5*__lognormal_momentum(mu, sigma2, 3-n)/M3
 
     if is_array:
         A[numpy.where(A <= 1e-20)] = 0.0
     else:
        if A <= 1e-20: A = 0.0
-
-    return A
-
-def size_function_wulff_solids_lognormal_old(L, h, k, l, sigma, mu, truncation, face):
-    is_array = isinstance(L, list) or isinstance(L, numpy.ndarray)
-
-    sigma2 = sigma*sigma
-    ssqrt2 = sigma*numpy.sqrt(2.0)
-
-    coefficients = __get_Hj_coefficients(h, k, l, truncation, face)
-
-    Hn_do1 = numpy.array([coefficients.a0, coefficients.b0, coefficients.c0, coefficients.d0])
-    Hn_do2 = numpy.array([coefficients.a1, coefficients.b1, coefficients.c1, coefficients.d1])
-    Hn_LD = coefficients.limit_dist * 0.01
-    Hn_Kc = 1/Hn_LD
-    Hn_xj = coefficients.xj
-
-    if is_array:
-        nrPoints = len(L)
-
-        A = numpy.zeros(nrPoints)
-        cyc = 1
-        j = 0
-
-        while ((j<nrPoints) and (cyc == 1)):
-            A[j] = 0.0
-
-            if L[j] == 0.0:
-                A[j] = 1.0
-            else:
-                if numpy.abs(Hn_xj-1.0) < THRESHOLD:
-                    distr = __FFourierLognormal(Hn_do1, L[j]*Hn_Kc, 1.0, mu, sigma2, ssqrt2, False)
-                    if distr > 1e-20: A[j] += distr
-                else:
-                    distr  = __FFourierLognormal(Hn_do2, L[j]*Hn_Kc, 1.0,       mu, sigma2, ssqrt2, False)
-                    distr2 = __FFourierLognormal(Hn_do1, L[j]*Hn_Kc, 1.0/Hn_xj, mu, sigma2, ssqrt2, False)
-                    distr3 = __FFourierLognormal(Hn_do2, L[j]*Hn_Kc, 1.0/Hn_xj, mu, sigma2, ssqrt2, False)
-
-                    if distr > 1e-20: A[j] += distr
-                    if distr2 > 1e-20: A[j] += distr2
-                    if distr3 > 1e-20: A[j] += distr3
-
-
-                if ((A[j]<=0.0) or (j>0 and A[j]>A[j-1])):
-                    A[j] = 0.0
-                    cyc = 0
-                    break
-
-            j += 1
-    else:
-        A = 0.0
-
-        if L == 0.0:
-            A = 1.0
-        else:
-            if numpy.abs(Hn_xj-1.0) < THRESHOLD:
-                distr = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2, False)
-                if distr > 1e-20: A += distr
-            else:
-                distr  = __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.0,       mu, sigma2, ssqrt2, False)
-                distr2 = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0/Hn_xj, mu, sigma2, ssqrt2, False)
-                distr3 = __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.0/Hn_xj, mu, sigma2, ssqrt2, False)
-
-                if distr > 1e-20:  A += distr
-                if distr2 > 1e-20: A += distr2
-                if distr3 > 1e-20: A += distr3
-
-            if A<=0.0: A = 0.0
 
     return A
 
@@ -1375,35 +1311,53 @@ if __name__=="__main__":
 
     import matplotlib.pyplot as plt
 
-    from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters, FitSpaceParameters
-    from orangecontrib.wonder.controller.fit.init.fit_initialization import FitInitialization
-    from orangecontrib.wonder.controller.fit.init.fft_parameters import FFTInitParameters
-    fitP = FitGlobalParameters()
-    fitP.fit_initialization = FitInitialization()
-    fitP.fit_initialization.fft_parameters = FFTInitParameters(s_max=2.0, n_step=1024)
-    fsp = fitP.space_parameters()
-
-    L = fsp.L
-
     L = numpy.arange(0, 25, 0.01)
 
     h = 1
     k = 0
     l = 0
 
-    mu = 2.0
+    mu = 3.0
     sigma = 0.02
 
-    truncation = 0.5
+    truncation = 0.0
 
     fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.TRIANGULAR)
 
-    H = numpy.sqrt(h**2 + k**2 + l**2)
-
-    limit_dist = H/h
-
 #---- Testing against analytical expression, not part of routine ------------------------------------------
     plt.plot(L,fourier_amplitude)
+
+    truncation = 0.2
+
+    fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.TRIANGULAR)
+
+    plt.plot(L,fourier_amplitude)
+
+    truncation = 0.4
+
+    fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.TRIANGULAR)
+
+    plt.plot(L,fourier_amplitude)
+
+    truncation = 0.6
+
+    fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.TRIANGULAR)
+
+    plt.plot(L,fourier_amplitude)
+
+
+    truncation = 0.8
+
+    fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.TRIANGULAR)
+
+    plt.plot(L,fourier_amplitude)
+
+    truncation = 1.0
+
+    fourier_amplitude = size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, WulffCubeFace.TRIANGULAR)
+
+    plt.plot(L,fourier_amplitude)
+
 
 #------------------------------------------------------------------------------------------------------------------
     plt.show()
