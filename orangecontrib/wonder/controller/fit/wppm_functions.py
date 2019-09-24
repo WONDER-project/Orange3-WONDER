@@ -714,90 +714,87 @@ if not 'wulff_solids_data_hexagonal' in globals():
     wulff_solids_data_triangular = __load_wulff_solids_data("Cube_TruncatedCubeTriangularFace_L_FIT.data")
 
 
-
-# x - x1 / x2 - x1 = y - y1 / y2 - y1
-# x1 = 0, x2 = 1
-# -> y = y1 + x (y2 - y1)
-def __point_in_between(y1, y2, x):
-    return y1 + x*(y2 - y1)
-
-import copy
-
-def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
-    divisor = numpy.gcd.reduce([h, k, l])
-
-    truncation_on_file = 100*truncation
-
-    if truncation_on_file.is_integer():
-        if face == WulffCubeFace.TRIANGULAR:
-            wulff_solid_data_row = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation_on_file)]
-        else:
-            wulff_solid_data_row = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation_on_file)]
-
-        return wulff_solid_data_row
-    else:
-        x = truncation % 1 # decimal part
-
-        if face == WulffCubeFace.TRIANGULAR:
-            coefficients_bottom = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation_on_file))]
-            coefficients_top    = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation_on_file)))]
-        else:
-            coefficients_bottom = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation_on_file))]
-            coefficients_top    = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation_on_file)))]
-
-        return  WulffSolidDataRow(h,
-                                  k,
-                                  l,
-                                  truncation_on_file,
-                                  __point_in_between(coefficients_top.limit_dist  , coefficients_bottom.limit_dist  , x),
-                                  __point_in_between(coefficients_top.aa          , coefficients_bottom.aa          , x),
-                                  __point_in_between(coefficients_top.bb          , coefficients_bottom.bb          , x),
-                                  __point_in_between(coefficients_top.cc          , coefficients_bottom.cc          , x),
-                                  __point_in_between(coefficients_top.dd          , coefficients_bottom.dd          , x),
-                                  __point_in_between(coefficients_top.chi_square_1, coefficients_bottom.chi_square_1, x),
-                                  __point_in_between(coefficients_top.a0          , coefficients_bottom.a0          , x),
-                                  __point_in_between(coefficients_top.b0          , coefficients_bottom.b0          , x),
-                                  __point_in_between(coefficients_top.c0          , coefficients_bottom.c0          , x),
-                                  __point_in_between(coefficients_top.d0          , coefficients_bottom.d0          , x),
-                                  __point_in_between(coefficients_top.xj          , coefficients_bottom.xj          , x),
-                                  __point_in_between(coefficients_top.a1          , coefficients_bottom.a1          , x),
-                                  __point_in_between(coefficients_top.b1          , coefficients_bottom.b1          , x),
-                                  __point_in_between(coefficients_top.c1          , coefficients_bottom.c1          , x),
-                                  __point_in_between(coefficients_top.d1          , coefficients_bottom.d1          , x),
-                                  __point_in_between(coefficients_top.xl          , coefficients_bottom.xl          , x),
-                                  __point_in_between(coefficients_top.chi_square_2, coefficients_bottom.chi_square_2, x))
-
-
-def __lognormal_momentum(mu, sigma2, n):
-    return numpy.exp((n*mu) + (0.5*sigma2*(n**2)))
-
-def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2, is_array):
-    if is_array:
-        A = numpy.zeros(len(L))
-    else:
-        A = 0.0
-
-    M3 = __lognormal_momentum(mu, sigma2, 3)
-
-    for n in range(0, 4):
-        A += poly_coefficients[n]*\
-             erfc((numpy.log(L*Kc)-mu-((3.0-n)*sigma2))/ssqrt2)*\
-             (L**n)*0.5*__lognormal_momentum(mu, sigma2, 3-n)/M3
-
-    if is_array:
-        A[numpy.where(A <= 1e-20)] = 0.0
-    else:
-       if A <= 1e-20: A = 0.0
-
-    return A
-
 def size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, face):
+
+    # x - x1 / x2 - x1 = y - y1 / y2 - y1
+    # x1 = 0, x2 = 1
+    # -> y = y1 + x (y2 - y1)
+    def __point_in_between(y1, y2, x):
+        return y1 + x*(y2 - y1)
+
+    def __get_Hj_coefficients(h, k, l, truncation, face): # N.B. L, truncation >= 0!
+        divisor = numpy.gcd.reduce([h, k, l])
+
+        truncation_on_file = 100*truncation
+
+        if truncation_on_file.is_integer():
+            if face == WulffCubeFace.TRIANGULAR:
+                wulff_solid_data_row = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation_on_file)]
+            else:
+                wulff_solid_data_row = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation_on_file)]
+
+            return wulff_solid_data_row
+        else:
+            x = truncation % 1 # decimal part
+
+            if face == WulffCubeFace.TRIANGULAR:
+                coefficients_bottom = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation_on_file))]
+                coefficients_top    = wulff_solids_data_triangular[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation_on_file)))]
+            else:
+                coefficients_bottom = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation_on_file))]
+                coefficients_top    = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation_on_file)))]
+
+            return  WulffSolidDataRow(h,
+                                      k,
+                                      l,
+                                      truncation_on_file,
+                                      __point_in_between(coefficients_top.limit_dist  , coefficients_bottom.limit_dist  , x),
+                                      __point_in_between(coefficients_top.aa          , coefficients_bottom.aa          , x),
+                                      __point_in_between(coefficients_top.bb          , coefficients_bottom.bb          , x),
+                                      __point_in_between(coefficients_top.cc          , coefficients_bottom.cc          , x),
+                                      __point_in_between(coefficients_top.dd          , coefficients_bottom.dd          , x),
+                                      __point_in_between(coefficients_top.chi_square_1, coefficients_bottom.chi_square_1, x),
+                                      __point_in_between(coefficients_top.a0          , coefficients_bottom.a0          , x),
+                                      __point_in_between(coefficients_top.b0          , coefficients_bottom.b0          , x),
+                                      __point_in_between(coefficients_top.c0          , coefficients_bottom.c0          , x),
+                                      __point_in_between(coefficients_top.d0          , coefficients_bottom.d0          , x),
+                                      __point_in_between(coefficients_top.xj          , coefficients_bottom.xj          , x),
+                                      __point_in_between(coefficients_top.a1          , coefficients_bottom.a1          , x),
+                                      __point_in_between(coefficients_top.b1          , coefficients_bottom.b1          , x),
+                                      __point_in_between(coefficients_top.c1          , coefficients_bottom.c1          , x),
+                                      __point_in_between(coefficients_top.d1          , coefficients_bottom.d1          , x),
+                                      __point_in_between(coefficients_top.xl          , coefficients_bottom.xl          , x),
+                                      __point_in_between(coefficients_top.chi_square_2, coefficients_bottom.chi_square_2, x))
+
+
+    def __lognormal_momentum(mu, sigma2, n):
+        return numpy.exp((n*mu) + (0.5*sigma2*(n**2)))
+
+    def __FFourierLognormal(poly_coefficients, L,  Kc,  mu, sigma2, ssqrt2, M3, is_array):
+        if is_array:
+            A = numpy.zeros(len(L))
+        else:
+            A = 0.0
+
+        for n in range(0, 4):
+            A += poly_coefficients[n]*\
+                 erfc((numpy.log(L*Kc)-mu-((3.0-n)*sigma2))/ssqrt2)*\
+                 (L**n)*0.5*__lognormal_momentum(mu, sigma2, 3-n)/M3
+
+        if is_array:
+            A[numpy.where(A <= 1e-20)] = 0.0
+        else:
+           if A <= 1e-20: A = 0.0
+
+        return A
+
     is_array = isinstance(L, list) or isinstance(L, numpy.ndarray)
 
     if not is_array and L==0: return 1.0
 
     sigma2 = sigma*sigma
     ssqrt2 = sigma*numpy.sqrt(2.0)
+    M3     = __lognormal_momentum(mu, sigma2, 3)
 
     coefficients = __get_Hj_coefficients(h, k, l, truncation, face)
 
@@ -808,11 +805,11 @@ def size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, face
     Hn_xj = coefficients.xj
 
     if numpy.abs(Hn_xj-1.0)<THRESHOLD:
-        fourier_amplitude = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2, is_array)
+        fourier_amplitude = __FFourierLognormal(Hn_do1, L*Hn_Kc, 1.0, mu, sigma2, ssqrt2, M3, is_array)
     else:
-        fourier_amplitude =  __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.      , mu, sigma2, ssqrt2, is_array) # integr(f2) on LK
-        fourier_amplitude += __FFourierLognormal(Hn_do1, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2, is_array) # (integr(f1)) on LKxj
-        fourier_amplitude -= __FFourierLognormal(Hn_do2, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2, is_array) # (integr(f2)) on LKxj
+        fourier_amplitude =  __FFourierLognormal(Hn_do2, L*Hn_Kc, 1.      , mu, sigma2, ssqrt2, M3, is_array) # integr(f2) on LK
+        fourier_amplitude += __FFourierLognormal(Hn_do1, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2, M3, is_array) # (integr(f1)) on LKxj
+        fourier_amplitude -= __FFourierLognormal(Hn_do2, L*Hn_Kc, 1./Hn_xj, mu, sigma2, ssqrt2, M3, is_array) # (integr(f2)) on LKxj
 
     if is_array:
         fourier_amplitude[numpy.where(L == 0.0)] = 1.0

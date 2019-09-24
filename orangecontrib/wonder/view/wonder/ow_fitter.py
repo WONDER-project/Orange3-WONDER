@@ -1148,10 +1148,10 @@ class OWFitter(OWGenericWidget):
         self.fit_thread.mutex.unlock()
 
     def fit_completed(self):
-        sys.stdout = self.standard_output
-
         self.setStatusMessage("Fitting procedure completed")
         print("Fitting procedure completed")
+
+        sys.stdout = self.standard_output
 
         self.fitted_fit_global_parameters.regenerate_parameters()
 
