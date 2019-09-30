@@ -1102,8 +1102,6 @@ def saxs(s, D, a0, formula, symmetry, normalize_to):
 ######################################################################
 import sys, tempfile, site, os
 
-gsasii_dirname = os.path.abspath(os.path.dirname(__file__)).split("orangecontrib/wonder/controller/fit")[0]
-
 from orangecontrib.wonder.util.gui.gui_utility import OW_IS_DEVELOP
 
 if OW_IS_DEVELOP:
@@ -1119,7 +1117,6 @@ print("GSAS-II home directory:",      gsasii_dirname)
 
 try:
     import GSASIIscriptable as G2sc
-    G2sc.LoadG2fil()
     print("GSAS-II found in ", gsasii_dirname)
 except:
     print("GSAS-II not available")
