@@ -1132,6 +1132,7 @@ print("GSAS-II home directory:",      gsasii_dirname)
 
 try:
     import GSASIIscriptable as G2sc
+    G2sc.SetPrintLevel("none")
     print("GSAS-II found in ", gsasii_dirname)
 except:
     print("GSAS-II not available")
