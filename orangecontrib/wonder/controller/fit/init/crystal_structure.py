@@ -68,6 +68,8 @@ class CrystalStructure(ParametersList):
 
     use_structure = False
     formula = None
+    use_gsas = False
+    cif_file = None
     intensity_scale_factor = None
 
     reflections = []
@@ -77,7 +79,7 @@ class CrystalStructure(ParametersList):
         return "crystal_structure_"
 
 
-    def __init__(self, a, b, c, alpha, beta, gamma, symmetry=Symmetry.SIMPLE_CUBIC, use_structure=False, formula=None, intensity_scale_factor=None):
+    def __init__(self, a, b, c, alpha, beta, gamma, symmetry=Symmetry.SIMPLE_CUBIC, use_structure=False, formula=None, use_gsas=False, cif_file=None, intensity_scale_factor=None):
         super(CrystalStructure, self).__init__()
 
         self.a = a
@@ -89,6 +91,8 @@ class CrystalStructure(ParametersList):
         self.symmetry = symmetry
         self.use_structure = use_structure
         self.formula = None if formula is None else formula.strip()
+        self.use_gsas = use_gsas
+        self.cif_file = cif_file
         self.intensity_scale_factor = intensity_scale_factor
 
         self.reflections = []
@@ -120,10 +124,10 @@ class CrystalStructure(ParametersList):
                                 alpha,
                                 beta,
                                 gamma,
-                                symmetry,
-                                use_structure,
-                                formula,
-                                intensity_scale_factor)
+                                symmetry=symmetry,
+                                use_structure=use_structure,
+                                formula=formula,
+                                intensity_scale_factor=intensity_scale_factor)
 
     def add_reflection(self, reflection):
         self.reflections.append(reflection)

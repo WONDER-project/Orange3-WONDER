@@ -122,6 +122,16 @@ def fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_ind
 
 def fit_function_reciprocal(s, fit_global_parameters, diffraction_pattern_index = 0):
     crystal_structure = fit_global_parameters.fit_initialization.crystal_structures[diffraction_pattern_index]
+    incident_radiation = fit_global_parameters.fit_initialization.incident_radiations[0 if len(fit_global_parameters.fit_initialization.incident_radiations) == 1 else diffraction_pattern_index]
+
+    if crystal_structure.use_structure and crystal_structure.use_gsas:
+        diffraction_pattern = fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index]
+
+        gsas_reflections_list = load_reflections(crystal_structure.cif_file,
+                                                 incident_radiation.wavelength.value,
+                                                 diffraction_pattern.get_diffraction_point(0).twotheta, diffraction_pattern.get_diffraction_point(-1).twotheta)
+    else:
+        gsas_reflections_list = None
 
     if CrystalStructure.is_cube(crystal_structure.symmetry):
 
@@ -130,7 +140,7 @@ def fit_function_reciprocal(s, fit_global_parameters, diffraction_pattern_index 
         separated_peaks_functions = []
 
         for reflection_index in range(crystal_structure.get_reflections_count()):
-            sanalitycal, Ianalitycal = create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern_index)
+            sanalitycal, Ianalitycal = create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern_index, gsas_reflections_list)
 
             separated_peaks_functions.append([sanalitycal, Ianalitycal])
 
@@ -160,8 +170,6 @@ def fit_function_reciprocal(s, fit_global_parameters, diffraction_pattern_index 
 
             if not thermal_polarization_parameters.debye_waller_factor is None:
                 I *= debye_waller(s, thermal_polarization_parameters.debye_waller_factor.value)
-
-        incident_radiation = fit_global_parameters.fit_initialization.incident_radiations[0 if len(fit_global_parameters.fit_initialization.incident_radiations) == 1 else diffraction_pattern_index]
 
         if not incident_radiation.is_single_wavelength:
             principal_wavelength = incident_radiation.wavelength
@@ -268,7 +276,7 @@ class FourierTransformFull(FourierTransform):
 # CALCOLO DI UN SINGOLO PICCO
 #################################################
 
-def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern_index=0):
+def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern_index=0, gsas_reflections_list=None):
     fft_type = fit_global_parameters.fit_initialization.fft_parameters.fft_type
     fit_space_parameters = fit_global_parameters.space_parameters()
     crystal_structure = fit_global_parameters.fit_initialization.crystal_structures[diffraction_pattern_index]
@@ -458,14 +466,21 @@ def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern
     # INTENSITY MODULATION: STRUCTURAL MODEL YES/NO --------------------------------------------------------------------
 
     if crystal_structure.use_structure:
-        I *= crystal_structure.intensity_scale_factor.value * \
-             multiplicity_cubic(reflection.h, reflection.k, reflection.l) * \
-             squared_modulus_structure_factor(s_hkl,
-                                              crystal_structure.formula,
-                                              reflection.h,
-                                              reflection.k,
-                                              reflection.l,
-                                              crystal_structure.symmetry)
+        if crystal_structure.use_gsas:
+            I *= crystal_structure.intensity_scale_factor.value * \
+                 intensity_factor_gsasii(reflection.h,
+                                         reflection.k,
+                                         reflection.l,
+                                         gsas_reflections_list)
+        else:
+            I *= crystal_structure.intensity_scale_factor.value * \
+                 multiplicity_cubic(reflection.h, reflection.k, reflection.l) * \
+                 squared_modulus_structure_factor(s_hkl,
+                                                  crystal_structure.formula,
+                                                  reflection.h,
+                                                  reflection.k,
+                                                  reflection.l,
+                                                  crystal_structure.symmetry)
     else:
         I *= reflection.intensity.value
 
@@ -1179,7 +1194,7 @@ class GSASIIReflections:
         text = "            123456789012345678901234567890123456789012345678901234567890       " + "\n" + \
                "INS   BANK      1                                                              " + "\n" + \
                "INS   HTYPE   PNCR                                                             " + "\n" + \
-               "INS  1 ICONS  " + "{:10.8f}".format(wavelength) + \
+               "INS  1 ICONS  " + "{:10.8f}".format(wavelength*10) + \
                "  0.000000       0.0         0       0.0    0       0.0"                         + "\n" + \
                "INS  1I HEAD  DUMMY INCIDENT SPECTRUM FOR DIFFRACTOMETER D1A                   " + "\n" + \
                "INS  1I ITYP    0    0.0000  180.0000         1                                " + "\n" + \
