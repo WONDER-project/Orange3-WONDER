@@ -57,10 +57,6 @@ class Normalization:
     def tuple(cls):
         return ["to N", "to N\u00b2"]
 
-def _wrapper_fit_function_direct(parameters):
-    twotheta, fit_global_parameters, diffraction_pattern_index = parameters
-
-    return fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index)
 
 def fit_function_direct(twotheta, fit_global_parameters, diffraction_pattern_index = 0):
     incident_radiation = fit_global_parameters.fit_initialization.incident_radiations[0 if len(fit_global_parameters.fit_initialization.incident_radiations) == 1 else diffraction_pattern_index]
@@ -127,9 +123,9 @@ def fit_function_reciprocal(s, fit_global_parameters, diffraction_pattern_index 
     if crystal_structure.use_structure and crystal_structure.use_gsas:
         diffraction_pattern = fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index]
 
-        gsas_reflections_list = load_reflections(crystal_structure.cif_file,
-                                                 incident_radiation.wavelength.value,
-                                                 diffraction_pattern.get_diffraction_point(0).twotheta, diffraction_pattern.get_diffraction_point(-1).twotheta)
+        gsas_reflections_list = gsasii_load_reflections(crystal_structure.cif_file,
+                                                        incident_radiation.wavelength.value,
+                                                        diffraction_pattern.get_diffraction_point(0).twotheta, diffraction_pattern.get_diffraction_point(-1).twotheta)
     else:
         gsas_reflections_list = None
 
@@ -185,7 +181,6 @@ def fit_function_reciprocal(s, fit_global_parameters, diffraction_pattern_index 
         return I
     else:
         raise NotImplementedError("Only Cubic structures are supported by fit")
-
 
 #################################################
 # FOURIER FUNCTIONS
@@ -468,7 +463,7 @@ def create_one_peak(reflection_index, fit_global_parameters, diffraction_pattern
     if crystal_structure.use_structure:
         if crystal_structure.use_gsas:
             I *= crystal_structure.intensity_scale_factor.value * \
-                 intensity_factor_gsasii(reflection.h,
+                 gsasii_intensity_factor(reflection.h,
                                          reflection.k,
                                          reflection.l,
                                          gsas_reflections_list)
@@ -1121,18 +1116,21 @@ from orangecontrib.wonder.util.gui.gui_utility import OW_IS_DEVELOP
 
 if OW_IS_DEVELOP:
     gsasii_dirname = os.environ.get("GSAS-II-DIR")
+    gsasii_temp_dir = os.environ.get("GSAS-II-TEMP-DIR")
 else:
     gsasii_dirname = os.path.join(site.getsitepackages()[0], "GSAS-II-WONDER")
+    gsasii_temp_dir = tempfile.gettempdir()
 
 sys.path.insert(0, gsasii_dirname)
-gsasii_temp_dir = tempfile.gettempdir()
 
-print("GSAS-II temporary directory:", gsasii_temp_dir)
-print("GSAS-II home directory:",      gsasii_dirname)
+project_file = os.path.join(gsasii_temp_dir, "temp.gpx")
+project_file_bak = os.path.join(gsasii_temp_dir, "temp.bak0.gpx")
+project_file_lst = os.path.join(gsasii_temp_dir, "temp.lst")
 
 try:
     import GSASIIscriptable as G2sc
     G2sc.SetPrintLevel("none")
+
     print("GSAS-II found in ", gsasii_dirname)
 except:
     print("GSAS-II not available")
@@ -1156,29 +1154,38 @@ class GSASIIReflectionData:
     def get_intensity_factor(self):
         return self.F2*self.multiplicity
 
+    def __str__(self):
+        return str(self.h           ) + " "  + \
+               str(self.k           ) + " "  + \
+               str(self.l           ) + " "  + \
+               str(self.pos         ) + " "  + \
+               str(self.multiplicity) + " "  + \
+               str(self.F2          ) + " "  + \
+               str(self.get_intensity_factor())
+
 class GSASIIReflections:
     def __init__(self, cif_file, wavelength, twotheta_min=0.0, twotheta_max=180.0):
         self.__data = {}
 
-        temp_file = self.create_temp_prm_file(wavelength)
-        project_file = os.path.join(gsasii_temp_dir, "temp.gpx")
-
         gpx = G2sc.G2Project(filename=project_file)
-        gpx.add_phase(cif_file, phasename="TEMP",fmthint='CIF')
-        hist1 = gpx.add_simulated_powder_histogram("TEMP", temp_file, twotheta_min, twotheta_max, 0.01, phases=gpx.phases())
-        hist1.SampleParameters['Scale'][0] = 10000000.
+        gpx.add_phase(cif_file, phasename="wonder_phase", fmthint='CIF')
+        prm_file = self.create_temp_prm_file(wavelength)
+
+        hist1 = gpx.add_simulated_powder_histogram("wonder_histo", prm_file, twotheta_min, twotheta_max, 0.01, phases=gpx.phases())
 
         gpx.data['Controls']['data']['max cyc'] = 0 # refinement not needed
         gpx.do_refinements([{}])
-        gpx.save()
+        #gpx.save()
 
-        gsasii_data = hist1.reflections()["TEMP"]["RefList"]
+        gsasii_data = hist1.reflections()["wonder_phase"]["RefList"]
 
         for item in gsasii_data:
             entry = GSASIIReflectionData(item[0], item[1], item[2], item[5], item[3], item[9])
             self.__data[entry.get_key()] = entry
 
-        os.remove(temp_file)
+        os.remove(project_file_bak)
+        os.remove(project_file_lst)
+        os.remove(prm_file)
         os.remove(project_file)
 
     def get_reflection(self, h, k, l):
@@ -1211,10 +1218,10 @@ class GSASIIReflections:
 
         return temp_file_name
 
-def load_reflections(cif_file, wavelength, twotheta_min=0.0, twotheta_max=180.0):
+def gsasii_load_reflections(cif_file, wavelength, twotheta_min=0.0, twotheta_max=180.0):
     return GSASIIReflections(cif_file, wavelength, twotheta_min, twotheta_max)
 
-def intensity_factor_gsasii(h, k, l, reflections):
+def gsasii_intensity_factor(h, k, l, reflections):
     return reflections.get_reflection(h, k, l).get_intensity_factor()
 
 ######################################################################
