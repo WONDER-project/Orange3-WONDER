@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import io
-import os
+import os, sys
 
 from setuptools import setup, find_packages
 
@@ -12,7 +12,7 @@ NAME = 'Orange3-WONDER-1'
 
 MAJOR = 1
 MINOR = 0
-MICRO = 31
+MICRO = 32
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 AUTHOR = 'Luca Rebuffi, Paolo Scardi, Alberto Flor'
@@ -46,6 +46,15 @@ PACKAGE_DATA = {
 INSTALL_REQUIRES = sorted(set(
     line.partition('#')[0].strip()
     for line in open(os.path.join(os.path.dirname(__file__), 'requirements.txt'))) - {''})
+
+platform = sys.platform
+
+if platform == "darwin":
+    INSTALL_REQUIRES.append('GSAS-II-WONDER-osx')
+elif platform.startswith("win"):
+    INSTALL_REQUIRES.append('GSAS-II-WONDER-win')
+elif platform.startswith("linux"):
+    INSTALL_REQUIRES.append('GSAS-II-WONDER-linux')
 
 ENTRY_POINTS = {
     'orange.widgets':

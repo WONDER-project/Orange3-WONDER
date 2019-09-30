@@ -1100,25 +1100,27 @@ def saxs(s, D, a0, formula, symmetry, normalize_to):
 ######################################################################
 # STRUCTURE - GSAS-II plugin
 ######################################################################
-import sys, tempfile
+import sys, tempfile, site, os
 
 gsasii_dirname = os.path.abspath(os.path.dirname(__file__)).split("orangecontrib/wonder/controller/fit")[0]
 
 from orangecontrib.wonder.util.gui.gui_utility import OW_IS_DEVELOP
 
 if OW_IS_DEVELOP:
-    gsasii_dirname = gsasii_dirname.split("Orange3-WONDER")[0]
-    gsasii_dirname += "GSAS-II-WONDER/GSAS-II-WONDER"
+    gsasii_dirname = os.environ.get("GSAS-II-DIR")
 else:
-    gsasii_dirname += "GSAS-II-WONDER"
+    gsasii_dirname = os.path.join(site.getsitepackages()[0], "GSAS-II-WONDER")
 
 sys.path.insert(0, gsasii_dirname)
 gsasii_temp_dir = tempfile.gettempdir()
 
-print(gsasii_temp_dir, gsasii_dirname)
+print("GSAS-II temporary directory:", gsasii_temp_dir)
+print("GSAS-II home directory:",      gsasii_dirname)
 
 try:
     import GSASIIscriptable as G2sc
+    G2sc.LoadG2fil()
+    print("GSAS-II found in ", gsasii_dirname)
 except:
     print("GSAS-II not available")
 
