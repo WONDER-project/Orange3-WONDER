@@ -3,7 +3,6 @@ from orangecontrib.wonder.controller.fit.fitter import FitterInterface
 from orangecontrib.wonder.model.diffraction_pattern import DiffractionPattern, DiffractionPoint
 from orangecontrib.wonder.controller.fit.fit_parameter import PARAM_ERR
 from orangecontrib.wonder.controller.fit.wppm_functions import fit_function_direct
-#from orangecontrib.wonder.controller.fit.wppm_functions_multipool import fit_function_direct_multipool
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters
 
 import numpy
@@ -136,7 +135,6 @@ class FitterMinpack(FitterInterface):
 
     def do_fit(self, current_fit_global_parameters, current_iteration, compute_pattern, compute_errors):
         if current_iteration == 0: self.fit_data.print_init_data()
-
 
         print("Fitter - Begin iteration nr. " + str(current_iteration))
 
