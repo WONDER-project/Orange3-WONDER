@@ -56,7 +56,6 @@ def __get_Hj_coefficients(h, k, l, truncation, face=WulffCubeFace.TRIANGULAR): #
 def A_c(D, L, h, k, l, truncation):
     coefficients = __get_Hj_coefficients(h, k, l, truncation)
 
-
 def g(mu, sigma, D):
     return lognormal_distribution(mu, sigma, D)
 
