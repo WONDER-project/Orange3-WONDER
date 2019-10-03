@@ -1,7 +1,7 @@
 ######################################################################
 # STRUCTURE - GSAS-II plugin
 ######################################################################
-import sys, tempfile, site, os, subprocess, numpy
+import sys, tempfile, site, os, subprocess, numpy, pickle, codecs
 
 from orangecontrib.wonder.util.gui.gui_utility import OW_IS_DEVELOP
 
@@ -74,7 +74,6 @@ class GSASIIReflections:
 
             gpx.data['Controls']['data']['max cyc'] = 0 # refinement not needed
             gpx.do_refinements([{}])
-            gpx.save()
 
             gsasii_data = hist1.reflections()["wonder_phase"]["RefList"]
 
@@ -82,18 +81,15 @@ class GSASIIReflections:
                 entry = GSASIIReflectionData(item[0], item[1], item[2], item[5], item[3], item[9])
                 self.__data[entry.get_key()] = entry
 
-            os.remove(project_file)
         elif GSASII_MODE == GSASII_MODE_EXTERNAL:
             prm_file = self.create_temp_prm_file(wavelength)
             gsasii_data_file = os.path.join(gsasii_temp_dir, "gsasii_data.dat")
             python_script_file = self.create_python_script(gsasii_dirname, gsasii_temp_dir, gsasii_data_file, project_file, cif_file, prm_file, twotheta_min, twotheta_max)
 
-            subprocess.call([sys.executable, python_script_file])
+            gsasii_data = pickle.loads(subprocess.check_output([sys.executable, python_script_file], timeout=10))
 
-            gsasii_data = numpy.loadtxt(gsasii_data_file, delimiter=",")
-          
             for item in gsasii_data:
-                entry = GSASIIReflectionData(item[0], item[1], item[2], item[3], item[4], item[5])
+                entry = GSASIIReflectionData(item[0], item[1], item[2], item[5], item[3], item[9])
                 self.__data[entry.get_key()] = entry
 
     def get_reflection(self, h, k, l):
@@ -104,22 +100,23 @@ class GSASIIReflections:
 
     @classmethod
     def create_temp_prm_file(cls, wavelength):
-        temp_file_name = os.path.join(gsasii_temp_dir, "temp.prm")
+        temp_file_name = os.path.join(gsasii_temp_dir, "temp.instprm")
         temp_file = open(temp_file_name, "w")
 
-        text = "            123456789012345678901234567890123456789012345678901234567890       " + "\n" + \
-               "INS   BANK      1                                                              " + "\n" + \
-               "INS   HTYPE   PNCR                                                             " + "\n" + \
-               "INS  1 ICONS  " + "{:10.8f}".format(wavelength*10) + \
-               "  0.000000       0.0         0       0.0    0       0.0"                         + "\n" + \
-               "INS  1I HEAD  DUMMY INCIDENT SPECTRUM FOR DIFFRACTOMETER D1A                   " + "\n" + \
-               "INS  1I ITYP    0    0.0000  180.0000         1                                " + "\n" + \
-               "INS  1PRCF1     0    0      0                                                  " + "\n" + \
-               "INS  1PRCF11   0.000000E+00   0.000000E+00   0.000000E+00   0.000000E+00       " + "\n" + \
-               "INS  1PRCF12   0.000000E+00   0.000000E+00   0.000000E+00   0.000000E+00       " + "\n" + \
-               "INS  1PRCF2     0    0      0                                                  " + "\n" + \
-               "INS  1PRCF21   0.000000E+00   0.000000E+00   0.000000E+00   0.000000E+00       " + "\n" + \
-               "INS  1PRCF22   0.000000E+00   0.000000E+00                                     "
+        text = "#GSAS-II instrument parameter file; do not add/delete items!\n" + \
+               "Type: PXC" + "\n" + \
+               "Bank: 1.0" + "\n" + \
+               "Lam: " + "{:10.8f}".format(wavelength*10) + "\n" + \
+               "Polariz.: 0.99" + "\n" + \
+               "Azimuth: 0.0" + "\n" + \
+               "Zero: 0.0" + "\n" + \
+               "U: 1.163" + "\n" + \
+               "V: -0.126" + "\n" + \
+               "W: 0.063" + "\n" + \
+               "X: 0.0" + "\n" + \
+               "Y: 0.0" + "\n" + \
+               "Z: 0.0" + "\n" + \
+               "SH / L: 0.002"
 
         temp_file.write(text)
         temp_file.close()
@@ -130,34 +127,28 @@ class GSASIIReflections:
         python_script_file_name = os.path.join(gsasii_temp_dir, "temp.py")
         python_script =  open(python_script_file_name, "w")
 
-        text =  "import sys, os, numpy\n\n"
-        text += "gsasii_dirname = '" + gsasii_dirname + "'\n"
-        text += "gsasii_temp_dir = '" + gsasii_temp_dir + "'\n"
-        text += "gsasii_data_file = '" + gsasii_data_file + "'\n"
-        text += "project_file = '" + project_file + "'\n"
-        text += "cif_file = '" + cif_file + "'\n"
-        text += "prm_file = '" + prm_file + "'\n"
-        text += "twotheta_min = " + str(twotheta_min) + "\n"
-        text += "twotheta_max = " + str(twotheta_max) + "\n"
-        text += "sys.path.insert(0, gsasii_dirname)\n\n"
-        text += "try:" + "\n"
-        text += "    import GSASIIscriptable as G2sc" + "\n"
-        text += "    G2sc.SetPrintLevel('none')" + "\n"
-        text += "except:" + "\n"
-        text += "    raise ValueError('GSAS NOT FOUND!')" + "\n"
-        text += "gpx = G2sc.G2Project(newgpx=project_file)" + "\n"
-        text += "gpx.add_phase(cif_file, phasename='wonder_phase', fmthint='CIF')" + "\n"
-        text += "hist1 = gpx.add_simulated_powder_histogram('wonder_histo', prm_file, twotheta_min, twotheta_max, 0.01,phases=gpx.phases())" + "\n"
-        text += "gpx.data['Controls']['data']['max cyc'] = 0" + "\n"
-        text += "gpx.do_refinements([{}])" + "\n"
-        text += "gpx.save()" + "\n"
-        text += "gsasii_data = hist1.reflections()['wonder_phase']['RefList']" + "\n"
-        text += "gsasii_data_out = open(gsasii_data_file, 'w')" + "\n"
-        text += "text = ''" + "\n"
-        text += "for item in gsasii_data:" + "\n"
-        text += "    text += str(item[0]) + ',' + str(item[1]) + ', ' + str(item[2]) + ',' +str(item[5]) + ',' + str(item[3]) + ',' + str(item[9]) + '\\n'" + "\n"
-        text += "gsasii_data_out.write(text)" + "\n"
-        text += "gsasii_data_out.close()" + "\n"
+        text =  "import sys, os, numpy, pickle, codecs\n\n"  + \
+                "gsasii_dirname = '" + gsasii_dirname + "'\n" + \
+                "gsasii_temp_dir = '" + gsasii_temp_dir + "'\n" + \
+                "gsasii_data_file = '" + gsasii_data_file + "'\n" + \
+                "project_file = '" + project_file + "'\n" + \
+                "cif_file = '" + cif_file + "'\n" + \
+                "prm_file = '" + prm_file + "'\n" + \
+                "twotheta_min = " + str(twotheta_min) + "\n" + \
+                "twotheta_max = " + str(twotheta_max) + "\n" + \
+                "sys.path.insert(0, gsasii_dirname)\n\n" + \
+                "try:" + "\n" + \
+                "    import GSASIIscriptable as G2sc" + "\n" + \
+                "    G2sc.SetPrintLevel('none')" + "\n" + \
+                "except:" + "\n" + \
+                "    raise ValueError('GSAS NOT FOUND!')" + "\n" + \
+                "gpx = G2sc.G2Project(newgpx=project_file)" + "\n" + \
+                "gpx.add_phase(cif_file, phasename='wonder_phase', fmthint='CIF')" + "\n" + \
+                "hist1 = gpx.add_simulated_powder_histogram('wonder_histo', prm_file, twotheta_min, twotheta_max, 0.01, phases=gpx.phases())" + "\n" + \
+                "gpx.data['Controls']['data']['max cyc'] = 0" + "\n" + \
+                "gpx.do_refinements([{}])" + "\n" + \
+                "gsasii_data = hist1.reflections()['wonder_phase']['RefList']" + "\n" + \
+                "pickle.dump(gsasii_data, os.fdopen(sys.stdout.fileno(), 'wb'))"
 
         python_script.write(text)
         python_script.close()
