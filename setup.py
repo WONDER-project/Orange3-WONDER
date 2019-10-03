@@ -12,7 +12,7 @@ NAME = 'Orange3-WONDER-1'
 
 MAJOR = 1
 MINOR = 0
-MICRO = 32
+MICRO = 33
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 AUTHOR = 'Luca Rebuffi, Paolo Scardi, Alberto Flor'
@@ -62,9 +62,6 @@ ENTRY_POINTS = {
          ),
     'orange3.addon':
         ('Orange3-WONDER-1 = orangecontrib.wonder',)
-
-
-
 }
 
 from distutils.core import setup
