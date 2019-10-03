@@ -10,7 +10,7 @@ from orangecontrib.wonder.util.gui.gui_utility import gui, ShowTextDialog
 from orangecontrib.wonder.util import congruence
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters
 from orangecontrib.wonder.controller.fit.microstructure.size import SizeParameters
-from orangecontrib.wonder.controller.fit.wppm_functions import Distribution, Normalization, Shape, WulffCubeFace
+from orangecontrib.wonder.controller.fit.wppm.wppm_functions import Distribution, Normalization, Shape, WulffCubeFace
 
 class OWSize(OWGenericWidget):
 

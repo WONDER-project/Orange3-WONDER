@@ -123,7 +123,7 @@ class InvariantPAH(ParametersList):
         step = L_max/100
         L = numpy.arange(start=step, stop=L_max + step, step=step)
 
-        from orangecontrib.wonder.controller.fit.wppm_functions import displacement_invariant_pah
+        from orangecontrib.wonder.controller.fit.wppm.wppm_functions import displacement_invariant_pah
 
         DL = displacement_invariant_pah(L, h, k, l, self.aa.value, self.bb.value, self.get_invariant(h, k, l))
 
@@ -378,7 +378,7 @@ class KrivoglazWilkensModel(ParametersList):
         step = L_max/100
         L = numpy.arange(start=step, stop=L_max + step, step=step)
 
-        from orangecontrib.wonder.controller.fit.wppm_functions import displacement_krivoglaz_wilkens
+        from orangecontrib.wonder.controller.fit.wppm.wppm_functions import displacement_krivoglaz_wilkens
 
         DL = displacement_krivoglaz_wilkens(L, h, k, l,
                                             self.rho.value,

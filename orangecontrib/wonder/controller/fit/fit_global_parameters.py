@@ -5,7 +5,7 @@ from orangecontrib.wonder.controller.fit.fit_parameter import FreeInputParameter
 from orangecontrib.wonder.controller.fit.instrument.background_parameters import ChebyshevBackground, ExpDecayBackground
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection, ZeroError, SpecimenDisplacement
 from orangecontrib.wonder.controller.fit.microstructure.strain import InvariantPAH, KrivoglazWilkensModel, WarrenModel
-from orangecontrib.wonder.controller.fit.wppm_functions import Distribution, Shape
+from orangecontrib.wonder.controller.fit.wppm.wppm_functions import Distribution, Shape
 
 class FitGlobalParameters(ParametersList):
 

@@ -23,7 +23,7 @@ from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalP
 from orangecontrib.wonder.controller.fit.init.thermal_polarization_parameters import ThermalPolarizationParameters
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import SpecimenDisplacement
 from orangecontrib.wonder.controller.fit.instrument.instrumental_parameters import Lab6TanCorrection
-from orangecontrib.wonder.controller.fit.wppm_functions import Shape, caglioti_fwhm, caglioti_eta, delta_two_theta_lab6, \
+from orangecontrib.wonder.controller.fit.wppm.wppm_functions import Shape, caglioti_fwhm, caglioti_eta, delta_two_theta_lab6, \
     integral_breadth_instrumental_function, integral_breadth_size, integral_breadth_strain, integral_breadth_total
 
 

@@ -1,6 +1,6 @@
 import numpy
 
-from orangecontrib.wonder.controller.fit.wppm_functions import WulffCubeFace, WulffSolidDataRow, \
+from orangecontrib.wonder.controller.fit.wppm.wppm_functions import WulffCubeFace, WulffSolidDataRow, \
     wulff_solids_data_triangular, wulff_solids_data_hexagonal, \
     lognormal_distribution
 

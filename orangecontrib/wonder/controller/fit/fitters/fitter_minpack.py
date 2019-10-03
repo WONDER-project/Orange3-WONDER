@@ -2,7 +2,7 @@ from orangecontrib.wonder.controller.fit.fitter import FitterInterface
 
 from orangecontrib.wonder.model.diffraction_pattern import DiffractionPattern, DiffractionPoint
 from orangecontrib.wonder.controller.fit.fit_parameter import PARAM_ERR
-from orangecontrib.wonder.controller.fit.wppm_functions import fit_function_direct
+from orangecontrib.wonder.controller.fit.wppm.wppm_functions import fit_function_direct
 from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalParameters
 
 import numpy
