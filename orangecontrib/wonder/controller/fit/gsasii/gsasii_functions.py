@@ -144,6 +144,7 @@ class GSASIIReflections:
         text += "    import GSASIIscriptable as G2sc" + "\n"
         text += "    G2sc.SetPrintLevel('none')" + "\n"
         text += "except:" + "\n"
+        text += "    raise ValueError('GSAS NOT FOUND!')" + "\n"
         text += "gpx = G2sc.G2Project(newgpx=project_file)" + "\n"
         text += "gpx.add_phase(cif_file, phasename='wonder_phase', fmthint='CIF')" + "\n"
         text += "hist1 = gpx.add_simulated_powder_histogram('wonder_histo', prm_file, twotheta_min, twotheta_max, 0.01,phases=gpx.phases())" + "\n"

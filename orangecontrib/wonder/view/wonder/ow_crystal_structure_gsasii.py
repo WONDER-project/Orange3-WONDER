@@ -1,4 +1,4 @@
-import sys, numpy, copy
+import os, sys, numpy, copy
 
 from PyQt5.QtWidgets import QMessageBox, QScrollArea, QApplication
 from PyQt5.QtCore import Qt
@@ -16,12 +16,12 @@ from orangecontrib.wonder.controller.fit.fit_global_parameters import FitGlobalP
 from orangecontrib.wonder.controller.fit.fit_parameter import FitParameter, Boundary
 from orangecontrib.wonder.controller.fit.init.crystal_structure import CrystalStructure, Reflection
 
-class OWCrystalStructure(OWGenericWidget):
+class OWCrystalStructureGSASII(OWGenericWidget):
 
-    name = "Crystal Structure"
+    name = "GSASII Crystal Structure"
     description = "Define Crystal Structure"
-    icon = "icons/crystal_structure.png"
-    priority = 3
+    icon = "icons/gsas2.png"
+    priority = 3.1
 
     want_main_area = False
 
@@ -34,7 +34,8 @@ class OWCrystalStructure(OWGenericWidget):
     a_function                            = Setting([0])
     a_function_value                      = Setting([""])
     symmetry                              = Setting([2])
-    use_structure                         = Setting([0])
+    use_structure                         = [1]
+    cif_file                              = Setting([""])
     formula                               = Setting([""])
     intensity_scale_factor                = Setting([1.0])
     intensity_scale_factor_fixed          = Setting([0])
@@ -85,6 +86,7 @@ class OWCrystalStructure(OWGenericWidget):
                                                         symmetry                             = self.symmetry[index],
                                                         use_structure                        = self.use_structure[index],
                                                         formula                              = self.formula[index],
+                                                        cif_file                             = self.cif_file[index],
                                                         intensity_scale_factor               = self.intensity_scale_factor[index],
                                                         intensity_scale_factor_fixed         = self.intensity_scale_factor_fixed[index],
                                                         intensity_scale_factor_has_min       = self.intensity_scale_factor_has_min[index],
@@ -164,6 +166,7 @@ class OWCrystalStructure(OWGenericWidget):
                                                                         symmetry                             = self.symmetry[index],
                                                                         use_structure                        = self.use_structure[index],
                                                                         formula                              = self.formula[index],
+                                                                        cif_file                             = self.cif_file[index],
                                                                         intensity_scale_factor               = self.intensity_scale_factor[index],
                                                                         intensity_scale_factor_fixed         = self.intensity_scale_factor_fixed[index],
                                                                         intensity_scale_factor_has_min       = self.intensity_scale_factor_has_min[index],
@@ -207,6 +210,7 @@ class OWCrystalStructure(OWGenericWidget):
         self.dump_symmetry()
         self.dump_use_structure()
         self.dump_formula()
+        self.dump_cif_file()
         self.dump_intensity_scale_factor()
         self.dump_reflections()
         self.dump_limit()
@@ -272,6 +276,17 @@ class OWCrystalStructure(OWGenericWidget):
                 self.use_structure.append(self.crystal_structure_box_array[index].use_structure)
         except:
             self.use_structure = copy.deepcopy(bkp_use_structure)
+
+    def dump_cif_file(self):
+        bkp_cif_file = copy.deepcopy(self.cif_file)
+
+        try:
+            self.cif_file = []
+
+            for index in range(len(self.crystal_structure_box_array)):
+                self.cif_file.append(self.crystal_structure_box_array[index].cif_file)
+        except:
+            self.cif_file = copy.deepcopy(bkp_cif_file)
 
     def dump_formula(self):
         bkp_formula = copy.deepcopy(self.formula)
@@ -371,8 +386,9 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
     a_function                            = 0
     a_function_value                      = ""
     symmetry                              = 2
-    use_structure                         = 0
+    use_structure                         = 1
     formula                               = ""
+    cif_file                              = ""
     intensity_scale_factor                = 1.0
     intensity_scale_factor_fixed          = 0
     intensity_scale_factor_has_min        = 0
@@ -407,8 +423,9 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
                  a_function                            = 0,
                  a_function_value                      = "",
                  symmetry                              = 2,
-                 use_structure                         = 0,
+                 use_structure                         = 1,
                  formula                               = "",
+                 cif_file                              = "",
                  intensity_scale_factor                = 1.0,
                  intensity_scale_factor_fixed          = 0,
                  intensity_scale_factor_has_min        = 0,
@@ -442,6 +459,7 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
         self.symmetry                              = symmetry
         self.use_structure                         = use_structure
         self.formula                               = formula
+        self.cif_file                              = cif_file
         self.intensity_scale_factor                = intensity_scale_factor
         self.intensity_scale_factor_fixed          = intensity_scale_factor_fixed
         self.intensity_scale_factor_has_min        = intensity_scale_factor_has_min
@@ -458,7 +476,6 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
 
         container = gui.widgetBox(parent, "", orientation="vertical", width=self.CONTROL_AREA_WIDTH-45)
 
-
         self.cb_symmetry = orangegui.comboBox(container, self, "symmetry", label="Symmetry", items=Symmetry.tuple(), callback=self.set_symmetry, orientation="horizontal")
 
         widget.create_box_in_widget(self, container, "a", "a [nm]", add_callback=True, min_value=0.0, min_accepted=False)
@@ -469,20 +486,19 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
                                        "", orientation="vertical",
                                        width=self.CONTROL_AREA_WIDTH - 45)
 
-        orangegui.comboBox(structure_box, self, "use_structure", label="Use Structural Model", items=["No", "Yes"],
-                           callback=self.set_structure, labelWidth=350, orientation="horizontal")
-
-
         self.structure_box_1 = gui.widgetBox(structure_box,
                                        "", orientation="vertical",
-                                       width=self.CONTROL_AREA_WIDTH - 50, height=60)
+                                       width=self.CONTROL_AREA_WIDTH - 50, height=90)
+
+        file_box = gui.widgetBox(self.structure_box_1, "", orientation="horizontal", width=self.CONTROL_AREA_WIDTH-55)
+
+        self.le_cif_file = gui.lineEdit(file_box, self, value="cif_file", valueType=str, label="CIF File", labelWidth=50,
+                                        callback=widget.dump_cif_file)
+        orangegui.button(file_box, self, "...", callback=self.open_folders)
 
         gui.lineEdit(self.structure_box_1, self, "formula", "Chemical Formula", labelWidth=110, valueType=str, callback=widget.dump_formula)
-        widget.create_box_in_widget(self, self.structure_box_1, "intensity_scale_factor", "I0", add_callback=True, min_value=0.0, min_accepted=False)
 
-        self.structure_box_2 = gui.widgetBox(structure_box,
-                                       "", orientation="vertical",
-                                       width=self.CONTROL_AREA_WIDTH - 50, height=60)
+        widget.create_box_in_widget(self, self.structure_box_1, "intensity_scale_factor", "I0", add_callback=True, min_value=0.0, min_accepted=False)
 
         orangegui.separator(container)
 
@@ -506,8 +522,6 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
         set_limit(self.limit_type)
 
         gui.button(gen_box, self, "Generate Reflections", callback=self.generate_reflections)
-
-        self.set_structure()
 
         reflection_box = gui.widgetBox(container,
                                        "Reflections", orientation="vertical",
@@ -535,17 +549,19 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
 
         self.is_on_init = False
 
+    def open_folders(self):
+        self.cif_file=gui.selectFileFromDialog(self,
+                                               self.cif_file,
+                                               start_directory=os.curdir)
+
+        self.le_cif_file.setText(self.cif_file)
+
+
     def after_change_workspace_units(self):
         pass
 
     def set_index(self, index):
         self.index = index
-
-    def set_structure(self):
-        self.structure_box_1.setVisible(self.use_structure==1)
-        self.structure_box_2.setVisible(self.use_structure==0)
-
-        if not self.is_on_init: self.widget.dump_use_structure()
 
     def set_symmetry(self):
         if not CrystalStructure.is_cube(self.cb_symmetry.currentText()):
@@ -665,32 +681,24 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
 
 
     def append_fit_initialization(self):
-        if self.use_structure == 0:
-            crystal_structure = CrystalStructure.init_cube(a0=self.widget.populate_parameter_in_widget(self, "a", self.get_parameters_prefix()),
-                                                           symmetry=self.cb_symmetry.currentText(),
-                                                           progressive=self.get_parameter_progressive())
+        crystal_structure = CrystalStructure.init_cube(a0=self.widget.populate_parameter_in_widget(self, "a", self.get_parameters_prefix()),
+                                                       symmetry=self.cb_symmetry.currentText(),
+                                                       use_structure=True,
+                                                       formula=congruence.checkEmptyString(self.formula, "Chemical Formula"),
+                                                       intensity_scale_factor=self.widget.populate_parameter_in_widget(self, "intensity_scale_factor", self.get_parameters_prefix()),
+                                                       progressive=self.get_parameter_progressive())
+        
+        crystal_structure.use_gsas = True
+        crystal_structure.cif_file = self.cif_file
+        
+        self.widget.fit_global_parameters.fit_initialization.crystal_structures.append(crystal_structure)
+        self.widget.fit_global_parameters.evaluate_functions() # in case that a is a function of other parameters
 
-            self.widget.fit_global_parameters.fit_initialization.crystal_structures.append(crystal_structure)
-            self.widget.fit_global_parameters.evaluate_functions() # in case that a is a function of other parameters
+        crystal_structure.parse_reflections(self.reflections, progressive=self.get_parameter_progressive())
 
-            crystal_structure.parse_reflections(self.reflections, progressive=self.get_parameter_progressive())
-
-        elif self.use_structure == 1:
-            crystal_structure = CrystalStructure.init_cube(a0=self.widget.populate_parameter_in_widget(self, "a", self.get_parameters_prefix()),
-                                                           symmetry=self.cb_symmetry.currentText(),
-                                                           use_structure=True,
-                                                           formula=congruence.checkEmptyString(self.formula, "Chemical Formula"),
-                                                           intensity_scale_factor=self.widget.populate_parameter_in_widget(self, "intensity_scale_factor", self.get_parameters_prefix()),
-                                                           progressive=self.get_parameter_progressive())
-
-            self.widget.fit_global_parameters.fit_initialization.crystal_structures.append(crystal_structure)
-            self.widget.fit_global_parameters.evaluate_functions() # in case that a is a function of other parameters
-
-            crystal_structure.parse_reflections(self.reflections, progressive=self.get_parameter_progressive())
-
-            #intensities will be ignored
-            for reflection in crystal_structure.get_reflections():
-                reflection.intensity.fixed = True
+        #intensities will be ignored
+        for reflection in crystal_structure.get_reflections():
+            reflection.intensity.fixed = True
 
         if not self.widget.fit_global_parameters.fit_initialization is None \
            and not self.widget.fit_global_parameters.fit_initialization.incident_radiations is None \
