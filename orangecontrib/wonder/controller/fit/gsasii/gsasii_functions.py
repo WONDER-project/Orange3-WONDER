@@ -1,8 +1,9 @@
 ######################################################################
 # STRUCTURE - GSAS-II plugin
 ######################################################################
-import sys, tempfile, site, os, subprocess, numpy, pickle, codecs
-
+import sys, tempfile, site, os, pickle, traceback
+import subprocess
+from subprocess import CalledProcessError, check_output
 from orangecontrib.wonder.util.gui.gui_utility import OW_IS_DEVELOP
 
 if OW_IS_DEVELOP:
@@ -16,7 +17,7 @@ sys.path.insert(0, gsasii_dirname)
 
 project_file = os.path.join(gsasii_temp_dir, "temp.gpx")
 
-GSASII_MODE_ONLINE = 1
+GSASII_MODE_ONLINE   = 1
 GSASII_MODE_EXTERNAL = 2
 
 if sys.platform == "darwin":
@@ -86,7 +87,14 @@ class GSASIIReflections:
             gsasii_data_file = os.path.join(gsasii_temp_dir, "gsasii_data.dat")
             python_script_file = self.create_python_script(gsasii_dirname, gsasii_temp_dir, gsasii_data_file, project_file, cif_file, prm_file, twotheta_min, twotheta_max)
 
-            gsasii_data = pickle.loads(subprocess.check_output([sys.executable, python_script_file], timeout=10))
+            try:
+                p = subprocess.Popen([sys.executable, python_script_file], stdout=subprocess.PIPE)
+                gsasii_data = pickle.loads(p.stdout.read())
+                p.communicate()
+
+                #gsasii_data = pickle.loads(check_output([sys.executable, python_script_file], timeout=10))
+            except CalledProcessError as error:
+                raise Exception("Failed to call GSAS-II: " + ''.join(traceback.format_tb(error.__traceback__)))
 
             for item in gsasii_data:
                 entry = GSASIIReflectionData(item[0], item[1], item[2], item[5], item[3], item[9])
@@ -127,8 +135,8 @@ class GSASIIReflections:
         python_script_file_name = os.path.join(gsasii_temp_dir, "temp.py")
         python_script =  open(python_script_file_name, "w")
 
-        text =  "import sys, os, numpy, pickle, codecs\n\n"  + \
-                "gsasii_dirname = '" + gsasii_dirname + "'\n" + \
+        text =  "import sys, os, pickle\n\n"  + \
+                "sys.path.insert(0, '" + gsasii_dirname + "')\n" + \
                 "gsasii_temp_dir = '" + gsasii_temp_dir + "'\n" + \
                 "gsasii_data_file = '" + gsasii_data_file + "'\n" + \
                 "project_file = '" + project_file + "'\n" + \
@@ -136,18 +144,17 @@ class GSASIIReflections:
                 "prm_file = '" + prm_file + "'\n" + \
                 "twotheta_min = " + str(twotheta_min) + "\n" + \
                 "twotheta_max = " + str(twotheta_max) + "\n" + \
-                "sys.path.insert(0, gsasii_dirname)\n\n" + \
-                "try:" + "\n" + \
-                "    import GSASIIscriptable as G2sc" + "\n" + \
-                "    G2sc.SetPrintLevel('none')" + "\n" + \
-                "except:" + "\n" + \
-                "    raise ValueError('GSAS NOT FOUND!')" + "\n" + \
-                "gpx = G2sc.G2Project(newgpx=project_file)" + "\n" + \
-                "gpx.add_phase(cif_file, phasename='wonder_phase', fmthint='CIF')" + "\n" + \
-                "hist1 = gpx.add_simulated_powder_histogram('wonder_histo', prm_file, twotheta_min, twotheta_max, 0.01, phases=gpx.phases())" + "\n" + \
-                "gpx.data['Controls']['data']['max cyc'] = 0" + "\n" + \
-                "gpx.do_refinements([{}])" + "\n" + \
-                "gsasii_data = hist1.reflections()['wonder_phase']['RefList']" + "\n" + \
+                "try:\n" + \
+                "    import GSASIIscriptable as G2sc\n" + \
+                "    G2sc.SetPrintLevel('none')\n" + \
+                "except:\n" + \
+                "    raise ValueError('GSAS NOT FOUND!')\n\n" + \
+                "gpx = G2sc.G2Project(newgpx=project_file)\n" + \
+                "gpx.add_phase(cif_file, phasename='wonder_phase', fmthint='CIF')\n" + \
+                "hist1 = gpx.add_simulated_powder_histogram('wonder_histo', prm_file, twotheta_min, twotheta_max, 0.01, phases=gpx.phases())\n" + \
+                "gpx.data['Controls']['data']['max cyc'] = 0\n" + \
+                "gpx.do_refinements([{}])\n" + \
+                "gsasii_data = hist1.reflections()['wonder_phase']['RefList']\n" + \
                 "pickle.dump(gsasii_data, os.fdopen(sys.stdout.fileno(), 'wb'))"
 
         python_script.write(text)
