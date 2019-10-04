@@ -69,9 +69,12 @@ class GSASIIReflections:
             gpx = G2sc.G2Project(newgpx=project_file)
             gpx.add_phase(cif_file, phasename="wonder_phase", fmthint='CIF')
 
-            prm_file = self.create_temp_prm_file(wavelength)
-
-            hist1 = gpx.add_simulated_powder_histogram("wonder_histo", prm_file, twotheta_min, twotheta_max, 0.01, phases=gpx.phases())
+            hist1 = gpx.add_simulated_powder_histogram("wonder_histo",
+                                                       self.create_temp_prm_file(wavelength),
+                                                       twotheta_min,
+                                                       twotheta_max,
+                                                       0.01,
+                                                       phases=gpx.phases())
 
             gpx.data['Controls']['data']['max cyc'] = 0 # refinement not needed
             gpx.do_refinements([{}])
@@ -83,16 +86,16 @@ class GSASIIReflections:
                 self.__data[entry.get_key()] = entry
 
         elif GSASII_MODE == GSASII_MODE_EXTERNAL:
-            prm_file = self.create_temp_prm_file(wavelength)
-            gsasii_data_file = os.path.join(gsasii_temp_dir, "gsasii_data.dat")
-            python_script_file = self.create_python_script(gsasii_dirname, gsasii_temp_dir, gsasii_data_file, project_file, cif_file, prm_file, twotheta_min, twotheta_max)
-
             try:
-                p = subprocess.Popen([sys.executable, python_script_file], stdout=subprocess.PIPE)
-                gsasii_data = pickle.loads(p.stdout.read())
-                p.communicate()
-
-                #gsasii_data = pickle.loads(check_output([sys.executable, python_script_file], timeout=10))
+                pipe = subprocess.Popen([sys.executable, self.create_python_script(gsasii_dirname,
+                                                                                   gsasii_temp_dir,
+                                                                                   os.path.join(gsasii_temp_dir, "gsasii_data.dat"),
+                                                                                   project_file,
+                                                                                   cif_file,
+                                                                                   self.create_temp_prm_file(wavelength),
+                                                                                   twotheta_min,
+                                                                                   twotheta_max)], stdout=subprocess.PIPE)
+                gsasii_data = pickle.loads(pipe.stdout.read())
             except CalledProcessError as error:
                 raise Exception("Failed to call GSAS-II: " + ''.join(traceback.format_tb(error.__traceback__)))
 
