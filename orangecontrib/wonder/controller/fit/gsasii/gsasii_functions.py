@@ -107,24 +107,40 @@ class GSASIIReflections:
         return [self.__data[key] for key in self.__data.keys()]
 
     @classmethod
-    def create_temp_prm_file(cls, wavelength):
+    def create_temp_prm_file(cls, wavelength, with_error_profile=False):
         temp_file_name = os.path.join(gsasii_temp_dir, "temp.instprm")
         temp_file = open(temp_file_name, "w")
 
-        text = "#GSAS-II instrument parameter file; do not add/delete items!\n" + \
-               "Type: PXC" + "\n" + \
-               "Bank: 1.0" + "\n" + \
-               "Lam: " + "{:10.8f}".format(wavelength*10) + "\n" + \
-               "Polariz.: 0.99" + "\n" + \
-               "Azimuth: 0.0" + "\n" + \
-               "Zero: 0.0" + "\n" + \
-               "U: 1.163" + "\n" + \
-               "V: -0.126" + "\n" + \
-               "W: 0.063" + "\n" + \
-               "X: 0.0" + "\n" + \
-               "Y: 0.0" + "\n" + \
-               "Z: 0.0" + "\n" + \
-               "SH / L: 0.002"
+        if with_error_profile: # 11-BM @ APS-ANL
+            text = "#GSAS-II instrument parameter file; do not add/delete items!\n" + \
+                   "Type: PXC" + "\n" + \
+                   "Bank: 1.0" + "\n" + \
+                   "Lam: " + "{:10.8f}".format(wavelength*10) + "\n" + \
+                   "Polariz.: 0.99" + "\n" + \
+                   "Azimuth: 0.0" + "\n" + \
+                   "Zero: 0.0" + "\n" + \
+                   "U: 1.163" + "\n" + \
+                   "V: -0.126" + "\n" + \
+                   "W: 0.063" + "\n" + \
+                   "X: 0.0" + "\n" + \
+                   "Y: 0.0" + "\n" + \
+                   "Z: 0.0" + "\n" + \
+                   "SH / L: 0.002"
+        else:
+            text = "#GSAS-II instrument parameter file; do not add/delete items!\n" + \
+                   "Type: PXC" + "\n" + \
+                   "Bank: 1.0" + "\n" + \
+                   "Lam: " + "{:10.8f}".format(wavelength*10) + "\n" + \
+                   "Polariz.: 0.99" + "\n" + \
+                   "Azimuth: 0.0" + "\n" + \
+                   "Zero: 0.0" + "\n" + \
+                   "U: 0.0" + "\n" + \
+                   "V: 0.0" + "\n" + \
+                   "W: 0.0" + "\n" + \
+                   "X: 0.0" + "\n" + \
+                   "Y: 0.0" + "\n" + \
+                   "Z: 0.0" + "\n" + \
+                   "SH / L: 0.0"
 
         temp_file.write(text)
         temp_file.close()
