@@ -735,7 +735,7 @@ def get_wulff_solid_Hj_coefficients(h, k, l, truncation, face): # N.B. L, trunca
 
     divisor = numpy.gcd.reduce([h, k, l])
 
-    truncation_on_file = 100*truncation
+    truncation_on_file = 100.0*truncation
 
     if truncation_on_file.is_integer():
         if face == WulffCubeFace.TRIANGULAR:
