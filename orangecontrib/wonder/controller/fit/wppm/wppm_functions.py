@@ -743,6 +743,8 @@ def get_wulff_solid_Hj_coefficients(h, k, l, truncation, face): # N.B. L, trunca
         else:
             wulff_solid_data_row = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation_on_file)]
 
+        #print(h, k, l, truncation, wulff_solid_data_row)
+
         return wulff_solid_data_row
     else:
         x = truncation % 1 # decimal part
@@ -754,7 +756,7 @@ def get_wulff_solid_Hj_coefficients(h, k, l, truncation, face): # N.B. L, trunca
             coefficients_bottom = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, int(truncation_on_file))]
             coefficients_top    = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, min(100, 1 + int(truncation_on_file)))]
 
-        return  WulffSolidDataRow(h,
+        wulff_solid_data_row =  WulffSolidDataRow(h,
                                   k,
                                   l,
                                   truncation_on_file,
@@ -776,6 +778,10 @@ def get_wulff_solid_Hj_coefficients(h, k, l, truncation, face): # N.B. L, trunca
                                   __point_in_between(coefficients_top.xl          , coefficients_bottom.xl          , x),
                                   __point_in_between(coefficients_top.chi_square_2, coefficients_bottom.chi_square_2, x))
 
+        #print(h, k, l, truncation, wulff_solid_data_row)
+
+        return wulff_solid_data_row
+
 
 def size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, face):
 
@@ -788,7 +794,7 @@ def size_function_wulff_solids_lognormal(L, h, k, l, sigma, mu, truncation, face
         else:
             A = 0.0
 
-        for n in range(0, 4):
+        for n in range(len(poly_coefficients)):
             A += poly_coefficients[n]*\
                  erfc((numpy.log(L*Kc)-mu-((3.0-n)*sigma2))/ssqrt2)*\
                  (L**n)*0.5*__lognormal_momentum(mu, sigma2, 3-n)/M3
