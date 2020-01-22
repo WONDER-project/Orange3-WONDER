@@ -125,10 +125,13 @@ def fit_function_reciprocal(s, fit_global_parameters, diffraction_pattern_index 
     if crystal_structure.use_structure and crystal_structure.use_gsas:
         diffraction_pattern = fit_global_parameters.fit_initialization.diffraction_patterns[diffraction_pattern_index]
 
-        gsas_reflections_list = gsasii_load_reflections(crystal_structure.cif_file,
-                                                        incident_radiation.wavelength.value,
-                                                        diffraction_pattern.get_diffraction_point(0).twotheta,
-                                                        diffraction_pattern.get_diffraction_point(-1).twotheta)
+        if crystal_structure.gsas_reflections_list is None:
+            crystal_structure.gsas_reflections_list = gsasii_load_reflections(crystal_structure.cif_file,
+                                                                              incident_radiation.wavelength.value,
+                                                                              diffraction_pattern.get_diffraction_point(0).twotheta,
+                                                                              diffraction_pattern.get_diffraction_point(-1).twotheta)
+
+        gsas_reflections_list = crystal_structure.gsas_reflections_list
     else:
         gsas_reflections_list = None
 
@@ -743,8 +746,6 @@ def get_wulff_solid_Hj_coefficients(h, k, l, truncation, face): # N.B. L, trunca
         else:
             wulff_solid_data_row = wulff_solids_data_hexagonal[WulffSolidDataRow.get_key(h/divisor, k/divisor, l/divisor, truncation_on_file)]
 
-        #print(h, k, l, truncation, wulff_solid_data_row)
-
         return wulff_solid_data_row
     else:
         x = truncation % 1 # decimal part
@@ -777,8 +778,6 @@ def get_wulff_solid_Hj_coefficients(h, k, l, truncation, face): # N.B. L, trunca
                                   __point_in_between(coefficients_top.d1          , coefficients_bottom.d1          , x),
                                   __point_in_between(coefficients_top.xl          , coefficients_bottom.xl          , x),
                                   __point_in_between(coefficients_top.chi_square_2, coefficients_bottom.chi_square_2, x))
-
-        #print(h, k, l, truncation, wulff_solid_data_row)
 
         return wulff_solid_data_row
 

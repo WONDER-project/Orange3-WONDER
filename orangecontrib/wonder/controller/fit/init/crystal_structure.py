@@ -79,7 +79,7 @@ class CrystalStructure(ParametersList):
         return "crystal_structure_"
 
 
-    def __init__(self, a, b, c, alpha, beta, gamma, symmetry=Symmetry.SIMPLE_CUBIC, use_structure=False, formula=None, use_gsas=False, cif_file=None, intensity_scale_factor=None):
+    def __init__(self, a, b, c, alpha, beta, gamma, symmetry=Symmetry.SIMPLE_CUBIC, use_structure=False, formula=None, use_gsas=False, cif_file=None, gsas_reflections_list=None, intensity_scale_factor=None):
         super(CrystalStructure, self).__init__()
 
         self.a = a
@@ -93,6 +93,7 @@ class CrystalStructure(ParametersList):
         self.formula = None if formula is None else formula.strip()
         self.use_gsas = use_gsas
         self.cif_file = cif_file
+        self.gsas_reflections_list = gsas_reflections_list
         self.intensity_scale_factor = intensity_scale_factor
 
         self.reflections = []

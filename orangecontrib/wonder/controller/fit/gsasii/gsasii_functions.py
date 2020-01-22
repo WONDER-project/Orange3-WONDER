@@ -21,12 +21,13 @@ GSASII_MODE_ONLINE   = 1
 GSASII_MODE_EXTERNAL = 2
 
 if sys.platform == "darwin":
-    GSASII_MODE = GSASII_MODE_EXTERNAL
+    GSASII_MODE = GSASII_MODE_ONLINE #GSASII_MODE_EXTERNAL
 else:
     GSASII_MODE = GSASII_MODE_ONLINE
 
 try:
     import GSASIIscriptable as G2sc
+
     G2sc.SetPrintLevel("none")
 
     print("GSAS-II found in ", gsasii_dirname)

@@ -734,7 +734,7 @@ class CrystalStructureBox(QtWidgets.QWidget, OWComponent):
 
 if __name__ == "__main__":
     a = QApplication(sys.argv)
-    ow = OWCrystalStructure()
+    ow = OWCrystalStructureGSASII()
     ow.show()
     a.exec_()
     ow.saveSettings()

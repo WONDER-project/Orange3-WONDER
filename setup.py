@@ -8,11 +8,11 @@ from setuptools import setup, find_packages
 with io.open('about.md', 'r', encoding='utf-8') as f:
     ABOUT = f.read()
 
-NAME = 'Orange3-WONDER-1'
+NAME = 'OASYS1-WONDER'
 
 MAJOR = 1
 MINOR = 0
-MICRO = 34
+MICRO = 0
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 AUTHOR = 'Luca Rebuffi, Paolo Scardi, Alberto Flor'
@@ -32,8 +32,8 @@ CLASSIFIERS = [
 ]
 
 KEYWORDS = [
-    'orange3 add-on',
-    'orange3-wonder-1'
+    'oasys1 add-on',
+    'oasys1-wonder-1'
 ]
 
 PACKAGES = find_packages()
